@@ -1,0 +1,164 @@
+<?php
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Carbon\Carbon;
+
+class AuthController extends Controller
+{
+    // ───────────────────────────────────────
+    // 1. INSCRIPTION
+    // ───────────────────────────────────────
+    public function register(Request $request)
+    {
+        $request->validate([
+            'nom'          => 'required|string',
+            'prenom'       => 'required|string',
+            'email'        => 'required|email|unique:users,email',
+            'mot_de_passe' => [
+                'required','min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+            ],
+            'role'        => 'required|in:testeur,developpeur',
+            'github_link' => 'required_if:role,developpeur|nullable|url',
+        ], [
+            'email.unique'            => 'Cette adresse email est déjà associée à un compte.',
+            'github_link.required_if' => 'Le lien GitHub est obligatoire pour un Développeur.',
+            'mot_de_passe.regex'      => 'Mot de passe non conforme.',
+        ]);
+
+        User::create([
+            'nom'          => $request->nom,
+            'prenom'       => $request->prenom,
+            'email'        => $request->email,
+            'mot_de_passe' => Hash::make($request->mot_de_passe),
+            'role'         => $request->role,
+            'statut'       => 'en_attente',
+            'github_link'  => $request->role === 'developpeur'
+                              ? $request->github_link : null,
+        ]);
+
+        return response()->json([
+            'message' => "Compte créé. En attente de validation."
+        ], 201);
+    }
+
+    // ───────────────────────────────────────
+    // 2. LOGIN
+    // ───────────────────────────────────────
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email'        => 'required|email',
+            'mot_de_passe' => 'required',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        // بريد أو كلمة سر غلط
+        if (!$user || !Hash::check($request->mot_de_passe, $user->mot_de_passe))
+            return response()->json(
+                ['message' => 'Email ou mot de passe incorrect.'], 401
+            );
+
+        // حساب في الانتظار
+        if ($user->statut === 'en_attente')
+            return response()->json(
+                ['message' => 'Votre compte est en attente de validation.'], 403
+            );
+
+        // حساب مرفوض
+        if ($user->statut === 'rejete')
+            return response()->json(
+                ['message' => "Compte rejeté, contactez l'administrateur."], 403
+            );
+
+        // كل شيء صحيح → نعطيه token
+        $token = JWTAuth::fromUser($user);
+
+        return response()->json([
+            'token' => $token,
+            'user'  => [
+                'id'     => $user->id,
+                'nom'    => $user->nom,
+                'prenom' => $user->prenom,
+                'email'  => $user->email,
+                'role'   => $user->role,
+            ]
+        ]);
+    }
+
+    // ───────────────────────────────────────
+    // 3. MOT DE PASSE OUBLIÉ
+    // ───────────────────────────────────────
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+        if (!$user)
+            return response()->json(
+                ['message' => 'Aucun compte associé à cet email.'], 404
+            );
+
+        $token = Str::random(64);
+
+        $user->update([
+            'reset_token'         => $token,
+            'reset_token_expires' => Carbon::now()->addHour(),
+        ]);
+
+        $link = env('FRONTEND_URL') . '/reset-password/' . $token;
+
+        Mail::raw(
+            "Bonjour {$user->prenom},\n\n"
+            . "Cliquez ici pour réinitialiser votre mot de passe (valide 1h) :\n{$link}",
+            fn($m) => $m->to($user->email)
+                        ->subject('Réinitialisation du mot de passe')
+        );
+
+        return response()->json(['message' => 'Lien envoyé par email.']);
+    }
+
+    // ───────────────────────────────────────
+    // 4. RESET PASSWORD
+    // ───────────────────────────────────────
+    public function resetPassword(Request $request, $token)
+    {
+        $request->validate([
+            'mot_de_passe' => [
+                'required','min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+            ],
+        ]);
+
+        $user = User::where('reset_token', $token)
+                    ->where('reset_token_expires', '>', Carbon::now())
+                    ->first();
+
+        if (!$user)
+            return response()->json(['message' => 'Lien invalide ou expiré.'], 400);
+
+        $user->update([
+            'mot_de_passe'        => Hash::make($request->mot_de_passe),
+            'reset_token'         => null,
+            'reset_token_expires' => null,
+        ]);
+
+        return response()->json(['message' => 'Mot de passe mis à jour avec succès.']);
+    }
+
+    // ───────────────────────────────────────
+    // 5. LOGOUT
+    // ───────────────────────────────────────
+    public function logout()
+    {
+        JWTAuth::invalidate(JWTAuth::getToken());
+        return response()->json(['message' => 'Déconnecté avec succès.']);
+    }
+}
