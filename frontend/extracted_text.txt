@@ -1,0 +1,203 @@
+
+Cahier de Charges
+Plateforme intelligente de gestion des tickets et anomalies
+
+Réalisé par : Maha Dorai &amp; Ahmed Skhiri
+Classe : MDW 3.1
+Année universitaire : 2025–2026
+
+1. Introduction
+Ce projet consiste à développer une application web permettant de gérer les tickets et suivre les anomalies dans les projets logiciels. La plateforme doit permettre aux testeurs de signaler les problèmes, aux développeurs de corriger les anomalies et à l'administrateur de superviser les projets et les tickets. Le système intègre également une intelligence artificielle capable d'analyser les tickets et de proposer des solutions.
+2. Acteurs du système
+Les acteurs du système sont :
+- Testeur
+- Développeur
+- Administrateur
+- Système IA
+Rôle du Testeur
+Le système doit permettre au testeur :
+- de créer un ticket
+- de décrire un problème
+- de consulter ses tickets
+- de modifier certaines informations du ticket
+- de suivre l'état du ticket
+- d'ajouter des commentaires
+Rôle du Développeur
+Le système doit permettre au développeur :
+- de consulter les tickets du projet
+- de prendre en charge un ticket
+- de corriger les anomalies
+- de modifier le statut du ticket
+- d'ajouter des commentaires
+Rôle de l'Administrateur
+Le système doit permettre à l'administrateur :
+- de gérer les utilisateurs
+- d'attribuer les rôles et les accès
+- de créer et gérer les projets
+- d'assigner les tickets aux développeurs
+- de suivre l'avancement des tickets
+- de consulter les statistiques du système
+Rôle du Système IA
+Le système IA doit :
+- analyser automatiquement les tickets soumis
+- proposer des solutions aux développeurs
+3. Cycle de vie d'un ticket
+Créé → Ouvert → En cours → En attente → Résolu → Fermé
+4. Besoins fonctionnels
+A. Gestion des utilisateurs
+BF1 — Authentification
+Le système doit permettre aux utilisateurs de s'inscrire, se connecter, se déconnecter et récupérer leur mot de passe.
+BF2 — Gestion des rôles
+Le système doit permettre à l'administrateur de gérer les rôles des utilisateurs et d'attribuer les rôles (Testeur, Développeur, Administrateur).
+B. Gestion des projets
+BF3 — Gestion des projets
+Le système doit permettre à l'administrateur de créer, modifier et supprimer un projet. Chaque projet peut contenir plusieurs tickets.
+C. Gestion des tickets
+BF4 — Création de ticket
+Le système doit permettre au testeur de créer un ticket, saisir un titre, décrire le problème, ajouter une pièce jointe, choisir une priorité et un type (Bug, Task, Improvement).
+BF5 — Consultation des tickets
+Le système doit permettre aux utilisateurs de consulter la liste des tickets, les filtrer par statut, priorité ou catégorie, et rechercher un ticket.
+BF6 — Détail d'un ticket
+Le système doit permettre aux utilisateurs de consulter les informations du ticket : type, priorité, statut, commentaires, développeur assigné, date et heure de création.
+BF7 — Assignation
+Le système doit permettre à l'administrateur d'assigner un ticket à un développeur.
+BF8 — Mise à jour du statut
+Le système doit permettre au développeur de modifier le statut du ticket.
+BF9 — Commentaires
+Le système doit permettre aux utilisateurs d'ajouter des commentaires et de suivre l'historique des échanges.
+D. Supervision &amp; Reporting
+BF10 — Tableau de bord
+Le système doit permettre à l'administrateur de consulter le nombre total de tickets, les tickets ouverts, en cours, résolus et critiques.
+BF11 — Statistiques
+Le système doit permettre à l'administrateur de consulter les statistiques des tickets par projet et par développeur.
+5. Besoins non fonctionnels
+- BNF1 — Sécurité : Le système doit protéger les données et gérer les accès.
+- BNF2 — Performance : Le système doit permettre une utilisation fluide.
+- BNF3 — Ergonomie : Le système doit proposer une interface simple et intuitive.
+- BNF4 — Maintenabilité : Le système doit utiliser un code structuré et modulaire.
+6. Contraintes techniques
+- Backend : Laravel
+- Frontend : Vue.js
+- IA : Python
+- Base de données : MySQL
+
+
+
+1. Backlog du produit
+
+Id
+Thème
+User Story
+Priorité
+1
+Authentification
+En tant qu'utilisateur, je souhaite m'inscrire, me connecter et récupérer mon mot de passe afin d'accéder à la plateforme.
+Must
+2
+Gestion des rôles
+En tant qu'administrateur, je souhaite attribuer les rôles (Testeur, Développeur, Administrateur) afin de gérer les accès.
+Must
+3
+Gestion des utilisateurs
+En tant qu'administrateur, je souhaite créer, modifier et supprimer des comptes utilisateurs afin de superviser l'équipe.
+Must
+4
+Gestion des projets
+En tant qu'administrateur, je souhaite créer, modifier et supprimer des projets afin d'organiser les tickets.
+Must
+5
+Création de ticket
+En tant que testeur, je souhaite créer un ticket (titre, description, priorité, type, pièce jointe) afin de signaler un problème.
+Must
+6
+Consultation &amp; Recherche
+En tant qu'utilisateur, je souhaite consulter, filtrer et rechercher les tickets afin de suivre leur état.
+Must
+7
+Assignation &amp; Statut
+En tant qu'administrateur, je souhaite assigner un ticket à un développeur. En tant que développeur, je souhaite modifier le statut du ticket.
+Must
+8
+Commentaires
+En tant qu'utilisateur, je souhaite ajouter des commentaires sur un ticket afin de suivre les échanges.
+Should
+9
+Tableau de bord
+En tant qu'administrateur, je souhaite consulter un tableau de bord avec les tickets ouverts, en cours, résolus et critiques.
+Must
+10
+Statistiques
+En tant qu'administrateur, je souhaite consulter les statistiques des tickets par projet et par développeur.
+Should
+11
+Analyse IA
+En tant que système IA, je dois analyser automatiquement les tickets soumis afin d'identifier le type et la gravité du problème.
+Must
+12
+Proposition IA
+En tant que système IA, je dois proposer des solutions automatiques afin d'aider les développeurs à résoudre les anomalies.
+Must
+Tableau : Backlog Produit Global
+2. Planification des sprints
+
+Sprint
+Contenu
+User Stories
+Sprint 1
+Authentification + Gestion des utilisateurs + Rôles
+1, 2, 3
+Sprint 2
+Gestion des projets + Gestion complète des tickets
+4, 5, 6, 7, 8
+Sprint 3
+Supervision + Tableau de bord + Statistiques
+9, 10
+Sprint 4
+Système IA (Analyse tickets + Proposition solutions)
+11, 12
+Tableau : Feuille de Route des Sprints (Roadmap Agile)
+
+3. Diagrammes de cas d'utilisation
+3.1 Package Administrateur
+
+Figure : Diagramme de cas d'utilisation "Package Administrateur"
+3.2 Package Testeur
+
+Figure : Diagramme de cas d'utilisation "Package Testeur"
+
+3.3 Package Développeur
+
+Figure : Diagramme de cas d'utilisation "Package Développeur"
+3.4 Package Système IA
+
+Figure : Diagramme de cas d'utilisation "Package Système IA"
+
+4. Diagramme de classes
+Le diagramme de classes représente la structure statique du système avec les classes principales, leurs attributs, leurs méthodes et les relations entre elles.
+
+Figure : Diagramme de classes global du système
+
+Annexe — Illustration Projet → Tickets
+
+Projet
+Ticket
+Type
+Statut
+Assigné à
+Projet A
+Ticket 1
+Bug
+En cours
+Dev 1
+Projet A
+Ticket 2
+Task
+Ouvert
+Dev 2
+Projet B
+Ticket 1
+Improvement
+En attente
+Dev 3
+
+
