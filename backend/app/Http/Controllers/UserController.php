@@ -116,15 +116,44 @@ class UserController extends Controller
         $user->update($request->only('nom','prenom','email','role','github_link'));
         return response()->json(['message' => 'Utilisateur mis à jour.']);
     }
+    public function changeEmail(Request $request)
+{
+    $user = JWTAuth::parseToken()->authenticate();
+    $request->validate([
+        'new_email'    => 'required|email|unique:users,email',
+        'mot_de_passe' => 'required',
+    ], [
+        'new_email.unique' => 'Cette adresse email est déjà associée à un compte.',
+    ]);
 
-    // ───────────────────────────────────────
-    // 6. ADMIN — حذف مستخدم
-    // ───────────────────────────────────────
-    public function deleteUser($id)
-    {
-        User::findOrFail($id)->delete();
-        return response()->json(['message' => 'Utilisateur supprimé.']);
-    }
+    if (!Hash::check($request->mot_de_passe, $user->mot_de_passe))
+        return response()->json(
+            ['message' => 'Le mot de passe actuel est incorrect.'], 400
+        );
+
+    $user->update(['email' => $request->new_email]);
+    return response()->json(['message' => 'Adresse email modifiée avec succès.']);
+}
+
+public function disableUser($id)
+{
+    $user = User::findOrFail($id);
+
+    if ($user->role === 'admin')
+        return response()->json(
+            ['message' => "Impossible de désactiver un administrateur."], 403
+        );
+
+    $user->update(['statut' => 'desactive']);
+    return response()->json(['message' => 'Compte désactivé.']);
+}
+
+public function enableUser($id)
+{
+    $user = User::findOrFail($id);
+    $user->update(['statut' => 'actif']);
+    return response()->json(['message' => 'Compte réactivé.']);
+}
 }
 
 

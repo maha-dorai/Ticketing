@@ -15,8 +15,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('mot_de_passe');
             $table->enum('role', ['testeur', 'developpeur', 'admin']);
-            $table->enum('statut', ['en_attente', 'actif', 'rejete'])
-                  ->default('en_attente');
+          $table->enum('statut', ['en_attente', 'actif', 'rejete', 'desactive'])->default('en_attente');
             $table->string('github_link')->nullable();
             $table->string('reset_token')->nullable();
             $table->timestamp('reset_token_expires')->nullable();

@@ -72,11 +72,18 @@ class AuthController extends Controller
                 ['message' => 'Votre compte est en attente de validation.'], 403
             );
 
-        // حساب مرفوض
-        if ($user->statut === 'rejete')
-            return response()->json(
-                ['message' => "Compte rejeté, contactez l'administrateur."], 403
-            );
+  // حساب مرفوض
+if ($user->statut === 'rejete')
+    return response()->json(
+        ['message' => "Compte rejeté, contactez l'administrateur."], 403
+    );
+
+// حساب معطّل
+if ($user->statut === 'desactive')
+    return response()->json(
+        ['message' => 'Votre compte a été désactivé.'], 403
+    );
+
 
         // كل شيء صحيح → نعطيه token
         $token = JWTAuth::fromUser($user);
