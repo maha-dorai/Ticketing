@@ -1,59 +1,76 @@
-// On importe les fonctions fondamentales pour créer un écosystème de pages virtuelles (Router) de chez Vue
+// ============================================================
+// router/index.ts — Le GPS de l'application
+// Définit toutes les pages accessibles et protège certaines routes
+// ============================================================
+
+// createRouter : crée l'instance du router Vue
+// createWebHistory : utilise de vraies URLs propres (sans le # dans l'URL)
 import { createRouter, createWebHistory } from 'vue-router';
-// On importe le store contenant la gestion avancée de connexion afin de valider les accès
+
+// On importe le store d'auth pour vérifier si l'utilisateur est connecté dans le gardien
 import { useAuthStore } from '../stores/authStore';
 
-// Le dictionnaire officiel : un catalogue classé décrivant formellement l'index de toutes vos pages
+// La liste de toutes les routes (pages) de l'application
 const routes = [
-  // Redirection d'office des requêtes racines
+
+  // Redirection automatique : si l'utilisateur va sur "/", il est envoyé vers "/login"
   { path: '/', redirect: '/login' },
-  // Route classique de la page de Connexion
+
+  // Page de connexion — accessible par tout le monde
   { path: '/login', name: 'Login', component: () => import('../views/Login.vue') },
-  // NOUVELLE ROUTE : Création d'une page '/register' purement accessible par tous qui lancera le "Register.vue"
+
+  // Page d'inscription — accessible par tout le monde
   { path: '/register', name: 'Register', component: () => import('../views/Register.vue') },
-  
-  // La route classifiée "Admin" sécurisée
-  { 
+
+  // Page d'administration — PROTÉGÉE : nécessite d'être connecté ET d'être admin
+  {
     path: '/admin/users',
-    name: 'UserManagement', 
+    name: 'UserManagement',
     component: () => import('../views/admin/UserManagement.vue'),
-    // Tagging personnalisable untuk l'intercepteur de sécurité global 
-    meta: { 
-      requiresAuth: true, 
-      requiredRole: 'admin' 
+
+    // meta : informations supplémentaires attachées à cette route
+    // Le gardien (beforeEach) les lira pour décider si l'accès est autorisé
+    meta: {
+      requiresAuth: true,          // l'utilisateur doit être connecté
+      requiredRole: 'admin'        // l'utilisateur doit avoir le rôle 'admin'
     }
   }
 ];
 
-// Instanciation logicielle du router 
+// On crée le router avec l'historique propre (pas de # dans l'URL)
 const router = createRouter({
-  // Efface le '#' des URLs ! Rendu propre. 
   history: createWebHistory(),
   routes,
 });
 
-// Gardien (Guard Navigation). Intercepte toute interaction ou click menant vers n'importe quel "to" (Géré par les routeurs)
+// ─────────────────────────────────────────────────────────
+// GARDIEN DE NAVIGATION (Navigation Guard)
+// S'exécute AVANT chaque changement de page
+// "to" = la page où l'utilisateur veut aller
+// "from" = la page d'où il vient
+// "next" = la fonction pour autoriser ou bloquer la navigation
+// ─────────────────────────────────────────────────────────
 router.beforeEach((to, from, next) => {
-  // L'historisation du Store permet un croisement direct des infos : Sommes nous connectés ? 
+
+  // On accède au store pour connaître l'état de connexion
   const authStore = useAuthStore();
-  
-  // Règle 1 :  On exige d'être connécté MAIS l'utilisateur NE L'EST PAS (Il essaye de forcer le chemin /admin/users à la main)
+
+  // Règle 1 : La page demande une connexion ET l'utilisateur n'est pas connecté
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    // Redirection stricte par code au composant nomé 'Login' 
+    // On bloque et on redirige vers la page de connexion
     return next({ name: 'Login' });
   }
 
-  // Règle 2 : Ségrégation de Pouvoirs (SuperAdmins Only). Validation d'un Méta rôle.
-// بدل 'Administrateur' → 'admin'
-if (to.meta.requiredRole && authStore.currentUser?.role !== to.meta.requiredRole) {
-      alert("Accès Refusé : Cette page est réservée aux Administrateurs.");
-    // Interdiction ferme 
+  // Règle 2 : La page demande un rôle spécifique ET l'utilisateur n'a pas ce rôle
+  if (to.meta.requiredRole && (authStore.currentUser as any)?.role !== to.meta.requiredRole) {
+    // Accès interdit — on redirige vers le login
+    alert("Accès Refusé : Cette page est réservée aux Administrateurs.");
     return next({ name: 'Login' });
   }
 
-  // Fin. Si tout est correct, le router achève le processus de téléportation par "next" 
+  // Tout est OK → on laisse l'utilisateur accéder à la page demandée
   next();
 });
 
-// Offre l'outil validé (Vue Router) prêt pour le point d'entrée "main.ts" de l'application !
+// On exporte le router pour qu'il soit branché sur l'application dans main.ts
 export default router;

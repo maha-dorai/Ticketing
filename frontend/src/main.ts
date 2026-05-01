@@ -1,22 +1,32 @@
-// Importe de force tout le réseau CSS configuré spécifiquement pour Tailwind. C'est l'essence du styling de la plateforme !
+// ============================================================
+// main.ts — Le point d'entrée de l'application Vue
+// C'est le premier fichier exécuté au démarrage
+// ============================================================
+
+// Importe le fichier CSS global qui charge Tailwind CSS
 import './assets/index.css'
 
-// Importe de l'usine Vue3 le concept même d'Application logicielle (createApp)
+// createApp : la fonction principale de Vue 3 pour créer l'application
 import { createApp } from 'vue'
-// Importe le centre d'entrepôt Pinia destiné à gérer en mémoire les connexions des employés mock.
+
+// createPinia : crée le gestionnaire d'état global (stockage des données partagées entre les composants)
 import { createPinia } from 'pinia'
-// Tire manuellement depuis le dossier Root/Router tous les paramètres complexes configurants nos Url et Gardien (Sécurisation Admin)
+
+// Importe toute la configuration des routes (pages) définie dans router/index.ts
 import router from './router'
-// Incorpore l'architecture physique du Dom Vue central 'App' comme socle initial 
+
+// Importe le composant racine App.vue — c'est la coquille qui contient toute l'application
 import App from './App.vue'
 
-// La genese : On construit "l'APP" autour de l'instance vide initialisée par 'App.vue' (le chef d'orchestre final Web).
+// Crée l'application Vue en partant du composant App.vue
 const app = createApp(App)
 
-// Phase d'Armement (Installation Plugins sur Node). On déclare Pinia pour l'utilisation et la disponibilité Universelle
+// Installe Pinia sur l'application — maintenant tous les composants peuvent utiliser les stores
 app.use(createPinia())
-// Idem mais avec les mécaniques de Web Router !
+
+// Installe Vue Router sur l'application — maintenant la navigation entre pages fonctionne
 app.use(router)
 
-// Dernière ligne au démarrage Web (Lancement réel du Programme !) : "Vise ce code sur l'id DIV appelé '#app' de ton fichier global index.html ".
+// Monte l'application sur l'élément HTML ayant l'id "app" dans le fichier index.html
+// C'est à ce moment que Vue prend le contrôle du navigateur et affiche l'interface
 app.mount('#app')

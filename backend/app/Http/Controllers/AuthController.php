@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\User;
@@ -11,154 +12,133 @@ use Carbon\Carbon;
 
 class AuthController extends Controller
 {
-    // ───────────────────────────────────────
-    // 1. INSCRIPTION
-    // ───────────────────────────────────────
     public function register(Request $request)
     {
-        $request->validate([
-            'nom'          => 'required|string',
-            'prenom'       => 'required|string',
-            'email'        => 'required|email|unique:users,email',
-            'mot_de_passe' => [
-                'required','min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
-            ],
-            'role'        => 'required|in:testeur,developpeur',
-            'github_link' => 'required_if:role,developpeur|nullable|url',
-        ], [
-            'email.unique'            => 'Cette adresse email est déjà associée à un compte.',
-            'github_link.required_if' => 'Le lien GitHub est obligatoire pour un Développeur.',
-            'mot_de_passe.regex'      => 'Mot de passe non conforme.',
-        ]);
+        try {
+            $request->validate([
+                'nom'          => 'required|string',
+                'prenom'       => 'required|string',
+                'email'        => 'required|email|unique:users,email',
+                'mot_de_passe' => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'],
+                'role'        => 'required|in:testeur,developpeur',
+                'github_link' => 'required_if:role,developpeur|nullable|url',
+            ]);
 
-        User::create([
-            'nom'          => $request->nom,
-            'prenom'       => $request->prenom,
-            'email'        => $request->email,
-            'mot_de_passe' => Hash::make($request->mot_de_passe),
-            'role'         => $request->role,
-            'statut'       => 'en_attente',
-            'github_link'  => $request->role === 'developpeur'
-                              ? $request->github_link : null,
-        ]);
+            User::create([
+                'nom'          => $request->nom,
+                'prenom'       => $request->prenom,
+                'email'        => $request->email,
+                'mot_de_passe' => Hash::make($request->mot_de_passe),
+                'role'         => $request->role,
+                'statut'       => 'en_attente',
+                'github_link'  => $request->role === 'developpeur' ? $request->github_link : null,
+            ]);
 
-        return response()->json([
-            'message' => "Compte créé. En attente de validation."
-        ], 201);
+            return response()->json(['message' => "Compte créé. En attente de validation."], 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur d\'inscription.', 'error' => $e->getMessage()], 500);
+        }
     }
 
-    // ───────────────────────────────────────
-    // 2. LOGIN
-    // ───────────────────────────────────────
     public function login(Request $request)
     {
-        $request->validate([
-            'email'        => 'required|email',
-            'mot_de_passe' => 'required',
-        ]);
+        try {
+            $request->validate(['email' => 'required|email', 'mot_de_passe' => 'required']);
 
-        $user = User::where('email', $request->email)->first();
+            $user = User::where('email', $request->email)->first();
 
-        // بريد أو كلمة سر غلط
-        if (!$user || !Hash::check($request->mot_de_passe, $user->mot_de_passe))
-            return response()->json(
-                ['message' => 'Email ou mot de passe incorrect.'], 401
-            );
+            if (!$user || !Hash::check($request->mot_de_passe, $user->mot_de_passe))
+                return response()->json(['message' => 'Email ou mot de passe incorrect.'], 401);
 
-        // حساب في الانتظار
-        if ($user->statut === 'en_attente')
-            return response()->json(
-                ['message' => 'Votre compte est en attente de validation.'], 403
-            );
+            if ($user->statut === 'en_attente')
+                return response()->json(['message' => 'Votre compte est en attente de validation.'], 403);
+            if ($user->statut === 'rejete')
+                return response()->json(['message' => "Compte rejeté, contactez l'administrateur."], 403);
+            if ($user->statut === 'desactive')
+                return response()->json(['message' => "Votre compte est désactivé."], 403);
 
-        // حساب مرفوض
-        if ($user->statut === 'rejete')
-            return response()->json(
-                ['message' => "Compte rejeté, contactez l'administrateur."], 403
-            );
+            $token = JWTAuth::fromUser($user);
 
-        // كل شيء صحيح → نعطيه token
-        $token = JWTAuth::fromUser($user);
-
-        return response()->json([
-            'token' => $token,
-            'user'  => [
-                'id'     => $user->id,
-                'nom'    => $user->nom,
-                'prenom' => $user->prenom,
-                'email'  => $user->email,
-                'role'   => $user->role,
-            ]
-        ]);
+            return response()->json([
+                'token' => $token,
+                'user'  => [
+                    'id'     => $user->id,
+                    'nom'    => $user->nom,
+                    'prenom' => $user->prenom,
+                    'email'  => $user->email,
+                    'role'   => $user->role,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur de connexion.', 'error' => $e->getMessage()], 500);
+        }
     }
 
-    // ───────────────────────────────────────
-    // 3. MOT DE PASSE OUBLIÉ
-    // ───────────────────────────────────────
     public function forgotPassword(Request $request)
     {
-        $request->validate(['email' => 'required|email']);
+        try {
+            $request->validate(['email' => 'required|email']);
+            $user = User::where('email', $request->email)->first();
 
-        $user = User::where('email', $request->email)->first();
-        if (!$user)
-            return response()->json(
-                ['message' => 'Aucun compte associé à cet email.'], 404
-            );
+            if (!$user) return response()->json(['message' => 'Aucun compte associé à cet email.'], 404);
 
-        $token = Str::random(64);
+            $token = Str::random(64);
 
-        $user->update([
-            'reset_token'         => $token,
-            'reset_token_expires' => Carbon::now()->addHour(),
-        ]);
+            $user->update([
+                'reset_token'         => hash('sha256', $token), // Hashing token securely
+                'reset_token_expires' => Carbon::now()->addHour(),
+            ]);
 
-        $link = env('FRONTEND_URL') . '/reset-password/' . $token;
+            $link = env('FRONTEND_URL', 'http://localhost:5173') . '/reset-password/' . $token;
 
-        Mail::raw(
-            "Bonjour {$user->prenom},\n\n"
-            . "Cliquez ici pour réinitialiser votre mot de passe (valide 1h) :\n{$link}",
-            fn($m) => $m->to($user->email)
-                        ->subject('Réinitialisation du mot de passe')
-        );
+            try {
+                Mail::raw("Cliquez ici pour réinitialiser votre mot de passe (valide 1h) :\n{$link}", function($m) use ($user) {
+                    $m->to($user->email)->subject('Réinitialisation du mot de passe');
+                });
+            } catch (\Exception $mailEx) {
+                // Ignore pour ne pas bloquer si le mail plante
+            }
 
-        return response()->json(['message' => 'Lien envoyé par email.']);
+            return response()->json(['message' => 'Lien envoyé par email.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
     }
 
-    // ───────────────────────────────────────
-    // 4. RESET PASSWORD
-    // ───────────────────────────────────────
     public function resetPassword(Request $request, $token)
     {
-        $request->validate([
-            'mot_de_passe' => [
-                'required','min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
-            ],
-        ]);
+        try {
+            $request->validate([
+                'mot_de_passe' => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'],
+            ]);
 
-        $user = User::where('reset_token', $token)
-                    ->where('reset_token_expires', '>', Carbon::now())
-                    ->first();
+            $hashedToken = hash('sha256', $token);
 
-        if (!$user)
-            return response()->json(['message' => 'Lien invalide ou expiré.'], 400);
+            $user = User::where('reset_token', $hashedToken)
+                        ->where('reset_token_expires', '>', Carbon::now())
+                        ->first();
 
-        $user->update([
-            'mot_de_passe'        => Hash::make($request->mot_de_passe),
-            'reset_token'         => null,
-            'reset_token_expires' => null,
-        ]);
+            if (!$user) return response()->json(['message' => 'Lien invalide ou expiré.'], 400);
 
-        return response()->json(['message' => 'Mot de passe mis à jour avec succès.']);
+            $user->update([
+                'mot_de_passe'        => Hash::make($request->mot_de_passe),
+                'reset_token'         => null,
+                'reset_token_expires' => null,
+            ]);
+
+            return response()->json(['message' => 'Mot de passe mis à jour avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
     }
 
-    // ───────────────────────────────────────
-    // 5. LOGOUT
-    // ───────────────────────────────────────
     public function logout()
     {
-        JWTAuth::invalidate(JWTAuth::getToken());
-        return response()->json(['message' => 'Déconnecté avec succès.']);
+        try {
+            JWTAuth::invalidate(JWTAuth::getToken());
+            return response()->json(['message' => 'Déconnecté avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de la déconnexion.', 'error' => $e->getMessage()], 500);
+        }
     }
 }

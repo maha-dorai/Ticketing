@@ -13,36 +13,56 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'is_admin' => \App\Http\Middleware\IsAdmin::class,
+            'check_status' => \App\Http\Middleware\CheckUserStatus::class,
         ]);
     })
-
     ->withExceptions(function (Exceptions $exceptions) {
-
-        // كل API يرجّع JSON
+        // Force l'API à toujours répondre en JSON
         $exceptions->shouldRenderJsonWhen(function (Request $request) {
             return $request->is('api/*');
         });
 
-        // 🔐 Token manquant / invalide
         $exceptions->render(function (AuthenticationException $e, Request $request) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Token manquant ou invalide.'
-            ], 401);
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token manquant ou invalide.'
+                ], 401);
+            }
         });
 
-        // ⚠️ أي خطأ آخر
+        // Gérer spécifiquement les exceptions de Tymon JWT
+        $exceptions->render(function (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'Token expiré.'], 401);
+            }
+        });
+        
+        $exceptions->render(function (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'Token invalide.'], 401);
+            }
+        });
+
+        // Gérer les routes non trouvées (404)
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'Ressource ou route non trouvée.'], 404);
+            }
+        });
+
+        // Toute autre exception (500, SQL, etc.)
         $exceptions->render(function (\Throwable $e, Request $request) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur interne du serveur.',
+                    'error' => config('app.debug') ? $e->getMessage() : null
+                ], 500);
+            }
         });
-
     })
-
     ->create();
