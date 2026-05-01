@@ -1,4 +1,3 @@
-```vue
 <template>
   <div class="min-h-screen bg-gray-50">
 
@@ -93,26 +92,51 @@
               <th class="px-4 py-3 text-center">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr v-for="user in activeUsers" :key="user.id" class="hover:bg-gray-50">
-              <td class="px-4 py-3 font-medium">{{ user.nom }} {{ user.prenom }}</td>
-              <td class="px-4 py-3 text-gray-600">{{ user.email }}</td>
-              <td class="px-4 py-3">
-                <span :class="roleClass(user.role)" class="px-2 py-0.5 rounded-full text-xs font-semibold capitalize">
-                  {{ user.role }}
-                </span>
-              </td>
-              <td class="px-4 py-3 text-center space-x-2">
-                <button @click="ouvrirModalEdition(user)"
-                  class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 font-semibold">
-                  ✎ Modifier
-                </button>
-                <button v-if="user.role !== 'admin'" @click="desactiverCompte(user.id)"
-                  class="px-3 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600 font-semibold">
-                  ⊘ Désactiver
-                </button>
-              </td>
-            </tr>
+          <tbody>
+            <template v-for="user in activeUsers" :key="user.id">
+
+              <!-- Ligne normale -->
+              <tr class="hover:bg-gray-50 border-t border-gray-100">
+                <td class="px-4 py-3 font-medium">{{ user.nom }} {{ user.prenom }}</td>
+                <td class="px-4 py-3 text-gray-600">{{ user.email }}</td>
+                <td class="px-4 py-3">
+                  <span :class="roleClass(user.role)" class="px-2 py-0.5 rounded-full text-xs font-semibold capitalize">
+                    {{ user.role }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <!-- Bouton désactiver — seulement si pas admin -->
+                  <button v-if="user.role !== 'admin'" @click="demanderDesactivation(user.id)"
+                    class="px-3 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600 font-semibold">
+                    ⊘ Désactiver
+                  </button>
+                </td>
+              </tr>
+
+              <!-- Bande de confirmation inline (remplace confirm()) -->
+              <tr v-if="confirmDesactiverId === user.id" class="bg-orange-50 border-t border-orange-200">
+                <td colspan="4" class="px-4 py-3">
+                  <div class="flex items-center justify-between">
+                    <p class="text-sm text-orange-700 font-medium">
+                      ⚠️ Confirmer la désactivation de
+                      <strong>{{ user.prenom }} {{ user.nom }}</strong> ?
+                      L'utilisateur ne pourra plus se connecter.
+                    </p>
+                    <div class="flex gap-2 ml-4 shrink-0">
+                      <button @click="confirmDesactiverId = null"
+                        class="px-3 py-1 text-xs text-gray-600 border rounded hover:bg-gray-100 font-semibold">
+                        Annuler
+                      </button>
+                      <button @click="confirmerDesactivation(user.id)"
+                        class="px-3 py-1 text-xs text-white bg-orange-600 rounded hover:bg-orange-700 font-semibold">
+                        Oui, désactiver
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+            </template>
           </tbody>
         </table>
       </section>
@@ -181,54 +205,6 @@
       </section>
 
     </div>
-
-    <!-- ═══════════════════ MODAL ÉDITION ═══════════════════ -->
-    <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">Modifier l'utilisateur</h3>
-
-        <div class="space-y-3">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-            <input v-model="editForm.nom" type="text"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-            <input v-model="editForm.prenom" type="text"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input v-model="editForm.email" type="email"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200" />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
-            <select v-model="editForm.role"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200 bg-white">
-              <option value="testeur">Testeur</option>
-              <option value="developpeur">Développeur</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-        </div>
-
-        <p v-if="modalError" class="mt-3 text-sm text-red-600 bg-red-50 p-2 rounded text-center">{{ modalError }}</p>
-
-        <div class="mt-5 flex gap-3 justify-end">
-          <button @click="fermerModal"
-            class="px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50 font-semibold">
-            Annuler
-          </button>
-          <button @click="sauvegarderEdition"
-            class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 font-semibold">
-            Enregistrer
-          </button>
-        </div>
-      </div>
-    </div>
-
   </div>
 </template>
 
@@ -242,16 +218,11 @@ const authStore = useAuthStore();
 const router    = useRouter();
 
 // ─── État global ──────────────────────────────────────────────────────────────
-const allUsers     = ref([]);
-const loading      = ref(false);
-const globalMessage = ref('');
-const globalSuccess = ref(true);
-
-// ─── Modal édition ────────────────────────────────────────────────────────────
-const showModal   = ref(false);
-const editUserId  = ref(null);
-const modalError  = ref('');
-const editForm    = ref({ nom: '', prenom: '', email: '', role: '' });
+const allUsers          = ref([]);
+const loading           = ref(false);
+const globalMessage     = ref('');
+const globalSuccess     = ref(true);
+const confirmDesactiverId = ref(null); // ID de l'utilisateur en attente de confirmation
 
 // ─── Computed : filtres par statut ────────────────────────────────────────────
 const pendingUsers  = computed(() => allUsers.value.filter(u => u.statut === 'en_attente'));
@@ -287,7 +258,7 @@ const formatDate = (dateStr) => {
 };
 
 const roleClass = (role) => {
-  if (role === 'admin')      return 'bg-red-100 text-red-700';
+  if (role === 'admin')       return 'bg-red-100 text-red-700';
   if (role === 'developpeur') return 'bg-blue-100 text-blue-700';
   return 'bg-purple-100 text-purple-700';
 };
@@ -304,7 +275,6 @@ const validerCandidat = async (id) => {
 };
 
 const refuserCandidat = async (id) => {
-  if (!confirm('Rejeter ce candidat ? Un email de notification lui sera envoyé.')) return;
   try {
     await api.put(`/users/${id}/validate`, { action: 'rejeter' });
     showMessage('Compte rejeté. Un email de notification a été envoyé.', true);
@@ -314,8 +284,14 @@ const refuserCandidat = async (id) => {
   }
 };
 
-const desactiverCompte = async (id) => {
-  if (!confirm('Désactiver ce compte ? L\'utilisateur ne pourra plus se connecter.')) return;
+// Étape 1 : affiche la bande de confirmation dans la page
+const demanderDesactivation = (id) => {
+  confirmDesactiverId.value = id;
+};
+
+// Étape 2 : après confirmation dans la page
+const confirmerDesactivation = async (id) => {
+  confirmDesactiverId.value = null;
   try {
     await api.put(`/users/${id}/disable`);
     showMessage('Compte désactivé avec succès.', true);
@@ -335,37 +311,9 @@ const activerCompte = async (id) => {
   }
 };
 
-// ─── Modal édition ────────────────────────────────────────────────────────────
-const ouvrirModalEdition = (user) => {
-  editUserId.value = user.id;
-  editForm.value   = { nom: user.nom, prenom: user.prenom, email: user.email, role: user.role };
-  modalError.value = '';
-  showModal.value  = true;
-};
-
-const fermerModal = () => {
-  showModal.value = false;
-};
-
-const sauvegarderEdition = async () => {
-  modalError.value = '';
-  try {
-    await api.put(`/users/${editUserId.value}`, editForm.value);
-    showMessage('Utilisateur mis à jour avec succès.', true);
-    showModal.value = false;
-    await fetchUsers();
-  } catch (err) {
-    const errors = err.response?.data?.errors;
-    modalError.value = errors
-      ? Object.values(errors).flat().join(' | ')
-      : err.response?.data?.message || 'Erreur lors de la mise à jour.';
-  }
-};
-
 // ─── Logout ──────────────────────────────────────────────────────────────────
 const logout = () => {
   authStore.logout();
   router.push({ name: 'Login' });
 };
 </script>
-```

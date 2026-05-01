@@ -21,6 +21,15 @@ const routes = [
     component: () => import('../views/admin/UserManagement.vue'),
     meta: { requiresAuth: true, requiredRole: 'admin' }
   },
+  {
+    path: '/admin/users/:id/edit',
+    name: 'EditUser',
+    component: () => import('../views/admin/EditUser.vue'),
+    meta: { requiresAuth: true, requiredRole: 'admin' }
+  },
+
+  // Redirection silencieuse pour toute route inconnue
+  { path: '/:pathMatch(.*)*', redirect: '/login' },
 ];
 
 const router = createRouter({
@@ -34,10 +43,9 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated)
     return next({ name: 'Login' });
 
-  if (to.meta.requiredRole && authStore.currentUser?.role !== to.meta.requiredRole) {
-    alert('Accès refusé : cette page est réservée aux administrateurs.');
+  // Plus d'alert() — redirection silencieuse vers Login
+  if (to.meta.requiredRole && authStore.currentUser?.role !== to.meta.requiredRole)
     return next({ name: 'Login' });
-  }
 
   next();
 });
