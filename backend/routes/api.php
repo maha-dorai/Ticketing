@@ -19,6 +19,7 @@ Route::middleware(['auth:api', 'check_status'])->group(function () {
     Route::get('/users/profile',         [UserController::class, 'getProfile']);
     Route::put('/users/profile',         [UserController::class, 'updateProfile']);
     Route::put('/users/change-password', [UserController::class, 'changePassword']);
+    Route::put('/users/change-email',    [UserController::class, 'changeEmail']); // Added from partner
     Route::get('/projects',              [ProjectController::class, 'index']);
 
     // Admin routes

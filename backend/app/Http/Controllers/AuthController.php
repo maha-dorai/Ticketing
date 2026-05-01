@@ -55,7 +55,7 @@ class AuthController extends Controller
             if ($user->statut === 'rejete')
                 return response()->json(['message' => "Compte rejeté, contactez l'administrateur."], 403);
             if ($user->statut === 'desactive')
-                return response()->json(['message' => "Votre compte est désactivé."], 403);
+                return response()->json(['message' => "Votre compte a été désactivé."], 403);
 
             $token = JWTAuth::fromUser($user);
 

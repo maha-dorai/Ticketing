@@ -58,6 +58,27 @@ class UserController extends Controller
         }
     }
 
+    public function changeEmail(Request $request)
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            $request->validate([
+                'new_email'    => 'required|email|unique:users,email',
+                'mot_de_passe' => 'required',
+            ], [
+                'new_email.unique' => 'Cette adresse email est déjà associée à un compte.',
+            ]);
+
+            if (!Hash::check($request->mot_de_passe, $user->mot_de_passe))
+                return response()->json(['message' => 'Le mot de passe actuel est incorrect.'], 400);
+
+            $user->update(['email' => $request->new_email]);
+            return response()->json(['message' => 'Adresse email modifiée avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
     public function getAllUsers()
     {
         try {
@@ -77,13 +98,17 @@ class UserController extends Controller
             if ($request->action === 'accepter') {
                 $user->update(['statut' => 'actif']);
                 $msg = 'Compte activé.';
+                $emailBody = "Bonjour {$user->prenom},\n\nVotre demande d'accès a été acceptée.\nBienvenue !\n— L'équipe Ticketing";
+                $emailSubj = "✅ Votre compte a été activé";
             } else {
                 $user->update(['statut' => 'rejete']);
                 $msg = 'Compte rejeté.';
+                $emailBody = "Bonjour {$user->prenom},\n\nVotre demande d'accès a été refusée.\n— L'équipe Ticketing";
+                $emailSubj = "❌ Demande d'accès refusée";
             }
 
             try {
-                Mail::raw("Votre compte a été {$msg}", fn($m) => $m->to($user->email)->subject("Statut du compte"));
+                Mail::raw($emailBody, fn($m) => $m->to($user->email)->subject($emailSubj));
             } catch (\Exception $mEx) {
                 // Ignore email failure
             }
