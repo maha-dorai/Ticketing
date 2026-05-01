@@ -92,9 +92,8 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 const authStore = useAuthStore();
 
-// ⚠️ À enlever en production
-const email = ref('marie@test.com');
-const password = ref('123');
+const email = ref('');
+const password = ref('');
 
 const errorMessage = ref('');
 const pendingMessage = ref('');

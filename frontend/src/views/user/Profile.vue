@@ -122,6 +122,11 @@ const changeEmail = async () => {
       new_email:    emailForm.value.new_email,
       mot_de_passe: emailForm.value.mot_de_passe,
     });
+    // Mettre à jour le store pour refléter le nouvel email immédiatement
+    if (authStore.currentUser) {
+      authStore.currentUser.email = emailForm.value.new_email;
+      localStorage.setItem('user', JSON.stringify(authStore.currentUser));
+    }
     emailSuccess.value = true;
     emailMessage.value = 'Adresse email modifiée avec succès.';
     emailForm.value    = { new_email: '', mot_de_passe: '' };
