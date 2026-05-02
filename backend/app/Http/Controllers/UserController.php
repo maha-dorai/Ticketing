@@ -10,7 +10,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class UserController extends Controller
 {
     // ───────────────────────────────────────
-    // PROFIL — عرض
+    // 5. PROFIL — عرض
     // ───────────────────────────────────────
     public function getProfile()
     {
@@ -26,7 +26,7 @@ class UserController extends Controller
     }
 
     // ───────────────────────────────────────
-    // PROFIL — تعديل اسم
+    // 5. PROFIL — تعديل اسم
     // ───────────────────────────────────────
     public function updateProfile(Request $request)
     {
@@ -40,7 +40,7 @@ class UserController extends Controller
     }
 
     // ───────────────────────────────────────
-    // PROFIL — تغيير كلمة السر
+    // 5. PROFIL — تغيير كلمة السر
     // ───────────────────────────────────────
     public function changePassword(Request $request)
     {
@@ -51,6 +51,11 @@ class UserController extends Controller
                 'required','min:8',
                 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
             ],
+        ], [
+            'ancien_mot_de_passe.required'   => 'L\'ancien mot de passe est obligatoire.',
+            'nouveau_mot_de_passe.required'  => 'Le nouveau mot de passe est obligatoire.',
+            'nouveau_mot_de_passe.min'       => 'Le nouveau mot de passe doit contenir au moins 8 caractères.',
+            'nouveau_mot_de_passe.regex'     => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
         ]);
 
         if (!Hash::check($request->ancien_mot_de_passe, $user->mot_de_passe))
@@ -65,29 +70,7 @@ class UserController extends Controller
     }
 
     // ───────────────────────────────────────
-    // PROFIL — تغيير الإيميل
-    // ───────────────────────────────────────
-    public function changeEmail(Request $request)
-    {
-        $user = JWTAuth::parseToken()->authenticate();
-        $request->validate([
-            'new_email'    => 'required|email|unique:users,email',
-            'mot_de_passe' => 'required',
-        ], [
-            'new_email.unique' => 'Cette adresse email est déjà associée à un compte.',
-        ]);
-
-        if (!Hash::check($request->mot_de_passe, $user->mot_de_passe))
-            return response()->json(
-                ['message' => 'Le mot de passe actuel est incorrect.'], 400
-            );
-
-        $user->update(['email' => $request->new_email]);
-        return response()->json(['message' => 'Adresse email modifiée avec succès.']);
-    }
-
-    // ───────────────────────────────────────
-    // ADMIN — قائمة المستخدمين
+    // 6. ADMIN — قائمة المستخدمين
     // ───────────────────────────────────────
     public function getAllUsers()
     {
@@ -99,7 +82,7 @@ class UserController extends Controller
     }
 
     // ───────────────────────────────────────
-    // ADMIN — قبول أو رفض حساب + إيميل
+    // 6. ADMIN — قبول أو رفض حساب
     // ───────────────────────────────────────
     public function validateUser(Request $request, $id)
     {
@@ -107,39 +90,24 @@ class UserController extends Controller
         $user = User::findOrFail($id);
 
         if ($request->action === 'accepter') {
-
             $user->update(['statut' => 'actif']);
-
-            // ✉️ إيميل القبول — هذا ما سيصل للشخص
             Mail::raw(
-                "Bonjour {$user->prenom},\n\n"
-                . "Votre demande d'accès à la plateforme Ticketing a été acceptée.\n"
-                . "Vous pouvez maintenant vous connecter avec votre adresse email et mot de passe.\n\n"
-                . "Bienvenue dans l'équipe !\n\n"
-                . "— L'équipe Ticketing",
-                fn($m) => $m->to($user->email)->subject('✅ Votre compte a été activé')
+                "Bonjour {$user->prenom}, votre compte a été accepté. Vous pouvez vous connecter.",
+                fn($m) => $m->to($user->email)->subject('Compte activé')
             );
-
             return response()->json(['message' => 'Compte activé.']);
         }
 
         $user->update(['statut' => 'rejete']);
-
-        // ✉️ إيميل الرفض — هذا ما سيصل للشخص
         Mail::raw(
-            "Bonjour {$user->prenom},\n\n"
-            . "Nous avons examiné votre demande d'accès à la plateforme Ticketing.\n"
-            . "Malheureusement, votre demande n'a pas été retenue.\n\n"
-            . "Pour plus d'informations, veuillez contacter l'administrateur.\n\n"
-            . "— L'équipe Ticketing",
-            fn($m) => $m->to($user->email)->subject('❌ Demande d\'accès refusée')
+            "Bonjour {$user->prenom}, votre compte a été rejeté. Contactez l'administrateur.",
+            fn($m) => $m->to($user->email)->subject('Compte rejeté')
         );
-
         return response()->json(['message' => 'Compte rejeté.']);
     }
 
     // ───────────────────────────────────────
-    // ADMIN — تعديل مستخدم
+    // 6. ADMIN — تعديل مستخدم
     // ───────────────────────────────────────
     public function updateUser(Request $request, $id)
     {
@@ -153,30 +121,42 @@ class UserController extends Controller
         $user->update($request->only('nom','prenom','email','role','github_link'));
         return response()->json(['message' => 'Utilisateur mis à jour.']);
     }
+    public function changeEmail(Request $request)
+{
+    $user = JWTAuth::parseToken()->authenticate();
+    $request->validate([
+        'new_email'    => 'required|email|unique:users,email',
+        'mot_de_passe' => 'required',
+    ], [
+        'new_email.unique' => 'Cette adresse email est déjà associée à un compte.',
+    ]);
 
-    // ───────────────────────────────────────
-    // ADMIN — تعطيل حساب
-    // ───────────────────────────────────────
-    public function disableUser($id)
-    {
-        $user = User::findOrFail($id);
+    if (!Hash::check($request->mot_de_passe, $user->mot_de_passe))
+        return response()->json(
+            ['message' => 'Le mot de passe actuel est incorrect.'], 400
+        );
 
-        if ($user->role === 'admin')
-            return response()->json(
-                ['message' => "Impossible de désactiver un administrateur."], 403
-            );
+    $user->update(['email' => $request->new_email]);
+    return response()->json(['message' => 'Adresse email modifiée avec succès.']);
+}
 
-        $user->update(['statut' => 'desactive']);
-        return response()->json(['message' => 'Compte désactivé.']);
-    }
+public function disableUser($id)
+{
+    $user = User::findOrFail($id);
 
-    // ───────────────────────────────────────
-    // ADMIN — إعادة تفعيل حساب
-    // ───────────────────────────────────────
-    public function enableUser($id)
-    {
-        $user = User::findOrFail($id);
-        $user->update(['statut' => 'actif']);
-        return response()->json(['message' => 'Compte réactivé.']);
-    }
+    if ($user->role === 'admin')
+        return response()->json(
+            ['message' => "Impossible de désactiver un administrateur."], 403
+        );
+
+    $user->update(['statut' => 'desactive']);
+    return response()->json(['message' => 'Compte désactivé.']);
+}
+
+public function enableUser($id)
+{
+    $user = User::findOrFail($id);
+    $user->update(['statut' => 'actif']);
+    return response()->json(['message' => 'Compte réactivé.']);
+}
 }

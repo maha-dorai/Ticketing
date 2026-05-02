@@ -27,9 +27,17 @@ class AuthController extends Controller
             'role'        => 'required|in:testeur,developpeur',
             'github_link' => 'required_if:role,developpeur|nullable|url',
         ], [
+            'nom.required'            => 'Le nom est obligatoire.',
+            'prenom.required'         => 'Le prénom est obligatoire.',
+            'email.required'          => "L'adresse email est obligatoire.",
+            'email.email'             => "L'adresse email n'est pas valide.",
             'email.unique'            => 'Cette adresse email est déjà associée à un compte.',
+            'mot_de_passe.required'   => 'Le mot de passe est obligatoire.',
+            'mot_de_passe.min'        => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'mot_de_passe.regex'      => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
+            'role.required'           => 'Le rôle est obligatoire.',
             'github_link.required_if' => 'Le lien GitHub est obligatoire pour un Développeur.',
-            'mot_de_passe.regex'      => 'Mot de passe non conforme.',
+            'github_link.url'         => 'Le lien GitHub doit être une URL valide.',
         ]);
 
         User::create([
@@ -135,13 +143,17 @@ if ($user->statut === 'desactive')
     // ───────────────────────────────────────
     // 4. RESET PASSWORD
     // ───────────────────────────────────────
-    public function resetPassword(Request $request, $token)
+    public function resetPassword(Request $request, string $token)
     {
         $request->validate([
             'mot_de_passe' => [
                 'required','min:8',
                 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
             ],
+        ], [
+            'mot_de_passe.required' => 'Le mot de passe est obligatoire.',
+            'mot_de_passe.min'      => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'mot_de_passe.regex'    => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
         ]);
 
         $user = User::where('reset_token', $token)

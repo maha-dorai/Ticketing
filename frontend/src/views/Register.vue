@@ -146,9 +146,12 @@ const registerCandidate = async () => {
 
   } catch (err: any) {
     const errors = err.response?.data?.errors;
-    errorMessage.value = errors
-      ? Object.values(errors).flat().join(' | ')
-      : err.response?.data?.message || 'Une erreur est survenue.';
+    if (errors) {
+      // Afficher uniquement le premier message d'erreur
+      errorMessage.value = String(Object.values(errors).flat()[0]);
+    } else {
+      errorMessage.value = err.response?.data?.message || 'Une erreur est survenue.';
+    }
   } finally {
     loading.value = false;
   }
