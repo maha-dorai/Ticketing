@@ -14,41 +14,30 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-<<<<<<< HEAD
-        $request->validate([
-            'nom'          => 'required|string',
-            'prenom'       => 'required|string',
-            'email'        => 'required|email|unique:users,email',
-            'mot_de_passe' => [
-                'required','min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
-            ],
-            'role'        => 'required|in:testeur,developpeur',
-            'github_link' => 'required_if:role,developpeur|nullable|url',
-        ], [
-            'nom.required'            => 'Le nom est obligatoire.',
-            'prenom.required'         => 'Le prénom est obligatoire.',
-            'email.required'          => "L'adresse email est obligatoire.",
-            'email.email'             => "L'adresse email n'est pas valide.",
-            'email.unique'            => 'Cette adresse email est déjà associée à un compte.',
-            'mot_de_passe.required'   => 'Le mot de passe est obligatoire.',
-            'mot_de_passe.min'        => 'Le mot de passe doit contenir au moins 8 caractères.',
-            'mot_de_passe.regex'      => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
-            'role.required'           => 'Le rôle est obligatoire.',
-            'github_link.required_if' => 'Le lien GitHub est obligatoire pour un Développeur.',
-            'github_link.url'         => 'Le lien GitHub doit être une URL valide.',
-        ]);
-=======
         try {
             $request->validate([
                 'nom'          => 'required|string',
                 'prenom'       => 'required|string',
                 'email'        => 'required|email|unique:users,email',
-                'mot_de_passe' => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'],
+                'mot_de_passe' => [
+                    'required', 'min:8',
+                    'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+                ],
                 'role'        => 'required|in:testeur,developpeur',
                 'github_link' => 'required_if:role,developpeur|nullable|url',
+            ], [
+                'nom.required'            => 'Le nom est obligatoire.',
+                'prenom.required'         => 'Le prénom est obligatoire.',
+                'email.required'          => "L'adresse email est obligatoire.",
+                'email.email'             => "L'adresse email n'est pas valide.",
+                'email.unique'            => 'Cette adresse email est déjà associée à un compte.',
+                'mot_de_passe.required'   => 'Le mot de passe est obligatoire.',
+                'mot_de_passe.min'        => 'Le mot de passe doit contenir au moins 8 caractères.',
+                'mot_de_passe.regex'      => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
+                'role.required'           => 'Le rôle est obligatoire.',
+                'github_link.required_if' => 'Le lien GitHub est obligatoire pour un Développeur.',
+                'github_link.url'         => 'Le lien GitHub doit être une URL valide.',
             ]);
->>>>>>> 3216b409835d1012acfccfcfc8da6747916b0c1f
 
             User::create([
                 'nom'          => $request->nom,
@@ -111,7 +100,7 @@ class AuthController extends Controller
             $token = Str::random(64);
 
             $user->update([
-                'reset_token'         => hash('sha256', $token), // Hashing token securely
+                'reset_token'         => hash('sha256', $token),
                 'reset_token_expires' => Carbon::now()->addHour(),
             ]);
 
@@ -131,30 +120,19 @@ class AuthController extends Controller
         }
     }
 
-<<<<<<< HEAD
-    // ───────────────────────────────────────
-    // 4. RESET PASSWORD
-    // ───────────────────────────────────────
-    public function resetPassword(Request $request, string $token)
-    {
-        $request->validate([
-            'mot_de_passe' => [
-                'required','min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
-            ],
-        ], [
-            'mot_de_passe.required' => 'Le mot de passe est obligatoire.',
-            'mot_de_passe.min'      => 'Le mot de passe doit contenir au moins 8 caractères.',
-            'mot_de_passe.regex'    => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
-        ]);
-=======
     public function resetPassword(Request $request, $token)
     {
         try {
             $request->validate([
-                'mot_de_passe' => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'],
+                'mot_de_passe' => [
+                    'required', 'min:8',
+                    'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+                ],
+            ], [
+                'mot_de_passe.required' => 'Le mot de passe est obligatoire.',
+                'mot_de_passe.min'      => 'Le mot de passe doit contenir au moins 8 caractères.',
+                'mot_de_passe.regex'    => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
             ]);
->>>>>>> 3216b409835d1012acfccfcfc8da6747916b0c1f
 
             $hashedToken = hash('sha256', $token);
 

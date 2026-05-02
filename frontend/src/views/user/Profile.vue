@@ -10,10 +10,16 @@
             {{ currentUser?.prenom }} {{ currentUser?.nom }} — {{ currentUser?.role }}
           </p>
         </div>
-        <button @click="logout"
-          class="px-4 py-2 text-sm text-white bg-gray-500 rounded hover:bg-gray-600 transition font-semibold">
-          Déconnexion
-        </button>
+        <div class="flex gap-2">
+          <button @click="$router.push({ name: 'Projects' })"
+            class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition font-semibold">
+            📁 Mes Projets
+          </button>
+          <button @click="logout"
+            class="px-4 py-2 text-sm text-white bg-gray-500 rounded hover:bg-gray-600 transition font-semibold">
+            Déconnexion
+          </button>
+        </div>
       </div>
 
       <!-- Changer le mot de passe -->
@@ -122,7 +128,6 @@ const changeEmail = async () => {
       new_email:    emailForm.value.new_email,
       mot_de_passe: emailForm.value.mot_de_passe,
     });
-    // Mettre à jour le store pour refléter le nouvel email immédiatement
     if (authStore.currentUser) {
       authStore.currentUser.email = emailForm.value.new_email;
       localStorage.setItem('user', JSON.stringify(authStore.currentUser));

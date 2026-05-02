@@ -10,12 +10,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UserController extends Controller
 {
-<<<<<<< HEAD
-    // ───────────────────────────────────────
-    // 5. PROFIL — عرض
-    // ───────────────────────────────────────
-=======
->>>>>>> 3216b409835d1012acfccfcfc8da6747916b0c1f
+    // ─── PROFIL ───────────────────────────────────────────────────────────────
+
     public function getProfile()
     {
         try {
@@ -33,12 +29,6 @@ class UserController extends Controller
         }
     }
 
-<<<<<<< HEAD
-    // ───────────────────────────────────────
-    // 5. PROFIL — تعديل اسم
-    // ───────────────────────────────────────
-=======
->>>>>>> 3216b409835d1012acfccfcfc8da6747916b0c1f
     public function updateProfile(Request $request)
     {
         try {
@@ -51,35 +41,22 @@ class UserController extends Controller
         }
     }
 
-<<<<<<< HEAD
-    // ───────────────────────────────────────
-    // 5. PROFIL — تغيير كلمة السر
-    // ───────────────────────────────────────
-    public function changePassword(Request $request)
-    {
-        $user = JWTAuth::parseToken()->authenticate();
-        $request->validate([
-            'ancien_mot_de_passe'  => 'required',
-            'nouveau_mot_de_passe' => [
-                'required','min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
-            ],
-        ], [
-            'ancien_mot_de_passe.required'   => 'L\'ancien mot de passe est obligatoire.',
-            'nouveau_mot_de_passe.required'  => 'Le nouveau mot de passe est obligatoire.',
-            'nouveau_mot_de_passe.min'       => 'Le nouveau mot de passe doit contenir au moins 8 caractères.',
-            'nouveau_mot_de_passe.regex'     => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
-        ]);
-=======
     public function changePassword(Request $request)
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
             $request->validate([
                 'ancien_mot_de_passe'  => 'required',
-                'nouveau_mot_de_passe' => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'],
+                'nouveau_mot_de_passe' => [
+                    'required', 'min:8',
+                    'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
+                ],
+            ], [
+                'ancien_mot_de_passe.required'  => "L'ancien mot de passe est obligatoire.",
+                'nouveau_mot_de_passe.required' => 'Le nouveau mot de passe est obligatoire.',
+                'nouveau_mot_de_passe.min'      => 'Le nouveau mot de passe doit contenir au moins 8 caractères.',
+                'nouveau_mot_de_passe.regex'    => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
             ]);
->>>>>>> 3216b409835d1012acfccfcfc8da6747916b0c1f
 
             if (!Hash::check($request->ancien_mot_de_passe, $user->mot_de_passe))
                 return response()->json(['message' => 'Le mot de passe actuel est incorrect.'], 400);
@@ -91,11 +68,6 @@ class UserController extends Controller
         }
     }
 
-<<<<<<< HEAD
-    // ───────────────────────────────────────
-    // 6. ADMIN — قائمة المستخدمين
-    // ───────────────────────────────────────
-=======
     public function changeEmail(Request $request)
     {
         try {
@@ -117,7 +89,8 @@ class UserController extends Controller
         }
     }
 
->>>>>>> 3216b409835d1012acfccfcfc8da6747916b0c1f
+    // ─── ADMIN ────────────────────────────────────────────────────────────────
+
     public function getAllUsers()
     {
         try {
@@ -128,48 +101,20 @@ class UserController extends Controller
         }
     }
 
-<<<<<<< HEAD
-    // ───────────────────────────────────────
-    // 6. ADMIN — قبول أو رفض حساب
-    // ───────────────────────────────────────
-=======
->>>>>>> 3216b409835d1012acfccfcfc8da6747916b0c1f
     public function validateUser(Request $request, $id)
     {
         try {
             $request->validate(['action' => 'required|in:accepter,rejeter']);
             $user = User::findOrFail($id);
 
-<<<<<<< HEAD
-        if ($request->action === 'accepter') {
-            $user->update(['statut' => 'actif']);
-            Mail::raw(
-                "Bonjour {$user->prenom}, votre compte a été accepté. Vous pouvez vous connecter.",
-                fn($m) => $m->to($user->email)->subject('Compte activé')
-            );
-            return response()->json(['message' => 'Compte activé.']);
-        }
-
-        $user->update(['statut' => 'rejete']);
-        Mail::raw(
-            "Bonjour {$user->prenom}, votre compte a été rejeté. Contactez l'administrateur.",
-            fn($m) => $m->to($user->email)->subject('Compte rejeté')
-        );
-        return response()->json(['message' => 'Compte rejeté.']);
-    }
-
-    // ───────────────────────────────────────
-    // 6. ADMIN — تعديل مستخدم
-    // ───────────────────────────────────────
-=======
             if ($request->action === 'accepter') {
                 $user->update(['statut' => 'actif']);
-                $msg = 'Compte activé.';
+                $msg       = 'Compte activé.';
                 $emailBody = "Bonjour {$user->prenom},\n\nVotre demande d'accès a été acceptée.\nBienvenue !\n— L'équipe Ticketing";
                 $emailSubj = "✅ Votre compte a été activé";
             } else {
                 $user->update(['statut' => 'rejete']);
-                $msg = 'Compte rejeté.';
+                $msg       = 'Compte rejeté.';
                 $emailBody = "Bonjour {$user->prenom},\n\nVotre demande d'accès a été refusée.\n— L'équipe Ticketing";
                 $emailSubj = "❌ Demande d'accès refusée";
             }
@@ -190,9 +135,11 @@ class UserController extends Controller
     {
         try {
             $user = User::findOrFail($id);
-            if ($id == auth()->id()) {
+            if ($id == auth()->id())
                 return response()->json(['message' => 'Vous ne pouvez pas désactiver votre propre compte.'], 403);
-            }
+            if ($user->role === 'admin')
+                return response()->json(['message' => 'Impossible de désactiver un administrateur.'], 403);
+
             $user->update(['statut' => 'desactive']);
             return response()->json(['message' => 'Utilisateur désactivé avec succès.']);
         } catch (\Exception $e) {
@@ -200,15 +147,25 @@ class UserController extends Controller
         }
     }
 
->>>>>>> 3216b409835d1012acfccfcfc8da6747916b0c1f
-    public function updateUser(Request $request, $id)
+    public function reactivateUser($id)
     {
         try {
             $user = User::findOrFail($id);
+            $user->update(['statut' => 'actif']);
+            return response()->json(['message' => 'Compte réactivé avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        try {
+            $user      = User::findOrFail($id);
             $validated = $request->validate([
                 'nom'    => 'required|string',
                 'prenom' => 'required|string',
-                'email'  => 'required|email|unique:users,email,'.$id,
+                'email'  => 'required|email|unique:users,email,' . $id,
                 'role'   => 'required|in:testeur,developpeur,admin',
             ]);
             $user->update($validated);
@@ -217,61 +174,19 @@ class UserController extends Controller
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
         }
     }
-    public function changeEmail(Request $request)
-{
-    $user = JWTAuth::parseToken()->authenticate();
-    $request->validate([
-        'new_email'    => 'required|email|unique:users,email',
-        'mot_de_passe' => 'required',
-    ], [
-        'new_email.unique' => 'Cette adresse email est déjà associée à un compte.',
-    ]);
 
-<<<<<<< HEAD
-    if (!Hash::check($request->mot_de_passe, $user->mot_de_passe))
-        return response()->json(
-            ['message' => 'Le mot de passe actuel est incorrect.'], 400
-        );
-
-    $user->update(['email' => $request->new_email]);
-    return response()->json(['message' => 'Adresse email modifiée avec succès.']);
-}
-
-public function disableUser($id)
-{
-    $user = User::findOrFail($id);
-
-    if ($user->role === 'admin')
-        return response()->json(
-            ['message' => "Impossible de désactiver un administrateur."], 403
-        );
-
-    $user->update(['statut' => 'desactive']);
-    return response()->json(['message' => 'Compte désactivé.']);
-}
-
-public function enableUser($id)
-{
-    $user = User::findOrFail($id);
-    $user->update(['statut' => 'actif']);
-    return response()->json(['message' => 'Compte réactivé.']);
-}
-}
-=======
     public function deleteUser($id)
     {
         try {
             $user = User::findOrFail($id);
 
-            if ($id == auth()->id()) {
+            if ($id == auth()->id())
                 return response()->json(['message' => 'Vous ne pouvez pas supprimer votre propre compte.'], 403);
-            }
 
             if ($user->role === 'admin') {
                 $adminCount = User::where('role', 'admin')->count();
-                if ($adminCount <= 1) {
+                if ($adminCount <= 1)
                     return response()->json(['message' => 'Impossible de supprimer le dernier administrateur du système.'], 403);
-                }
             }
 
             $user->delete();
@@ -281,4 +196,3 @@ public function enableUser($id)
         }
     }
 }
->>>>>>> 3216b409835d1012acfccfcfc8da6747916b0c1f

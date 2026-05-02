@@ -7,15 +7,23 @@
         <h1 class="text-2xl font-extrabold text-gray-900">Console d'Administration</h1>
         <p class="text-gray-500 text-sm mt-0.5">Gestion des utilisateurs et des accès</p>
       </div>
-      <button @click="logout" class="px-4 py-2 text-sm text-white bg-gray-600 rounded hover:bg-gray-700 font-semibold">
-        Se déconnecter
-      </button>
+      <div class="flex gap-2">
+        <button @click="$router.push({ name: 'ProjectManagement' })"
+          class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
+          📁 Projets
+        </button>
+        <button @click="logout"
+          class="px-4 py-2 text-sm text-white bg-gray-600 rounded hover:bg-gray-700 font-semibold">
+          Se déconnecter
+        </button>
+      </div>
     </div>
 
     <div class="px-8 py-6 space-y-10">
 
       <!-- Message global -->
-      <p v-if="globalMessage" :class="globalSuccess ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'"
+      <p v-if="globalMessage"
+        :class="globalSuccess ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'"
         class="border px-4 py-3 rounded text-sm font-medium">
         {{ globalMessage }}
       </p>
@@ -100,12 +108,12 @@
                 <td class="px-4 py-3 font-medium">{{ user.nom }} {{ user.prenom }}</td>
                 <td class="px-4 py-3 text-gray-600">{{ user.email }}</td>
                 <td class="px-4 py-3">
-                  <span :class="roleClass(user.role)" class="px-2 py-0.5 rounded-full text-xs font-semibold capitalize">
+                  <span :class="roleClass(user.role)"
+                    class="px-2 py-0.5 rounded-full text-xs font-semibold capitalize">
                     {{ user.role }}
                   </span>
                 </td>
                 <td class="px-4 py-3 text-center">
-                  <!-- Bouton désactiver — seulement si pas admin -->
                   <button v-if="user.role !== 'admin'" @click="demanderDesactivation(user.id)"
                     class="px-3 py-1 bg-orange-500 text-white text-xs rounded hover:bg-orange-600 font-semibold">
                     ⊘ Désactiver
@@ -113,7 +121,7 @@
                 </td>
               </tr>
 
-              <!-- Bande de confirmation inline (remplace confirm()) -->
+              <!-- Bande de confirmation inline -->
               <tr v-if="confirmDesactiverId === user.id" class="bg-orange-50 border-t border-orange-200">
                 <td colspan="4" class="px-4 py-3">
                   <div class="flex items-center justify-between">
@@ -218,11 +226,11 @@ const authStore = useAuthStore();
 const router    = useRouter();
 
 // ─── État global ──────────────────────────────────────────────────────────────
-const allUsers          = ref([]);
-const loading           = ref(false);
-const globalMessage     = ref('');
-const globalSuccess     = ref(true);
-const confirmDesactiverId = ref(null); // ID de l'utilisateur en attente de confirmation
+const allUsers            = ref([]);
+const loading             = ref(false);
+const globalMessage       = ref('');
+const globalSuccess       = ref(true);
+const confirmDesactiverId = ref(null);
 
 // ─── Computed : filtres par statut ────────────────────────────────────────────
 const pendingUsers  = computed(() => allUsers.value.filter(u => u.statut === 'en_attente'));
@@ -248,7 +256,7 @@ onMounted(fetchUsers);
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const showMessage = (msg, success = true) => {
   globalMessage.value = msg;
-  globalSuccess.value = success;
+  globalSuccess.value  = success;
   setTimeout(() => { globalMessage.value = ''; }, 4000);
 };
 
@@ -263,7 +271,7 @@ const roleClass = (role) => {
   return 'bg-purple-100 text-purple-700';
 };
 
-// ─── Actions ─────────────────────────────────────────────────────────────────
+// ─── Actions ──────────────────────────────────────────────────────────────────
 const validerCandidat = async (id) => {
   try {
     await api.put(`/users/${id}/validate`, { action: 'accepter' });
@@ -284,16 +292,14 @@ const refuserCandidat = async (id) => {
   }
 };
 
-// Étape 1 : affiche la bande de confirmation dans la page
 const demanderDesactivation = (id) => {
   confirmDesactiverId.value = id;
 };
 
-// Étape 2 : après confirmation dans la page
 const confirmerDesactivation = async (id) => {
   confirmDesactiverId.value = null;
   try {
-    await api.put(`/users/${id}/disable`);
+    await api.put(`/users/${id}/deactivate`);   // ✅ corrigé
     showMessage('Compte désactivé avec succès.', true);
     await fetchUsers();
   } catch (err) {
@@ -303,7 +309,7 @@ const confirmerDesactivation = async (id) => {
 
 const activerCompte = async (id) => {
   try {
-    await api.put(`/users/${id}/enable`);
+    await api.put(`/users/${id}/reactivate`);   // ✅ corrigé
     showMessage('Compte réactivé avec succès.', true);
     await fetchUsers();
   } catch {
@@ -311,7 +317,7 @@ const activerCompte = async (id) => {
   }
 };
 
-// ─── Logout ──────────────────────────────────────────────────────────────────
+// ─── Logout ───────────────────────────────────────────────────────────────────
 const logout = () => {
   authStore.logout();
   router.push({ name: 'Login' });

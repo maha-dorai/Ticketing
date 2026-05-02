@@ -9,12 +9,21 @@ const routes = [
   { path: '/forgot-password',       name: 'ForgotPassword', component: () => import('../views/ForgotPassword.vue') },
   { path: '/reset-password/:token', name: 'ResetPassword',  component: () => import('../views/ResetPassword.vue') },
 
+  // ── Utilisateur ───────────────────────────────────────────────────────────────
   {
     path: '/profile',
     name: 'Profile',
     component: () => import('../views/user/Profile.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/projects',
+    name: 'Projects',
+    component: () => import('../views/user/Projects.vue'),
+    meta: { requiresAuth: true }
+  },
+
+  // ── Admin ─────────────────────────────────────────────────────────────────────
   {
     path: '/admin/users',
     name: 'UserManagement',
@@ -25,6 +34,12 @@ const routes = [
     path: '/admin/users/:id/edit',
     name: 'EditUser',
     component: () => import('../views/admin/EditUser.vue'),
+    meta: { requiresAuth: true, requiredRole: 'admin' }
+  },
+  {
+    path: '/admin/projects',
+    name: 'ProjectManagement',
+    component: () => import('../views/admin/ProjectManagement.vue'),
     meta: { requiresAuth: true, requiredRole: 'admin' }
   },
 
@@ -43,7 +58,6 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated)
     return next({ name: 'Login' });
 
-  // Plus d'alert() — redirection silencieuse vers Login
   if (to.meta.requiredRole && authStore.currentUser?.role !== to.meta.requiredRole)
     return next({ name: 'Login' });
 
