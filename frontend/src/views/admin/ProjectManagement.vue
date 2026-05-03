@@ -19,7 +19,7 @@
       </div>
     </div>
 
-    <div class="px-8 py-6 space-y-8">
+    <div class="px-8 py-6 space-y-6">
 
       <!-- Message global -->
       <p v-if="globalMessage"
@@ -28,114 +28,125 @@
         {{ globalMessage }}
       </p>
 
-      <!-- ═══════════════════ LISTE DES PROJETS ═══════════════════ -->
-      <section>
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-            <span class="inline-block w-3 h-3 rounded-full bg-blue-500"></span>
-            Projets
-            <span class="text-sm font-normal text-gray-500">({{ pagination.total ?? 0 }})</span>
-          </h2>
-          <button @click="openCreateModal"
-            class="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-semibold">
-            + Nouveau projet
-          </button>
-        </div>
+      <!-- Bouton + Recherche -->
+      <div class="flex items-center justify-between gap-4">
+        <input v-model="searchQuery" @input="debouncedSearch" type="text"
+          placeholder="Rechercher un projet..."
+          class="w-full max-w-sm px-3 py-2 border rounded text-sm bg-white focus:outline-none focus:ring focus:ring-blue-200" />
+        <button @click="openCreateModal"
+          class="shrink-0 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-semibold">
+          + Nouveau projet
+        </button>
+      </div>
 
-        <!-- Recherche -->
-        <div class="mb-4">
-          <input v-model="searchQuery" @input="debouncedSearch" type="text"
-            placeholder="Rechercher un projet..."
-            class="w-full max-w-sm px-3 py-2 border rounded text-sm focus:outline-none focus:ring focus:ring-blue-200" />
-        </div>
+      <!-- ═══════ ONGLETS ═══════ -->
+      <div class="flex border-b">
+        <button v-for="tab in tabs" :key="tab.key"
+          @click="activeTab = tab.key"
+          :class="activeTab === tab.key
+            ? 'border-b-2 border-blue-600 text-blue-600 font-bold'
+            : 'text-gray-500 hover:text-gray-700 font-semibold'"
+          class="px-6 py-3 text-sm flex items-center gap-2 transition">
+          <span :class="tab.dot" class="inline-block w-2.5 h-2.5 rounded-full"></span>
+          {{ tab.label }}
+          <span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full ml-1">
+            {{ count(tab.key) }}
+          </span>
+        </button>
+      </div>
 
-        <div v-if="loading" class="text-gray-400 text-sm">Chargement...</div>
-        <div v-else-if="projects.length === 0" class="text-gray-400 text-sm italic">Aucun projet trouvé.</div>
+      <!-- ═══════ TABLEAU ═══════ -->
+      <div v-if="loading" class="text-gray-400 text-sm py-6">Chargement...</div>
 
-        <table v-else class="w-full bg-white shadow rounded text-sm">
-          <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
-            <tr>
-              <th class="px-4 py-3 text-left">Nom</th>
-              <th class="px-4 py-3 text-left">Description</th>
-              <th class="px-4 py-3 text-left">Début</th>
-              <th class="px-4 py-3 text-left">Fin</th>
-              <th class="px-4 py-3 text-left">Statut</th>
-              <th class="px-4 py-3 text-left">Membres</th>
-              <th class="px-4 py-3 text-center">Actions</th>
+      <div v-else-if="filteredProjects.length === 0"
+        class="text-center py-12 bg-white rounded-xl shadow text-gray-400">
+        <div class="text-3xl mb-2">📂</div>
+        <p class="text-sm italic">Aucun projet {{ activeTabLabel }} trouvé.</p>
+      </div>
+
+      <table v-else class="w-full bg-white shadow rounded text-sm">
+        <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+          <tr>
+            <th class="px-4 py-3 text-left">Nom</th>
+            <th class="px-4 py-3 text-left">Description</th>
+            <th class="px-4 py-3 text-left">Début</th>
+            <th class="px-4 py-3 text-left">Fin</th>
+            <th class="px-4 py-3 text-left">Membres</th>
+            <th class="px-4 py-3 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <template v-for="project in filteredProjects" :key="project.id">
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium">{{ project.nom }}</td>
+              <td class="px-4 py-3 text-gray-500 max-w-xs truncate">{{ project.description || '—' }}</td>
+              <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(project.date_debut) }}</td>
+              <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(project.date_fin) }}</td>
+              <td class="px-4 py-3 text-gray-500 text-xs">
+                <span v-if="project.users?.length">
+                  {{ project.users.map(u => u.prenom + ' ' + u.nom).join(', ') }}
+                </span>
+                <span v-else class="italic text-gray-400">Aucun membre</span>
+              </td>
+              <td class="px-4 py-3 text-center space-x-1">
+                <!-- Modifier — sauf si fermé -->
+                <button v-if="project.statut !== 'ferme'" @click="openEditModal(project)"
+                  class="px-2 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600 font-semibold">
+                  ✏️ Modifier
+                </button>
+                <!-- Membres — sauf si fermé -->
+                <button v-if="project.statut !== 'ferme'" @click="openAssignModal(project)"
+                  class="px-2 py-1 bg-indigo-500 text-white text-xs rounded hover:bg-indigo-600 font-semibold">
+                  👥 Membres
+                </button>
+                <!-- Fermer — seulement si en_cours -->
+                <button v-if="project.statut === 'en_cours'" @click="demanderFermeture(project.id)"
+                  class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 font-semibold">
+                  🔒 Fermer
+                </button>
+                <!-- Badge fermé -->
+                <span v-if="project.statut === 'ferme'"
+                  class="px-2 py-1 bg-gray-200 text-gray-500 text-xs rounded font-semibold">
+                  🔒 Fermé
+                </span>
+              </td>
             </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <template v-for="project in projects" :key="project.id">
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-3 font-medium">{{ project.nom }}</td>
-                <td class="px-4 py-3 text-gray-500 max-w-xs truncate">{{ project.description || '—' }}</td>
-                <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(project.date_debut) }}</td>
-                <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(project.date_fin) }}</td>
-                <td class="px-4 py-3">
-                  <span :class="statutClass(project.statut)"
-                    class="px-2 py-0.5 rounded-full text-xs font-semibold">
-                    {{ statutLabel(project.statut) }}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-gray-500 text-xs">
-                  <span v-if="project.users?.length">
-                    {{ project.users.map(u => u.prenom + ' ' + u.nom).join(', ') }}
-                  </span>
-                  <span v-else class="italic text-gray-400">Aucun membre</span>
-                </td>
-                <td class="px-4 py-3 text-center space-x-1">
-                  <button @click="openEditModal(project)"
-                    class="px-2 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600 font-semibold">
-                    ✏️ Modifier
-                  </button>
-                  <button @click="openAssignModal(project)"
-                    class="px-2 py-1 bg-indigo-500 text-white text-xs rounded hover:bg-indigo-600 font-semibold">
-                    👥 Membres
-                  </button>
-                  <button v-if="project.statut !== 'ferme'" @click="demanderFermeture(project.id)"
-                    class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 font-semibold">
-                    🔒 Fermer
-                  </button>
-                </td>
-              </tr>
 
-              <!-- Confirmation fermeture inline -->
-              <tr v-if="confirmFermetureId === project.id" class="bg-red-50 border-t border-red-200">
-                <td colspan="7" class="px-4 py-3">
-                  <div class="flex items-center justify-between">
-                    <p class="text-sm text-red-700 font-medium">
-                      ⚠️ Confirmer la fermeture de <strong>{{ project.nom }}</strong> ?
-                      Cette action est irréversible.
-                    </p>
-                    <div class="flex gap-2 ml-4 shrink-0">
-                      <button @click="confirmFermetureId = null"
-                        class="px-3 py-1 text-xs text-gray-600 border rounded hover:bg-gray-100 font-semibold">
-                        Annuler
-                      </button>
-                      <button @click="confirmerFermeture(project.id)"
-                        class="px-3 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700 font-semibold">
-                        Oui, fermer
-                      </button>
-                    </div>
+            <!-- Confirmation fermeture inline -->
+            <tr v-if="confirmFermetureId === project.id" class="bg-red-50 border-t border-red-200">
+              <td colspan="6" class="px-4 py-3">
+                <div class="flex items-center justify-between">
+                  <p class="text-sm text-red-700 font-medium">
+                    ⚠️ Confirmer la fermeture de <strong>{{ project.nom }}</strong> ? Action irréversible.
+                  </p>
+                  <div class="flex gap-2 ml-4 shrink-0">
+                    <button @click="confirmFermetureId = null"
+                      class="px-3 py-1 text-xs text-gray-600 border rounded hover:bg-gray-100 font-semibold">
+                      Annuler
+                    </button>
+                    <button @click="confirmerFermeture(project.id)"
+                      class="px-3 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700 font-semibold">
+                      Oui, fermer
+                    </button>
                   </div>
-                </td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
+                </div>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
 
-        <!-- Pagination -->
-        <div v-if="pagination.last_page > 1" class="flex justify-center items-center gap-2 mt-4">
-          <button @click="changePage(pagination.current_page - 1)" :disabled="pagination.current_page === 1"
-            class="px-3 py-1 text-xs border rounded hover:bg-gray-100 disabled:opacity-40">← Préc.</button>
-          <span class="text-sm text-gray-500">Page {{ pagination.current_page }} / {{ pagination.last_page }}</span>
-          <button @click="changePage(pagination.current_page + 1)" :disabled="pagination.current_page === pagination.last_page"
-            class="px-3 py-1 text-xs border rounded hover:bg-gray-100 disabled:opacity-40">Suiv. →</button>
-        </div>
-      </section>
+      <!-- Pagination -->
+      <div v-if="pagination.last_page > 1" class="flex justify-center items-center gap-2 mt-2">
+        <button @click="changePage(pagination.current_page - 1)" :disabled="pagination.current_page === 1"
+          class="px-3 py-1 text-xs border rounded hover:bg-gray-100 disabled:opacity-40">← Préc.</button>
+        <span class="text-sm text-gray-500">Page {{ pagination.current_page }} / {{ pagination.last_page }}</span>
+        <button @click="changePage(pagination.current_page + 1)" :disabled="pagination.current_page === pagination.last_page"
+          class="px-3 py-1 text-xs border rounded hover:bg-gray-100 disabled:opacity-40">Suiv. →</button>
+      </div>
     </div>
 
-    <!-- ═══════════════════ MODAL CRÉER ═══════════════════ -->
+    <!-- ═══════ MODAL CRÉER ═══════ -->
     <div v-if="showCreateModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
         <h3 class="text-lg font-bold text-gray-900 mb-4 border-l-4 border-blue-500 pl-3">Nouveau projet</h3>
@@ -174,7 +185,7 @@
       </div>
     </div>
 
-    <!-- ═══════════════════ MODAL MODIFIER ═══════════════════ -->
+    <!-- ═══════ MODAL MODIFIER ═══════ -->
     <div v-if="showEditModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
         <h3 class="text-lg font-bold text-gray-900 mb-4 border-l-4 border-yellow-500 pl-3">
@@ -192,7 +203,6 @@
               class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring focus:ring-yellow-200">
               <option value="en_cours">En cours</option>
               <option value="termine">Terminé</option>
-              <option value="ferme">Fermé</option>
             </select>
           </div>
           <p v-if="modalError" class="text-red-600 text-xs bg-red-50 p-2 rounded">{{ modalError }}</p>
@@ -207,20 +217,19 @@
       </div>
     </div>
 
-    <!-- ═══════════════════ MODAL AFFECTER MEMBRES ═══════════════════ -->
+    <!-- ═══════ MODAL MEMBRES ═══════ -->
     <div v-if="showAssignModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
         <h3 class="text-lg font-bold text-gray-900 mb-4 border-l-4 border-indigo-500 pl-3">
           Membres — {{ selectedProject?.nom }}
         </h3>
-        <div v-if="usersLoading" class="text-gray-400 text-sm py-4 text-center">Chargement des utilisateurs...</div>
+        <div v-if="usersLoading" class="text-gray-400 text-sm py-4 text-center">Chargement...</div>
         <div v-else>
-          <p class="text-xs text-gray-500 mb-3">Sélectionnez les membres à affecter à ce projet :</p>
+          <p class="text-xs text-gray-500 mb-3">Sélectionnez les membres à affecter :</p>
           <div class="max-h-64 overflow-y-auto space-y-2 border rounded p-3">
             <label v-for="user in activeUsers" :key="user.id"
               class="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
-              <input type="checkbox" :value="user.id" v-model="assignedUserIds"
-                class="w-4 h-4 accent-indigo-600" />
+              <input type="checkbox" :value="user.id" v-model="assignedUserIds" class="w-4 h-4 accent-indigo-600" />
               <span class="text-sm">
                 <span class="font-medium">{{ user.prenom }} {{ user.nom }}</span>
                 <span :class="roleClass(user.role)" class="ml-2 px-1.5 py-0.5 rounded-full text-xs font-semibold">
@@ -249,7 +258,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../../stores/authStore';
 import { useRouter } from 'vue-router';
 import api from '../../services/api';
@@ -257,13 +266,22 @@ import api from '../../services/api';
 const authStore = useAuthStore();
 const router    = useRouter();
 
-// ─── État ──────────────────────────────────────────────────────────────────────
-const projects       = ref([]);
-const loading        = ref(false);
-const searchQuery    = ref('');
-const pagination     = ref({ current_page: 1, last_page: 1, total: 0 });
-const globalMessage  = ref('');
-const globalSuccess  = ref(true);
+// ─── Onglets ────────────────────────────────────────────────────────────────
+const tabs = [
+  { key: 'en_cours', label: 'En cours',  dot: 'bg-blue-500'  },
+  { key: 'termine',  label: 'Terminés',  dot: 'bg-green-500' },
+  { key: 'ferme',    label: 'Fermés',    dot: 'bg-gray-400'  },
+];
+const activeTab = ref('en_cours');
+const activeTabLabel = computed(() => tabs.find(t => t.key === activeTab.value)?.label ?? '');
+
+// ─── État ────────────────────────────────────────────────────────────────────
+const allProjects      = ref([]);
+const loading          = ref(false);
+const searchQuery      = ref('');
+const pagination       = ref({ current_page: 1, last_page: 1, total: 0 });
+const globalMessage    = ref('');
+const globalSuccess    = ref(true);
 const confirmFermetureId = ref(null);
 
 // Modals
@@ -274,30 +292,30 @@ const selectedProject = ref(null);
 const modalLoading    = ref(false);
 const modalError      = ref('');
 
-// Formulaire création
 const createForm = ref({ nom: '', description: '', date_debut: '', date_fin: '' });
+const editForm   = ref({ nom: '', statut: 'en_cours' });
 
-// Formulaire modification
-const editForm = ref({ nom: '', statut: 'en_cours' });
-
-// Affectation membres
 const activeUsers     = ref([]);
 const assignedUserIds = ref([]);
 const usersLoading    = ref(false);
 
-// ─── Fetch projets ─────────────────────────────────────────────────────────────
-const fetchProjects = async (page = 1) => {
+// ─── Computed : projets filtrés par onglet ────────────────────────────────────
+const filteredProjects = computed(() =>
+  allProjects.value.filter(p => p.statut === activeTab.value)
+);
+
+const count = (key) => allProjects.value.filter(p => p.statut === key).length;
+
+// ─── Fetch tous les projets (sans pagination serveur pour les onglets) ────────
+const fetchProjects = async () => {
   loading.value = true;
   try {
-    const params = { page };
+    const params = {};
     if (searchQuery.value) params.search = searchQuery.value;
+    // On récupère tout (per_page grand) pour que les onglets affichent les bons compteurs
+    params.per_page = 200;
     const res = await api.get('/projects', { params });
-    projects.value   = res.data.data;
-    pagination.value = {
-      current_page: res.data.current_page,
-      last_page:    res.data.last_page,
-      total:        res.data.total,
-    };
+    allProjects.value = res.data.data ?? res.data;
   } catch {
     showMessage('Erreur lors du chargement des projets.', false);
   } finally {
@@ -307,19 +325,18 @@ const fetchProjects = async (page = 1) => {
 
 onMounted(() => fetchProjects());
 
-// ─── Recherche avec délai ──────────────────────────────────────────────────────
 let searchTimer = null;
 const debouncedSearch = () => {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => fetchProjects(1), 400);
+  searchTimer = setTimeout(() => fetchProjects(), 400);
 };
 
 const changePage = (page) => {
   if (page < 1 || page > pagination.value.last_page) return;
-  fetchProjects(page);
+  fetchProjects();
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 const showMessage = (msg, success = true) => {
   globalMessage.value = msg;
   globalSuccess.value  = success;
@@ -328,18 +345,10 @@ const showMessage = (msg, success = true) => {
 
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
 
-const statutLabel = (s) => ({ en_cours: 'En cours', termine: 'Terminé', ferme: 'Fermé' }[s] ?? s);
-
-const statutClass = (s) => ({
-  en_cours: 'bg-blue-100 text-blue-700',
-  termine:  'bg-green-100 text-green-700',
-  ferme:    'bg-gray-200 text-gray-600',
-}[s] ?? 'bg-gray-100 text-gray-500');
-
 const roleClass = (role) => ({
-  admin:        'bg-red-100 text-red-700',
-  developpeur:  'bg-blue-100 text-blue-700',
-  chef_projet:  'bg-purple-100 text-purple-700',
+  admin:       'bg-red-100 text-red-700',
+  developpeur: 'bg-blue-100 text-blue-700',
+  chef_projet: 'bg-purple-100 text-purple-700',
 }[role] ?? 'bg-gray-100 text-gray-600');
 
 const closeModals = () => {
@@ -351,7 +360,7 @@ const closeModals = () => {
   modalLoading.value    = false;
 };
 
-// ─── Créer projet ──────────────────────────────────────────────────────────────
+// ─── Créer ───────────────────────────────────────────────────────────────────
 const openCreateModal = () => {
   createForm.value = { nom: '', description: '', date_debut: '', date_fin: '' };
   modalError.value  = '';
@@ -359,25 +368,20 @@ const openCreateModal = () => {
 };
 
 const createProject = async () => {
-  if (!createForm.value.nom.trim()) {
-    modalError.value = 'Le nom du projet est obligatoire.';
-    return;
-  }
-  modalLoading.value = true;
-  modalError.value   = '';
+  if (!createForm.value.nom.trim()) { modalError.value = 'Le nom est obligatoire.'; return; }
+  modalLoading.value = true; modalError.value = '';
   try {
     await api.post('/projects', createForm.value);
     closeModals();
     showMessage('Projet créé avec succès.', true);
+    activeTab.value = 'en_cours';
     await fetchProjects();
   } catch (err) {
     modalError.value = err.response?.data?.message || 'Erreur lors de la création.';
-  } finally {
-    modalLoading.value = false;
-  }
+  } finally { modalLoading.value = false; }
 };
 
-// ─── Modifier projet ───────────────────────────────────────────────────────────
+// ─── Modifier ─────────────────────────────────────────────────────────────────
 const openEditModal = (project) => {
   selectedProject.value = project;
   editForm.value = { nom: project.nom, statut: project.statut };
@@ -386,39 +390,35 @@ const openEditModal = (project) => {
 };
 
 const updateProject = async () => {
-  if (!editForm.value.nom.trim()) {
-    modalError.value = 'Le nom est obligatoire.';
-    return;
-  }
-  modalLoading.value = true;
-  modalError.value   = '';
+  if (!editForm.value.nom.trim()) { modalError.value = 'Le nom est obligatoire.'; return; }
+  modalLoading.value = true; modalError.value = '';
   try {
     await api.put(`/projects/${selectedProject.value.id}`, editForm.value);
     closeModals();
     showMessage('Projet mis à jour.', true);
-    await fetchProjects(pagination.value.current_page);
+    await fetchProjects();
   } catch (err) {
     modalError.value = err.response?.data?.message || 'Erreur lors de la mise à jour.';
-  } finally {
-    modalLoading.value = false;
-  }
+  } finally { modalLoading.value = false; }
 };
 
-// ─── Fermer projet ─────────────────────────────────────────────────────────────
-const demanderFermeture = (id) => { confirmFermetureId.value = id; };
+// ─── Fermer ──────────────────────────────────────────────────────────────────
+const demanderFermeture  = (id) => { confirmFermetureId.value = id; };
 
 const confirmerFermeture = async (id) => {
   confirmFermetureId.value = null;
   try {
     await api.delete(`/projects/${id}`);
     showMessage('Projet fermé avec succès.', true);
-    await fetchProjects(pagination.value.current_page);
+    // Basculer sur l'onglet Fermés
+    await fetchProjects();
+    activeTab.value = 'ferme';
   } catch (err) {
     showMessage(err.response?.data?.message || 'Erreur lors de la fermeture.', false);
   }
 };
 
-// ─── Affecter membres ──────────────────────────────────────────────────────────
+// ─── Membres ─────────────────────────────────────────────────────────────────
 const openAssignModal = async (project) => {
   selectedProject.value = project;
   assignedUserIds.value = project.users?.map(u => u.id) ?? [];
@@ -428,31 +428,23 @@ const openAssignModal = async (project) => {
   try {
     const res = await api.get('/users');
     activeUsers.value = res.data.filter(u => u.statut === 'actif' && u.role !== 'admin');
-  } catch {
-    modalError.value = 'Impossible de charger les utilisateurs.';
-  } finally {
-    usersLoading.value = false;
-  }
+  } catch { modalError.value = 'Impossible de charger les utilisateurs.'; }
+  finally { usersLoading.value = false; }
 };
 
 const assignUsers = async () => {
-  modalLoading.value = true;
-  modalError.value   = '';
+  modalLoading.value = true; modalError.value = '';
   try {
-    await api.post(`/projects/${selectedProject.value.id}/assign`, {
-      user_ids: assignedUserIds.value,
-    });
+    await api.post(`/projects/${selectedProject.value.id}/assign`, { user_ids: assignedUserIds.value });
     closeModals();
     showMessage('Membres affectés avec succès.', true);
-    await fetchProjects(pagination.value.current_page);
+    await fetchProjects();
   } catch (err) {
-    modalError.value = err.response?.data?.message || 'Erreur lors de l\'affectation.';
-  } finally {
-    modalLoading.value = false;
-  }
+    modalError.value = err.response?.data?.message || "Erreur lors de l'affectation.";
+  } finally { modalLoading.value = false; }
 };
 
-// ─── Logout ───────────────────────────────────────────────────────────────────
+// ─── Logout ──────────────────────────────────────────────────────────────────
 const logout = () => {
   authStore.logout();
   router.push({ name: 'Login' });

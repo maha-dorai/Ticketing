@@ -234,7 +234,7 @@ const confirmDesactiverId = ref(null);
 
 // ─── Computed : filtres par statut ────────────────────────────────────────────
 const pendingUsers  = computed(() => allUsers.value.filter(u => u.statut === 'en_attente'));
-const activeUsers   = computed(() => allUsers.value.filter(u => u.statut === 'actif'));
+const activeUsers = computed(() => allUsers.value.filter(u => u.statut === 'actif' && u.role !== 'admin'));
 const disabledUsers = computed(() => allUsers.value.filter(u => u.statut === 'desactive'));
 const rejectedUsers = computed(() => allUsers.value.filter(u => u.statut === 'rejete'));
 
