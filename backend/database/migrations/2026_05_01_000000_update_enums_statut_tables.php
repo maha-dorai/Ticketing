@@ -8,25 +8,33 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // En SQLite (et Laravel 11), on utilise change() de manière native 
-        // au lieu d'utiliser du SQL Brut conçu pour MySQL.
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('statut', ['en_attente', 'actif', 'rejete', 'desactive'])->default('en_attente')->change();
+            $table->enum('statut', ['en_attente', 'actif', 'rejete', 'desactive'])
+                  ->default('en_attente')
+                  ->change();
         });
 
         Schema::table('projects', function (Blueprint $table) {
-            $table->enum('statut', ['en_cours', 'termine', 'ferme'])->default('en_cours')->change();
+            // ✅ CORRIGÉ : ouvert/en_cours/ferme selon CDC §4.1
+            // Supprimé : termine (n'existe pas dans le CDC)
+            $table->enum('statut', ['ouvert', 'en_cours', 'ferme'])
+                  ->default('ouvert')
+                  ->change();
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('statut', ['en_attente', 'actif', 'rejete'])->default('en_attente')->change();
+            $table->enum('statut', ['en_attente', 'actif', 'rejete'])
+                  ->default('en_attente')
+                  ->change();
         });
 
         Schema::table('projects', function (Blueprint $table) {
-            $table->enum('statut', ['en_cours', 'termine'])->default('en_cours')->change();
+            $table->enum('statut', ['en_cours', 'termine'])
+                  ->default('en_cours')
+                  ->change();
         });
     }
 };

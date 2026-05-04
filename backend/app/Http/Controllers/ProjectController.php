@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Requests\AssignMembersRequest;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use Illuminate\Support\Facades\Log;
 
 class ProjectController extends Controller
 {
@@ -17,14 +16,12 @@ class ProjectController extends Controller
             $user = JWTAuth::parseToken()->authenticate();
             $query = $user->role === 'admin' ? Project::query() : $user->projects();
 
-            // Recherche
             if ($request->has('search') && !empty($request->search)) {
                 $query->where('nom', 'like', '%' . $request->search . '%');
             }
 
-            // Pagination au lieu de get()
             $projects = $query->with('users:id,nom,prenom,role')->paginate(10);
-            
+
             return response()->json($projects);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
@@ -41,6 +38,9 @@ class ProjectController extends Controller
                 'date_fin'    => 'nullable|date|after_or_equal:date_debut',
             ]);
 
+            // ✅ CORRIGÉ : statut initial = 'ouvert' selon CDC §4.1
+            $validated['statut'] = 'ouvert';
+
             $project = Project::create($validated);
 
             return response()->json(['message' => 'Projet créé avec succès.', 'project' => $project], 201);
@@ -55,8 +55,9 @@ class ProjectController extends Controller
             $project = Project::findOrFail($id);
 
             $validated = $request->validate([
-                'nom'         => 'required|string|max:255',
-                'statut'      => 'required|in:en_cours,termine,ferme', // Ajout de ferme
+                'nom'    => 'required|string|max:255',
+                // ✅ CORRIGÉ : termine supprimé, remplacé par ouvert/en_cours/ferme (CDC §4.1)
+                'statut' => 'required|in:ouvert,en_cours,ferme',
             ]);
 
             $project->update($validated);
@@ -71,7 +72,7 @@ class ProjectController extends Controller
     {
         try {
             $project = Project::findOrFail($id);
-            // CDC: "La suppression d'un projet est interdite, il peut seulement être fermé"
+            // CDC §4.3 : "La suppression d'un projet est interdite, il peut seulement être fermé"
             $project->update(['statut' => 'ferme']);
 
             return response()->json(['message' => 'Projet fermé avec succès.']);
@@ -84,8 +85,6 @@ class ProjectController extends Controller
     {
         try {
             $project = Project::findOrFail($id);
-
-            // Validation externalisée dans AssignMembersRequest
             $project->users()->sync($request->validated()['user_ids']);
 
             return response()->json(['message' => 'Membres affectés avec succès.']);

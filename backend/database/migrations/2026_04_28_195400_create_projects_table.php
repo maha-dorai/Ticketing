@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('projects', function (Blueprint $table) {
@@ -17,14 +14,12 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->date('date_debut')->nullable();
             $table->date('date_fin')->nullable();
-            $table->enum('statut', ['en_cours', 'termine'])->default('en_cours');
+            // ✅ CORRIGÉ : ouvert (CDC §4.1) au lieu de en_cours
+            $table->enum('statut', ['ouvert', 'en_cours', 'ferme'])->default('ouvert');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('projects');
