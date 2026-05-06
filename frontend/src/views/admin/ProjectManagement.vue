@@ -99,8 +99,8 @@
                   class="px-2 py-1 bg-indigo-500 text-white text-xs rounded hover:bg-indigo-600 font-semibold">
                   👥 Membres
                 </button>
-                <!-- Fermer — seulement si en_cours -->
-                <button v-if="project.statut === 'en_cours'" @click="demanderFermeture(project.id)"
+                <!-- ✅ CORRIGÉ : Fermer — si ouvert OU en_cours (CDC §4.2) -->
+                <button v-if="project.statut !== 'ferme'" @click="demanderFermeture(project.id)"
                   class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 font-semibold">
                   🔒 Fermer
                 </button>
@@ -201,8 +201,9 @@
             <label class="block text-xs font-medium text-gray-700 mb-1">Statut *</label>
             <select v-model="editForm.statut"
               class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring focus:ring-yellow-200">
+              <!-- ✅ CORRIGÉ : ouvert/en_cours uniquement (ferme = bouton dédié) -->
+              <option value="ouvert">Ouvert</option>
               <option value="en_cours">En cours</option>
-              <option value="termine">Terminé</option>
             </select>
           </div>
           <p v-if="modalError" class="text-red-600 text-xs bg-red-50 p-2 rounded">{{ modalError }}</p>
@@ -266,22 +267,24 @@ import api from '../../services/api';
 const authStore = useAuthStore();
 const router    = useRouter();
 
-// ─── Onglets ────────────────────────────────────────────────────────────────
+// ─── Onglets ─────────────────────────────────────────────────────────────────
+// ✅ CORRIGÉ : ouvert/en_cours/ferme selon CDC §4.1 (supprimé : termine)
 const tabs = [
+  { key: 'ouvert',   label: 'Ouverts',   dot: 'bg-green-500' },
   { key: 'en_cours', label: 'En cours',  dot: 'bg-blue-500'  },
-  { key: 'termine',  label: 'Terminés',  dot: 'bg-green-500' },
   { key: 'ferme',    label: 'Fermés',    dot: 'bg-gray-400'  },
 ];
-const activeTab = ref('en_cours');
+// ✅ CORRIGÉ : onglet actif par défaut = ouvert
+const activeTab = ref('ouvert');
 const activeTabLabel = computed(() => tabs.find(t => t.key === activeTab.value)?.label ?? '');
 
-// ─── État ────────────────────────────────────────────────────────────────────
-const allProjects      = ref([]);
-const loading          = ref(false);
-const searchQuery      = ref('');
-const pagination       = ref({ current_page: 1, last_page: 1, total: 0 });
-const globalMessage    = ref('');
-const globalSuccess    = ref(true);
+// ─── État ─────────────────────────────────────────────────────────────────────
+const allProjects        = ref([]);
+const loading            = ref(false);
+const searchQuery        = ref('');
+const pagination         = ref({ current_page: 1, last_page: 1, total: 0 });
+const globalMessage      = ref('');
+const globalSuccess      = ref(true);
 const confirmFermetureId = ref(null);
 
 // Modals
@@ -293,7 +296,8 @@ const modalLoading    = ref(false);
 const modalError      = ref('');
 
 const createForm = ref({ nom: '', description: '', date_debut: '', date_fin: '' });
-const editForm   = ref({ nom: '', statut: 'en_cours' });
+// ✅ CORRIGÉ : valeur par défaut du formulaire = ouvert
+const editForm   = ref({ nom: '', statut: 'ouvert' });
 
 const activeUsers     = ref([]);
 const assignedUserIds = ref([]);
@@ -306,13 +310,12 @@ const filteredProjects = computed(() =>
 
 const count = (key) => allProjects.value.filter(p => p.statut === key).length;
 
-// ─── Fetch tous les projets (sans pagination serveur pour les onglets) ────────
+// ─── Fetch ────────────────────────────────────────────────────────────────────
 const fetchProjects = async () => {
   loading.value = true;
   try {
     const params = {};
     if (searchQuery.value) params.search = searchQuery.value;
-    // On récupère tout (per_page grand) pour que les onglets affichent les bons compteurs
     params.per_page = 200;
     const res = await api.get('/projects', { params });
     allProjects.value = res.data.data ?? res.data;
@@ -336,7 +339,7 @@ const changePage = (page) => {
   fetchProjects();
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const showMessage = (msg, success = true) => {
   globalMessage.value = msg;
   globalSuccess.value  = success;
@@ -348,7 +351,7 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
 const roleClass = (role) => ({
   admin:       'bg-red-100 text-red-700',
   developpeur: 'bg-blue-100 text-blue-700',
-  chef_projet: 'bg-purple-100 text-purple-700',
+  testeur:     'bg-purple-100 text-purple-700',
 }[role] ?? 'bg-gray-100 text-gray-600');
 
 const closeModals = () => {
@@ -360,7 +363,7 @@ const closeModals = () => {
   modalLoading.value    = false;
 };
 
-// ─── Créer ───────────────────────────────────────────────────────────────────
+// ─── Créer ────────────────────────────────────────────────────────────────────
 const openCreateModal = () => {
   createForm.value = { nom: '', description: '', date_debut: '', date_fin: '' };
   modalError.value  = '';
@@ -374,7 +377,8 @@ const createProject = async () => {
     await api.post('/projects', createForm.value);
     closeModals();
     showMessage('Projet créé avec succès.', true);
-    activeTab.value = 'en_cours';
+    // ✅ CORRIGÉ : après création, aller sur l'onglet Ouverts
+    activeTab.value = 'ouvert';
     await fetchProjects();
   } catch (err) {
     modalError.value = err.response?.data?.message || 'Erreur lors de la création.';
@@ -402,7 +406,7 @@ const updateProject = async () => {
   } finally { modalLoading.value = false; }
 };
 
-// ─── Fermer ──────────────────────────────────────────────────────────────────
+// ─── Fermer ───────────────────────────────────────────────────────────────────
 const demanderFermeture  = (id) => { confirmFermetureId.value = id; };
 
 const confirmerFermeture = async (id) => {
@@ -410,7 +414,6 @@ const confirmerFermeture = async (id) => {
   try {
     await api.delete(`/projects/${id}`);
     showMessage('Projet fermé avec succès.', true);
-    // Basculer sur l'onglet Fermés
     await fetchProjects();
     activeTab.value = 'ferme';
   } catch (err) {
@@ -418,7 +421,7 @@ const confirmerFermeture = async (id) => {
   }
 };
 
-// ─── Membres ─────────────────────────────────────────────────────────────────
+// ─── Membres ──────────────────────────────────────────────────────────────────
 const openAssignModal = async (project) => {
   selectedProject.value = project;
   assignedUserIds.value = project.users?.map(u => u.id) ?? [];
@@ -444,7 +447,7 @@ const assignUsers = async () => {
   } finally { modalLoading.value = false; }
 };
 
-// ─── Logout ──────────────────────────────────────────────────────────────────
+// ─── Logout ───────────────────────────────────────────────────────────────────
 const logout = () => {
   authStore.logout();
   router.push({ name: 'Login' });

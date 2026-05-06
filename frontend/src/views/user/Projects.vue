@@ -158,11 +158,10 @@ const changePage = (page) => {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
 
-const statutLabel = (s) => ({ en_cours: 'En cours', termine: 'Terminé', ferme: 'Fermé' }[s] ?? s);
-
+const statutLabel = (s) => ({ ouvert: 'Ouvert', en_cours: 'En cours', ferme: 'Fermé' }[s] ?? s);
 const statutClass = (s) => ({
+  ouvert:   'bg-green-100 text-green-700',
   en_cours: 'bg-blue-100 text-blue-700',
-  termine:  'bg-green-100 text-green-700',
   ferme:    'bg-gray-200 text-gray-500',
 }[s] ?? 'bg-gray-100 text-gray-500');
 
