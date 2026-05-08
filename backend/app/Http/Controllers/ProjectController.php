@@ -13,14 +13,17 @@ class ProjectController extends Controller
     public function index(Request $request)
     {
         try {
-            $user = JWTAuth::parseToken()->authenticate();
-            $query = $user->role === 'admin' ? Project::query() : $user->projects();
+            $user  = JWTAuth::parseToken()->authenticate();
+            $query = $user->isAdmin() ? Project::query() : $user->projects();
 
-            if ($request->has('search') && !empty($request->search)) {
+            if ($request->filled('search')) {
                 $query->where('nom', 'like', '%' . $request->search . '%');
             }
 
-            $projects = $query->with('users:id,nom,prenom,role')->paginate(10);
+            $projects = $query->with([
+                'users:id,nom,prenom,role',
+                'creator:id,nom,prenom',
+            ])->paginate(10);
 
             return response()->json($projects);
         } catch (\Exception $e) {
@@ -31,17 +34,26 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         try {
-            $validated = $request->validate([
-                'nom'         => 'required|string|max:255',
+            $creator = JWTAuth::parseToken()->authenticate();
+
+            $request->validate([
+                'nom'         => 'required|string|max:255|unique:projects,nom',   // ✅ Fix US07-E2 : nom unique
                 'description' => 'nullable|string',
                 'date_debut'  => 'nullable|date',
                 'date_fin'    => 'nullable|date|after_or_equal:date_debut',
+            ], [
+                'nom.required' => 'Le nom du projet est obligatoire.',
+                'nom.unique'   => 'Un projet avec ce nom existe déjà.',
             ]);
 
-            // ✅ CORRIGÉ : statut initial = 'ouvert' selon CDC §4.1
-            $validated['statut'] = 'ouvert';
-
-            $project = Project::create($validated);
+            $project = Project::create([
+                'nom'         => $request->nom,
+                'description' => $request->description,
+                'date_debut'  => $request->date_debut,
+                'date_fin'    => $request->date_fin,
+                'statut'      => 'ouvert',
+                'created_by'  => $creator->id,              // ✅ Fix Sprint 2 : created_by
+            ]);
 
             return response()->json(['message' => 'Projet créé avec succès.', 'project' => $project], 201);
         } catch (\Exception $e) {
@@ -54,13 +66,15 @@ class ProjectController extends Controller
         try {
             $project = Project::findOrFail($id);
 
-            $validated = $request->validate([
+            $request->validate([
                 'nom'    => 'required|string|max:255',
-                // ✅ CORRIGÉ : termine supprimé, remplacé par ouvert/en_cours/ferme (CDC §4.1)
-                'statut' => 'required|in:ouvert,en_cours,ferme',
+                'statut' => 'required|in:ouvert,en_cours,archive',    // ✅ Fix prof : archive au lieu de ferme
+            ], [
+                'nom.required'    => 'Le nom du projet est obligatoire.',
+                'statut.in'       => 'Le statut doit être : ouvert, en_cours ou archive.',
             ]);
 
-            $project->update($validated);
+            $project->update($request->only('nom', 'statut', 'description', 'date_debut', 'date_fin'));
 
             return response()->json(['message' => 'Projet mis à jour.']);
         } catch (\Exception $e) {
@@ -68,24 +82,42 @@ class ProjectController extends Controller
         }
     }
 
+    // Archiver un projet (interdit de supprimer — traçabilité)
     public function destroy($id)
     {
         try {
             $project = Project::findOrFail($id);
-            // CDC §4.3 : "La suppression d'un projet est interdite, il peut seulement être fermé"
-            $project->update(['statut' => 'ferme']);
+            $project->update(['statut' => 'archive']);        // ✅ Fix prof : archive au lieu de ferme
 
-            return response()->json(['message' => 'Projet fermé avec succès.']);
+            return response()->json(['message' => 'Projet archivé avec succès.']);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erreur lors de la fermeture.', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erreur lors de l\'archivage.', 'error' => $e->getMessage()], 500);
         }
     }
 
-    public function assignUsers(AssignMembersRequest $request, $id)
+    public function assignUsers(Request $request, $id)
     {
         try {
             $project = Project::findOrFail($id);
-            $project->users()->sync($request->validated()['user_ids']);
+
+            $request->validate([
+                'user_ids'   => 'required|array',
+                'user_ids.*' => 'exists:users,id',
+            ]);
+
+            // ✅ Fix US09-E1 : vérifier que tous les membres ont le statut 'actif'
+            $inactiveUsers = User::whereIn('id', $request->user_ids)
+                                 ->where('statut', '!=', 'actif')
+                                 ->pluck('email');
+
+            if ($inactiveUsers->isNotEmpty()) {
+                return response()->json([
+                    'message'        => 'Certains membres ne sont pas actifs et ne peuvent pas être affectés.',
+                    'comptes_bloqués' => $inactiveUsers,
+                ], 422);
+            }
+
+            $project->users()->sync($request->user_ids);
 
             return response()->json(['message' => 'Membres affectés avec succès.']);
         } catch (\Exception $e) {

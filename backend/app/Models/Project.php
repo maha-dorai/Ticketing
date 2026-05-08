@@ -1,16 +1,29 @@
 <?php
-
+ 
 namespace App\Models;
-
+ 
 use Illuminate\Database\Eloquent\Model;
-
+ 
 class Project extends Model
 {
-    protected $fillable = ['nom', 'description', 'date_debut', 'date_fin', 'statut'];
-
-    // Relation Many-to-Many avec les Utilisateurs
+    protected $fillable = [
+        'nom',
+        'description',
+        'date_debut',
+        'date_fin',
+        'statut',      // 'ouvert' | 'en_cours' | 'archive'
+        'created_by',  // FK vers users.id
+    ];
+ 
+    // Membres affectés au projet (Many-to-Many)
     public function users()
     {
         return $this->belongsToMany(User::class);
+    }
+ 
+    // Admin ou super_admin qui a créé le projet
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

@@ -5,15 +5,14 @@ namespace App\Http\Middleware;
 use Closure;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
-class IsAdmin
+class IsSuperAdmin
 {
     public function handle($request, Closure $next)
     {
         $user = JWTAuth::parseToken()->authenticate();
 
-        // Accès autorisé pour admin ET super_admin
-        if (!in_array($user->role, ['admin', 'super_admin']))
-            return response()->json(['message' => 'Accès réservé aux administrateurs.'], 403);
+        if ($user->role !== 'super_admin')
+            return response()->json(['message' => 'Accès réservé au super administrateur.'], 403);
 
         return $next($request);
     }

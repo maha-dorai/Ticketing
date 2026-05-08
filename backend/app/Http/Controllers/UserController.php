@@ -61,7 +61,10 @@ class UserController extends Controller
             if (!Hash::check($request->ancien_mot_de_passe, $user->mot_de_passe))
                 return response()->json(['message' => 'Le mot de passe actuel est incorrect.'], 400);
 
-            $user->update(['mot_de_passe' => Hash::make($request->nouveau_mot_de_passe)]);
+            $user->update([
+                'mot_de_passe'          => Hash::make($request->nouveau_mot_de_passe),
+                'force_password_change' => false, // Réinitialise le flag après le changement obligatoire
+            ]);
             return response()->json(['message' => 'Mot de passe modifié avec succès.']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
@@ -151,6 +154,10 @@ class UserController extends Controller
     {
         try {
             $user = User::findOrFail($id);
+
+            if ($user->statut !== 'desactive')
+                return response()->json(['message' => 'Ce compte n\'est pas désactivé.'], 400);
+
             $user->update(['statut' => 'actif']);
             return response()->json(['message' => 'Compte réactivé avec succès.']);
         } catch (\Exception $e) {
@@ -175,24 +182,11 @@ class UserController extends Controller
         }
     }
 
+    // ⚠️ Suppression définitive INTERDITE — traçabilité obligatoire (spec Sprint 1)
     public function deleteUser($id)
     {
-        try {
-            $user = User::findOrFail($id);
-
-            if ($id == auth()->id())
-                return response()->json(['message' => 'Vous ne pouvez pas supprimer votre propre compte.'], 403);
-
-            if ($user->role === 'admin') {
-                $adminCount = User::where('role', 'admin')->count();
-                if ($adminCount <= 1)
-                    return response()->json(['message' => 'Impossible de supprimer le dernier administrateur du système.'], 403);
-            }
-
-            $user->delete();
-            return response()->json(['message' => 'Utilisateur supprimé.']);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
-        }
+        return response()->json([
+            'message' => 'La suppression définitive d\'un compte est interdite. Utilisez la désactivation pour préserver la traçabilité.',
+        ], 403);
     }
 }

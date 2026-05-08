@@ -9,41 +9,56 @@ const routes = [
   { path: '/forgot-password',       name: 'ForgotPassword', component: () => import('../views/ForgotPassword.vue') },
   { path: '/reset-password/:token', name: 'ResetPassword',  component: () => import('../views/ResetPassword.vue') },
 
-  // ── Utilisateur ───────────────────────────────────────────────────────────────
+  // Page obligatoire si force_password_change = true
+  {
+    path: '/change-password-required',
+    name: 'ForceChangePassword',
+    component: () => import('../views/ForceChangePassword.vue'),
+    meta: { requiresAuth: true },
+  },
+
+  // ── Utilisateur ──────────────────────────────────────────────────────────────
   {
     path: '/profile',
     name: 'Profile',
     component: () => import('../views/user/Profile.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/projects',
     name: 'Projects',
     component: () => import('../views/user/Projects.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
 
-  // ── Admin ─────────────────────────────────────────────────────────────────────
+  // ── Admin (admin + super_admin) ──────────────────────────────────────────────
   {
     path: '/admin/users',
     name: 'UserManagement',
     component: () => import('../views/admin/UserManagement.vue'),
-    meta: { requiresAuth: true, requiredRole: 'admin' }
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/users/:id/edit',
     name: 'EditUser',
     component: () => import('../views/admin/EditUser.vue'),
-    meta: { requiresAuth: true, requiredRole: 'admin' }
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/projects',
     name: 'ProjectManagement',
     component: () => import('../views/admin/ProjectManagement.vue'),
-    meta: { requiresAuth: true, requiredRole: 'admin' }
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
 
-  // Redirection silencieuse pour toute route inconnue
+  // ── Super Admin uniquement ────────────────────────────────────────────────────
+  {
+    path: '/super-admin/admins',
+    name: 'AdminManagement',
+    component: () => import('../views/super-admin/AdminManagement.vue'),
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+  },
+
   { path: '/:pathMatch(.*)*', redirect: '/login' },
 ];
 
@@ -55,10 +70,26 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
 
+  // Non connecté → login
   if (to.meta.requiresAuth && !authStore.isAuthenticated)
     return next({ name: 'Login' });
 
-  if (to.meta.requiredRole && authStore.currentUser?.role !== to.meta.requiredRole)
+  // Connecté mais doit changer son mot de passe → bloquer toutes les pages sauf celle-ci
+  if (
+    authStore.isAuthenticated &&
+    authStore.forcePasswordChange &&
+    to.name !== 'ForceChangePassword' &&
+    to.name !== 'Login'
+  ) {
+    return next({ name: 'ForceChangePassword' });
+  }
+
+  // Page réservée aux admin (admin + super_admin)
+  if (to.meta.requiresAdmin && !authStore.isAdmin())
+    return next({ name: 'Login' });
+
+  // Page réservée au super_admin uniquement
+  if (to.meta.requiresSuperAdmin && !authStore.isSuperAdmin())
     return next({ name: 'Login' });
 
   next();

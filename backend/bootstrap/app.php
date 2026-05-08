@@ -15,8 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'is_admin' => \App\Http\Middleware\IsAdmin::class,
-            'check_status' => \App\Http\Middleware\CheckUserStatus::class,
+            'is_admin'              => \App\Http\Middleware\IsAdmin::class,
+            'is_super_admin'        => \App\Http\Middleware\IsSuperAdmin::class,
+            'check_status'          => \App\Http\Middleware\CheckUserStatus::class,
+            'force_password_change' => \App\Http\Middleware\ForcePasswordChange::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

@@ -3,28 +3,32 @@ import { ref } from 'vue';
 import api from '../services/api';
 
 export const useAuthStore = defineStore('auth', () => {
-  const isAuthenticated = ref(false);
-  const currentUser = ref<any>(null);
+  const isAuthenticated     = ref(false);
+  const currentUser         = ref<any>(null);
+  const forcePasswordChange = ref(false);
 
   const init = () => {
     const token = localStorage.getItem('token');
     const user  = localStorage.getItem('user');
     if (token && user) {
-      isAuthenticated.value = true;
-      currentUser.value = JSON.parse(user);
+      isAuthenticated.value     = true;
+      currentUser.value         = JSON.parse(user);
+      forcePasswordChange.value = currentUser.value?.force_password_change ?? false;
     }
   };
 
   const login = async (email: string, password: string) => {
     try {
-      const res = await api.post('/auth/login', {
-        email,
-        mot_de_passe: password
-      });
+      const res = await api.post('/auth/login', { email, mot_de_passe: password });
+
+      const user = res.data.user;
       localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-      currentUser.value = res.data.user;
-      isAuthenticated.value = true;
+      localStorage.setItem('user',  JSON.stringify(user));
+
+      currentUser.value         = user;
+      isAuthenticated.value     = true;
+      forcePasswordChange.value = user.force_password_change ?? false;
+
       return 'success';
     } catch (err: any) {
       const msg = err.response?.data?.message || '';
@@ -37,22 +41,35 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async () => {
     try { await api.post('/auth/logout'); } catch {}
-    isAuthenticated.value = false;
-    currentUser.value = null;
+    isAuthenticated.value     = false;
+    currentUser.value         = null;
+    forcePasswordChange.value = false;
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
 
   const register = async (userData: {
-    nom: string;
-    prenom: string;
-    email: string;
-    mot_de_passe: string;
-    role: string;
-    github_link?: string | null;
+    nom: string; prenom: string; email: string;
+    mot_de_passe: string; role: string; github_link?: string | null;
   }) => {
     await api.post('/auth/register', userData);
   };
 
-  return { isAuthenticated, currentUser, login, logout, register, init };
+  // Appelé après le changement de mot de passe forcé
+  const clearForcePasswordChange = () => {
+    forcePasswordChange.value = false;
+    if (currentUser.value) {
+      currentUser.value.force_password_change = false;
+      localStorage.setItem('user', JSON.stringify(currentUser.value));
+    }
+  };
+
+  const isAdmin      = () => ['admin', 'super_admin'].includes(currentUser.value?.role);
+  const isSuperAdmin = () => currentUser.value?.role === 'super_admin';
+
+  return {
+    isAuthenticated, currentUser, forcePasswordChange,
+    login, logout, register, init,
+    clearForcePasswordChange, isAdmin, isSuperAdmin,
+  };
 });
