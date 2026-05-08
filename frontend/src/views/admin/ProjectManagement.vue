@@ -90,43 +90,43 @@
               </td>
               <td class="px-4 py-3 text-center space-x-1">
                 <!-- Modifier — sauf si fermé -->
-                <button v-if="project.statut !== 'ferme'" @click="openEditModal(project)"
+                <button v-if="project.statut !== 'Archive'" @click="openEditModal(project)"
                   class="px-2 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600 font-semibold">
                   ✏️ Modifier
                 </button>
                 <!-- Membres — sauf si fermé -->
-                <button v-if="project.statut !== 'ferme'" @click="openAssignModal(project)"
+                <button v-if="project.statut !== 'Archive'" @click="openAssignModal(project)"
                   class="px-2 py-1 bg-indigo-500 text-white text-xs rounded hover:bg-indigo-600 font-semibold">
                   👥 Membres
                 </button>
-                <!-- ✅ CORRIGÉ : Fermer — si ouvert OU en_cours (CDC §4.2) -->
-                <button v-if="project.statut !== 'ferme'" @click="demanderFermeture(project.id)"
+                <!-- ✅ CORRIGÉ : Archiver — si ouvert OU en_cours (CDC §4.2) -->
+                <button v-if="project.statut !== 'Archive'" @click="demanderArchiveture(project.id)"
                   class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 font-semibold">
-                  🔒 Fermer
+                  🔒 Archiver
                 </button>
                 <!-- Badge fermé -->
-                <span v-if="project.statut === 'ferme'"
+                <span v-if="project.statut === 'Archive'"
                   class="px-2 py-1 bg-gray-200 text-gray-500 text-xs rounded font-semibold">
                   🔒 Fermé
                 </span>
               </td>
             </tr>
 
-            <!-- Confirmation fermeture inline -->
-            <tr v-if="confirmFermetureId === project.id" class="bg-red-50 border-t border-red-200">
+            <!-- Confirmation Archiveture inline -->
+            <tr v-if="confirmArchivetureId === project.id" class="bg-red-50 border-t border-red-200">
               <td colspan="6" class="px-4 py-3">
                 <div class="flex items-center justify-between">
                   <p class="text-sm text-red-700 font-medium">
-                    ⚠️ Confirmer la fermeture de <strong>{{ project.nom }}</strong> ? Action irréversible.
+                    ⚠️ Confirmer la Archiveture de <strong>{{ project.nom }}</strong> ? Action irréversible.
                   </p>
                   <div class="flex gap-2 ml-4 shrink-0">
-                    <button @click="confirmFermetureId = null"
+                    <button @click="confirmArchivetureId = null"
                       class="px-3 py-1 text-xs text-gray-600 border rounded hover:bg-gray-100 font-semibold">
                       Annuler
                     </button>
-                    <button @click="confirmerFermeture(project.id)"
+                    <button @click="confirmerArchiveture(project.id)"
                       class="px-3 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700 font-semibold">
-                      Oui, fermer
+                      Oui, Archiver
                     </button>
                   </div>
                 </div>
@@ -201,7 +201,7 @@
             <label class="block text-xs font-medium text-gray-700 mb-1">Statut *</label>
             <select v-model="editForm.statut"
               class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring focus:ring-yellow-200">
-              <!-- ✅ CORRIGÉ : ouvert/en_cours uniquement (ferme = bouton dédié) -->
+              <!-- ✅ CORRIGÉ : ouvert/en_cours uniquement (Archive = bouton dédié) -->
               <option value="ouvert">Ouvert</option>
               <option value="en_cours">En cours</option>
             </select>
@@ -268,11 +268,11 @@ const authStore = useAuthStore();
 const router    = useRouter();
 
 // ─── Onglets ─────────────────────────────────────────────────────────────────
-// ✅ CORRIGÉ : ouvert/en_cours/ferme selon CDC §4.1 (supprimé : termine)
+// ✅ CORRIGÉ : ouvert/en_cours/Archive selon CDC §4.1 (supprimé : termine)
 const tabs = [
   { key: 'ouvert',   label: 'Ouverts',   dot: 'bg-green-500' },
   { key: 'en_cours', label: 'En cours',  dot: 'bg-blue-500'  },
-  { key: 'ferme',    label: 'Fermés',    dot: 'bg-gray-400'  },
+  { key: 'Archive',    label: 'Archivés',    dot: 'bg-gray-400'  },
 ];
 // ✅ CORRIGÉ : onglet actif par défaut = ouvert
 const activeTab = ref('ouvert');
@@ -285,7 +285,7 @@ const searchQuery        = ref('');
 const pagination         = ref({ current_page: 1, last_page: 1, total: 0 });
 const globalMessage      = ref('');
 const globalSuccess      = ref(true);
-const confirmFermetureId = ref(null);
+const confirmArchivetureId = ref(null);
 
 // Modals
 const showCreateModal = ref(false);
@@ -406,18 +406,18 @@ const updateProject = async () => {
   } finally { modalLoading.value = false; }
 };
 
-// ─── Fermer ───────────────────────────────────────────────────────────────────
-const demanderFermeture  = (id) => { confirmFermetureId.value = id; };
+// ─── Archiver ───────────────────────────────────────────────────────────────────
+const demanderArchiveture  = (id) => { confirmArchivetureId.value = id; };
 
-const confirmerFermeture = async (id) => {
-  confirmFermetureId.value = null;
+const confirmerArchiveture = async (id) => {
+  confirmArchivetureId.value = null;
   try {
     await api.delete(`/projects/${id}`);
     showMessage('Projet fermé avec succès.', true);
     await fetchProjects();
-    activeTab.value = 'ferme';
+    activeTab.value = 'Archive';
   } catch (err) {
-    showMessage(err.response?.data?.message || 'Erreur lors de la fermeture.', false);
+    showMessage(err.response?.data?.message || 'Erreur lors de la Archiveture.', false);
   }
 };
 
