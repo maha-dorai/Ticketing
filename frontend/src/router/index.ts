@@ -67,32 +67,28 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to, _from) => {
   const authStore = useAuthStore();
 
-  // Non connecté → login
   if (to.meta.requiresAuth && !authStore.isAuthenticated)
-    return next({ name: 'Login' });
+    return { name: 'Login' };
 
-  // Connecté mais doit changer son mot de passe → bloquer toutes les pages sauf celle-ci
   if (
     authStore.isAuthenticated &&
     authStore.forcePasswordChange &&
     to.name !== 'ForceChangePassword' &&
     to.name !== 'Login'
   ) {
-    return next({ name: 'ForceChangePassword' });
+    return { name: 'ForceChangePassword' };
   }
 
-  // Page réservée aux admin (admin + super_admin)
   if (to.meta.requiresAdmin && !authStore.isAdmin())
-    return next({ name: 'Login' });
+    return { name: 'Login' };
 
-  // Page réservée au super_admin uniquement
   if (to.meta.requiresSuperAdmin && !authStore.isSuperAdmin())
-    return next({ name: 'Login' });
+    return { name: 'Login' };
 
-  next();
+  return true;
 });
 
 export default router;

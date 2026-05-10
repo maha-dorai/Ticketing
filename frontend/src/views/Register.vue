@@ -1,159 +1,178 @@
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg border border-gray-100">
-
-      <!-- Header -->
-      <div>
-        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Rejoindre l'Équipe
-        </h2>
-        <p class="mt-2 text-center text-sm text-gray-600">
-          Inscription soumise à validation
-        </p>
+  <div class="auth-page">
+    <div class="auth-container">
+      <div class="brand">
+        <div class="brand-icon">🎫</div>
+        <h1 class="brand-name">Ticketing</h1>
+        <p class="brand-sub">Créer un compte — soumis à validation</p>
       </div>
+      <div class="card">
+        <h2 class="card-title">Inscription</h2>
 
-      <!-- Message succès -->
-      <div v-if="successMessage" class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-        <p class="text-green-700 font-semibold text-sm">✅ {{ successMessage }}</p>
-        <p class="text-green-600 text-xs mt-1">Redirection en cours...</p>
-      </div>
+        <div v-if="successMessage" class="alert alert-success">✓ {{ successMessage }}</div>
 
-      <form v-else class="mt-8 space-y-6" @submit.prevent="registerCandidate">
-
-        <div class="rounded-md shadow-sm space-y-4">
-
-          <!-- Nom -->
-          <div>
-            <label class="block mb-1 text-sm font-medium text-gray-700">Nom</label>
-            <input v-model="form.nom" type="text" required placeholder="Dupont"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200" />
+        <form v-else @submit.prevent="registerCandidate" class="form">
+          <div class="row2">
+            <div class="field">
+              <label class="label">Nom</label>
+              <input v-model="form.nom" type="text" required placeholder="Dupont" class="input" />
+            </div>
+            <div class="field">
+              <label class="label">Prénom</label>
+              <input v-model="form.prenom" type="text" required placeholder="Jean" class="input" />
+            </div>
           </div>
 
-          <!-- Prénom -->
-          <div>
-            <label class="block mb-1 text-sm font-medium text-gray-700">Prénom</label>
-            <input v-model="form.prenom" type="text" required placeholder="Jean"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200" />
+          <div class="field">
+            <label class="label">Adresse email</label>
+            <input v-model="form.email" type="email" required placeholder="jean@exemple.com" class="input" />
           </div>
 
-          <!-- Email -->
-          <div>
-            <label class="block mb-1 text-sm font-medium text-gray-700">Email professionnel</label>
-            <input v-model="form.email" type="email" required placeholder="jean@dev.com"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200" />
-          </div>
-
-          <!-- Mot de passe -->
-          <div>
-            <label class="block mb-1 text-sm font-medium text-gray-700">Mot de passe</label>
-            <div class="relative">
-              <input v-model="form.mot_de_passe" :type="showPassword ? 'text' : 'password'" required
-                placeholder="••••••••"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200 pr-10" />
-              <button type="button" @click="showPassword = !showPassword"
-                class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700">
-                <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          <div class="field">
+            <label class="label">Mot de passe</label>
+            <div class="input-wrap">
+              <input v-model="form.mot_de_passe" :type="showPw ? 'text' : 'password'" required placeholder="••••••••" class="input input-pr" />
+              <button type="button" class="eye-btn" @click="showPw = !showPw" tabindex="-1">
+                <svg v-if="showPw" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 4.411m0 0L21 21" />
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>
                 </svg>
               </button>
             </div>
-            <p class="text-xs text-gray-400 mt-1">Min. 8 caractères, 1 majuscule, 1 chiffre, 1 caractère spécial</p>
+            <!-- Indicateur de force -->
+            <div class="strength-bar">
+              <div v-for="i in 4" :key="i" class="strength-segment" :class="strengthClass(i)"></div>
+            </div>
+            <p class="hint">Minimum 8 caractères — majuscule, chiffre, symbole requis</p>
           </div>
 
-          <!-- Rôle -->
-          <div>
-            <label class="block mb-1 text-sm font-medium text-gray-700">Choisissez votre rôle</label>
-            <select v-model="form.role"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring focus:ring-blue-200">
-              <option value="developpeur">Développeur</option>
-              <option value="testeur">Testeur (QA)</option>
+          <div class="field">
+            <label class="label">Rôle</label>
+            <select v-model="form.role" class="select">
+              <option value="developpeur">👨‍💻 Développeur</option>
+              <option value="testeur">🧪 Testeur (QA)</option>
             </select>
           </div>
 
-          <!-- Github -->
-          <div v-if="form.role === 'developpeur'" class="bg-blue-50 p-4 rounded">
-            <label class="block mb-1 text-sm font-medium text-blue-800">Lien GitHub / Portfolio</label>
-            <input v-model="form.github_link" type="url"
-              class="w-full px-3 py-2 border border-blue-300 rounded-md focus:outline-none focus:ring focus:ring-blue-200"
-              placeholder="https://github.com/username" />
+          <div v-if="form.role === 'developpeur'" class="github-box">
+            <label class="label" style="color:#93c5fd">Lien GitHub / Portfolio</label>
+            <input v-model="form.github_link" type="url" placeholder="https://github.com/username" class="input" style="margin-top:0.4rem" />
           </div>
 
+          <div v-if="errorMessage" class="alert alert-error">✕ {{ errorMessage }}</div>
+
+          <button type="submit" :disabled="loading" class="btn-primary">
+            <svg v-if="loading" class="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="18" height="18">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:0.25"/>
+              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:0.75"/>
+            </svg>
+            <span v-else>Envoyer ma candidature →</span>
+          </button>
+        </form>
+
+        <div class="card-footer">
+          Déjà un compte ?
+          <router-link to="/login" class="link">Se connecter</router-link>
         </div>
-
-        <!-- Erreur -->
-        <p v-if="errorMessage" class="text-red-600 text-sm text-center bg-red-50 p-3 rounded border border-red-200">
-          {{ errorMessage }}
-        </p>
-
-        <!-- Bouton -->
-        <button type="submit" :disabled="loading"
-          class="w-full py-2 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 font-semibold">
-          {{ loading ? 'Envoi en cours...' : "S'inscrire" }}
-        </button>
-      </form>
-
-      <!-- Retour login -->
-      <div class="text-center mt-4">
-        <router-link to="/login" class="text-sm text-gray-500 underline">
-          Retour à la connexion
-        </router-link>
       </div>
-
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue';
+<script setup>
+import { ref, computed } from 'vue';
 import { useAuthStore } from '../stores/authStore';
 import { useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
-const router    = useRouter();
+const router = useRouter();
 
-const errorMessage   = ref('');
+const errorMessage = ref('');
 const successMessage = ref('');
-const loading        = ref(false);
-const showPassword   = ref(false);
+const loading = ref(false);
+const showPw = ref(false);
 
-const form = ref({
-  nom: '', prenom: '', email: '', mot_de_passe: '',
-  role: 'developpeur', github_link: '',
+const form = ref({ nom: '', prenom: '', email: '', mot_de_passe: '', role: 'developpeur', github_link: '' });
+
+// Password strength
+const strength = computed(() => {
+  const p = form.value.mot_de_passe;
+  let s = 0;
+  if (p.length >= 8) s++;
+  if (/[A-Z]/.test(p)) s++;
+  if (/[0-9]/.test(p)) s++;
+  if (/[\W_]/.test(p)) s++;
+  return s;
 });
 
-const registerCandidate = async () => {
-  errorMessage.value   = '';
-  successMessage.value = '';
-  loading.value        = true;
+const strengthClass = (i) => {
+  if (strength.value < i) return 'seg-empty';
+  if (strength.value <= 1) return 'seg-weak';
+  if (strength.value <= 2) return 'seg-fair';
+  if (strength.value <= 3) return 'seg-good';
+  return 'seg-strong';
+};
 
+const registerCandidate = async () => {
+  errorMessage.value = ''; loading.value = true;
   try {
     await authStore.register({
-      nom:          form.value.nom,
-      prenom:       form.value.prenom,
-      email:        form.value.email,
-      mot_de_passe: form.value.mot_de_passe,
-      role:         form.value.role,
-      github_link:  form.value.role === 'developpeur' ? form.value.github_link : null,
+      nom: form.value.nom, prenom: form.value.prenom, email: form.value.email,
+      mot_de_passe: form.value.mot_de_passe, role: form.value.role,
+      github_link: form.value.role === 'developpeur' ? form.value.github_link : null,
     });
-
-    // ✅ Message dans la page — plus d'alert()
-    successMessage.value = 'Compte créé avec succès ! Votre demande est en attente de validation.';
+    successMessage.value = 'Compte créé ! Votre demande est en attente de validation.';
     setTimeout(() => router.push({ name: 'Login' }), 2500);
-
-  } catch (err: any) {
+  } catch (err) {
     const errors = err.response?.data?.errors;
-    if (errors) {
-      // Afficher uniquement le premier message d'erreur
-      errorMessage.value = String(Object.values(errors).flat()[0]);
-    } else {
-      errorMessage.value = err.response?.data?.message || 'Une erreur est survenue.';
-    }
-  } finally {
-    loading.value = false;
-  }
+    errorMessage.value = errors ? String(Object.values(errors).flat()[0]) : err.response?.data?.message || 'Une erreur est survenue.';
+  } finally { loading.value = false; }
 };
 </script>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+* { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
+.auth-page { min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
+.auth-container { width: 100%; max-width: 460px; }
+.brand { text-align: center; margin-bottom: 2rem; }
+.brand-icon { font-size: 2.5rem; } .brand-name { font-size: 1.75rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.02em; margin: 0; } .brand-sub { color: #64748b; font-size: 0.875rem; margin: 0.25rem 0 0; }
+.card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2rem; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
+.card-title { font-size: 1.25rem; font-weight: 700; color: #f1f5f9; margin: 0 0 1.5rem; }
+.alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; }
+.alert-error { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+.alert-success { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+.form { display: flex; flex-direction: column; gap: 1.1rem; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.field { display: flex; flex-direction: column; gap: 0.4rem; }
+.label { font-size: 0.8125rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.02em; }
+.input-wrap { position: relative; }
+.input { width: 100%; padding: 0.6875rem 0.875rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f1f5f9; font-size: 0.9375rem; font-family: inherit; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+.input::placeholder { color: #475569; }
+.input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.input-pr { padding-right: 2.75rem; }
+.eye-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #475569; padding: 4px; display: flex; align-items: center; transition: color 0.15s; }
+.eye-btn:hover { color: #94a3b8; }
+.strength-bar { display: flex; gap: 4px; margin-top: 6px; }
+.strength-segment { height: 3px; flex: 1; border-radius: 2px; transition: background 0.3s; }
+.seg-empty { background: #1e293b; border: 1px solid #334155; }
+.seg-weak { background: #ef4444; }
+.seg-fair { background: #f59e0b; }
+.seg-good { background: #3b82f6; }
+.seg-strong { background: #22c55e; }
+.hint { font-size: 0.75rem; color: #475569; margin-top: 0.2rem; }
+.select { width: 100%; padding: 0.6875rem 0.875rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f1f5f9; font-size: 0.9375rem; font-family: inherit; outline: none; }
+.select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.github-box { background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.2); border-radius: 8px; padding: 1rem; }
+.btn-primary { width: 100%; padding: 0.75rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 0.9375rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: background 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 0.25rem; }
+.btn-primary:hover:not(:disabled) { background: #2563eb; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.card-footer { text-align: center; margin-top: 1.5rem; font-size: 0.875rem; color: #64748b; }
+.link { color: #3b82f6; font-weight: 600; text-decoration: none; margin-left: 0.25rem; }
+.link:hover { color: #60a5fa; }
+.spinner { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>

@@ -7,10 +7,20 @@
         <h1 class="text-2xl font-extrabold text-gray-900">Console Super Administrateur</h1>
         <p class="text-gray-500 text-sm mt-0.5">Gestion des comptes administrateurs</p>
       </div>
-      <button @click="logout"
-        class="px-4 py-2 text-sm text-white bg-gray-600 rounded hover:bg-gray-700 font-semibold">
-        Se déconnecter
-      </button>
+      <div class="flex gap-2">
+        <button @click="$router.push({ name: 'UserManagement' })"
+          class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
+          👥 Membres
+        </button>
+        <button @click="$router.push({ name: 'ProjectManagement' })"
+          class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
+          📁 Projets
+        </button>
+        <button @click="logout"
+          class="px-4 py-2 text-sm text-white bg-gray-600 rounded hover:bg-gray-700 font-semibold">
+          Se déconnecter
+        </button>
+      </div>
     </div>
 
     <div class="px-8 py-6 space-y-10">

@@ -77,11 +77,12 @@ class AuthController extends Controller
             return response()->json([
                 'token' => $token,
                 'user'  => [
-                    'id'     => $user->id,
-                    'nom'    => $user->nom,
-                    'prenom' => $user->prenom,
-                    'email'  => $user->email,
-                    'role'   => $user->role,
+                    'id'                    => $user->id,
+                    'nom'                   => $user->nom,
+                    'prenom'                => $user->prenom,
+                    'email'                 => $user->email,
+                    'role'                  => $user->role,
+                    'force_password_change' => (bool) $user->force_password_change,
                 ]
             ]);
         } catch (\Exception $e) {

@@ -8,6 +8,10 @@
         <p class="text-gray-500 text-sm mt-0.5">Gestion des projets</p>
       </div>
       <div class="flex items-center gap-3">
+        <button v-if="authStore.isSuperAdmin()" @click="$router.push({ name: 'AdminManagement' })"
+          class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
+          ← Super Admin
+        </button>
         <button @click="$router.push({ name: 'UserManagement' })"
           class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
           👥 Utilisateurs
