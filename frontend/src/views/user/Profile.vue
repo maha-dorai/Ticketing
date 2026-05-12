@@ -91,7 +91,7 @@ import api from '../../services/api';
 const authStore = useAuthStore();
 const router = useRouter();
 const currentUser = computed(() => authStore.currentUser);
-const roleLabel = computed(() => ({ admin: 'Administrateur', super_admin: 'Super Admin', developpeur: 'Développeur', testeur: 'Testeur' }[currentUser.value?.role] || '');
+const roleLabel = computed(() => ({ admin: 'Administrateur', super_admin: 'Super Admin', developpeur: 'Développeur', testeur: 'Testeur' }[currentUser.value?.role] || ''));
 
 // Eye toggle component
 const EyeSvg = defineComponent({

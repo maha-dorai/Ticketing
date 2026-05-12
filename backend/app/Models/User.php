@@ -69,4 +69,24 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(Project::class, 'created_by');
     }
+
+    public function createdTickets()
+    {
+        return $this->hasMany(Ticket::class, 'testeur_id');
+    }
+
+    public function assignedTickets()
+    {
+        return $this->hasMany(Ticket::class, 'developpeur_id');
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
 }

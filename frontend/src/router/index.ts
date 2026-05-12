@@ -30,6 +30,24 @@ const routes = [
     component: () => import('../views/user/Projects.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/tickets',
+    name: 'Tickets',
+    component: () => import('../views/user/Tickets.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/tickets/:id',
+    name: 'TicketDetails',
+    component: () => import('../views/user/TicketDetails.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/notifications',
+    name: 'Notifications',
+    component: () => import('../views/user/Notifications.vue'),
+    meta: { requiresAuth: true },
+  },
 
   // ── Admin (admin + super_admin) ──────────────────────────────────────────────
   {

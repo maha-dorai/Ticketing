@@ -10,13 +10,20 @@
             {{ currentUser?.prenom }} {{ currentUser?.nom }} — {{ currentUser?.role }}
           </p>
         </div>
-        <div class="flex gap-2">
-          <button @click="$router.push({ name: 'Profile' })"
-            class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
+        <div class="flex flex-wrap gap-2">
+          <button @click="$router.push({ name: 'Projects' })" class="px-4 py-2 text-sm text-blue-700 bg-blue-100 rounded font-semibold ring-2 ring-blue-500">
+            📂 Projets
+          </button>
+          <button @click="$router.push({ name: 'Tickets' })" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold transition">
+            🎟️ Tickets
+          </button>
+          <button @click="$router.push({ name: 'Notifications' })" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold transition">
+            🔔 Notifications
+          </button>
+          <button @click="$router.push({ name: 'Profile' })" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
             👤 Mon compte
           </button>
-          <button @click="logout"
-            class="px-4 py-2 text-sm text-white bg-gray-600 rounded hover:bg-gray-700 font-semibold">
+          <button @click="logout" class="px-4 py-2 text-sm text-white bg-gray-600 rounded hover:bg-gray-700 font-semibold">
             Déconnexion
           </button>
         </div>

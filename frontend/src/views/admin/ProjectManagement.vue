@@ -16,6 +16,14 @@
           class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
           👥 Utilisateurs
         </button>
+        <button @click="$router.push({ name: 'Tickets' })"
+          class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
+          🎟️ Tickets
+        </button>
+        <button @click="$router.push({ name: 'Notifications' })"
+          class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
+          🔔 Notifications
+        </button>
         <button @click="logout"
           class="px-4 py-2 text-sm text-white bg-gray-600 rounded hover:bg-gray-700 font-semibold">
           Se déconnecter
