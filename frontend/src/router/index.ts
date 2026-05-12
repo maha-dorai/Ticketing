@@ -9,7 +9,6 @@ const routes = [
   { path: '/forgot-password',       name: 'ForgotPassword', component: () => import('../views/ForgotPassword.vue') },
   { path: '/reset-password/:token', name: 'ResetPassword',  component: () => import('../views/ResetPassword.vue') },
 
-  // Page obligatoire si force_password_change = true
   {
     path: '/change-password-required',
     name: 'ForceChangePassword',
@@ -17,7 +16,6 @@ const routes = [
     meta: { requiresAuth: true },
   },
 
-  // ── Utilisateur ──────────────────────────────────────────────────────────────
   {
     path: '/profile',
     name: 'Profile',
@@ -31,7 +29,6 @@ const routes = [
     meta: { requiresAuth: true },
   },
 
-  // ── Admin (admin + super_admin) ──────────────────────────────────────────────
   {
     path: '/admin/users',
     name: 'UserManagement',
@@ -51,7 +48,6 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true },
   },
 
-  // ── Super Admin uniquement ────────────────────────────────────────────────────
   {
     path: '/super-admin/admins',
     name: 'AdminManagement',
@@ -67,24 +63,31 @@ const router = createRouter({
   routes,
 });
 
+// الصفحات العامة — ما تتأثرش بأي guard
+const publicRoutes = ['Login', 'Register', 'ForgotPassword', 'ResetPassword'];
+
 router.beforeEach((to, _from) => {
   const authStore = useAuthStore();
 
+  // 1. صفحة محمية وما دخلش بعد
   if (to.meta.requiresAuth && !authStore.isAuthenticated)
     return { name: 'Login' };
 
+  // 2. مجبر يغيّر كلمة المرور
   if (
     authStore.isAuthenticated &&
     authStore.forcePasswordChange &&
     to.name !== 'ForceChangePassword' &&
-    to.name !== 'Login'
+    !publicRoutes.includes(to.name as string)
   ) {
     return { name: 'ForceChangePassword' };
   }
 
+  // 3. صفحة admin
   if (to.meta.requiresAdmin && !authStore.isAdmin())
     return { name: 'Login' };
 
+  // 4. صفحة super_admin
   if (to.meta.requiresSuperAdmin && !authStore.isSuperAdmin())
     return { name: 'Login' };
 

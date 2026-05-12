@@ -15,17 +15,17 @@
           <div class="row2">
             <div class="field">
               <label class="label">Nom</label>
-              <input v-model="form.nom" type="text" required placeholder="Dupont" class="input" />
+              <input v-model="form.nom" type="text" class="input" />
             </div>
             <div class="field">
               <label class="label">Prénom</label>
-              <input v-model="form.prenom" type="text" required placeholder="Jean" class="input" />
+              <input v-model="form.prenom" type="text" class="input" />
             </div>
           </div>
 
           <div class="field">
             <label class="label">Adresse email</label>
-            <input v-model="form.email" type="email" required placeholder="jean@exemple.com" class="input" />
+            <input v-model="form.email" type="email" class="input" />
           </div>
 
           <div class="field">
