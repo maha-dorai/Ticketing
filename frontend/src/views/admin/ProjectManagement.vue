@@ -1,467 +1,371 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-
-    <!-- Header -->
-    <div class="bg-white border-b px-8 py-4 flex items-center justify-between shadow-sm">
-      <div>
-        <h1 class="text-2xl font-extrabold text-gray-900">Console d'Administration</h1>
-        <p class="text-gray-500 text-sm mt-0.5">Gestion des projets</p>
-      </div>
-      <div class="flex items-center gap-3">
-        <button v-if="authStore.isSuperAdmin()" @click="$router.push({ name: 'AdminManagement' })"
-          class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
-          ← Super Admin
-        </button>
-        <button @click="$router.push({ name: 'UserManagement' })"
-          class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
-          👥 Utilisateurs
-        </button>
-        <button @click="$router.push({ name: 'Tickets' })"
-          class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
-          🎟️ Tickets
-        </button>
-        <button @click="$router.push({ name: 'Notifications' })"
-          class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold">
-          🔔 Notifications
-        </button>
-        <button @click="logout"
-          class="px-4 py-2 text-sm text-white bg-gray-600 rounded hover:bg-gray-700 font-semibold">
-          Se déconnecter
-        </button>
-      </div>
-    </div>
-
-    <div class="px-8 py-6 space-y-6">
-
-      <!-- Message global -->
-      <p v-if="globalMessage"
-        :class="globalSuccess ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'"
-        class="border px-4 py-3 rounded text-sm font-medium">
-        {{ globalMessage }}
-      </p>
-
-      <!-- Bouton + Recherche -->
-      <div class="flex items-center justify-between gap-4">
-        <input v-model="searchQuery" @input="debouncedSearch" type="text"
-          placeholder="Rechercher un projet..."
-          class="w-full max-w-sm px-3 py-2 border rounded text-sm bg-white focus:outline-none focus:ring focus:ring-blue-200" />
-        <button @click="openCreateModal"
-          class="shrink-0 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 font-semibold">
-          + Nouveau projet
-        </button>
+  <div class="layout">
+    <AppSidebar />
+    <main class="main">
+      <!-- Header -->
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Gestion des projets</h1>
+          <p class="page-sub">Créez, modifiez et archivez les projets de la plateforme</p>
+        </div>
+        <button @click="openCreate" class="btn-new">+ Nouveau projet</button>
       </div>
 
-      <!-- ═══════ ONGLETS ═══════ -->
-      <div class="flex border-b">
-        <button v-for="tab in tabs" :key="tab.key"
-          @click="activeTab = tab.key"
-          :class="activeTab === tab.key
-            ? 'border-b-2 border-blue-600 text-blue-600 font-bold'
-            : 'text-gray-500 hover:text-gray-700 font-semibold'"
-          class="px-6 py-3 text-sm flex items-center gap-2 transition">
-          <span :class="tab.dot" class="inline-block w-2.5 h-2.5 rounded-full"></span>
-          {{ tab.label }}
-          <span class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full ml-1">
-            {{ count(tab.key) }}
-          </span>
-        </button>
-      </div>
+      <div class="page-content">
+        <div v-if="globalMsg" class="alert" :class="globalOk ? 'alert-ok' : 'alert-err'">{{ globalOk ? '✓' : '✕' }} {{ globalMsg }}</div>
 
-      <!-- ═══════ TABLEAU ═══════ -->
-      <div v-if="loading" class="text-gray-400 text-sm py-6">Chargement...</div>
+        <!-- Search + Filter -->
+        <div class="toolbar">
+          <div class="search-wrap">
+            <svg class="si" xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+            <input v-model="search" @input="onSearch" placeholder="Rechercher un projet..." class="search-input" />
+          </div>
+          <div class="filters">
+            <button @click="filter=''" :class="['fb', filter===''?'fb-active':'']">Tous</button>
+            <button @click="filter='ouvert'" :class="['fb', filter==='ouvert'?'fb-active':'']">🟢 Ouverts</button>
+            <button @click="filter='en_cours'" :class="['fb', filter==='en_cours'?'fb-active':'']">🔵 En cours</button>
+            <button @click="filter='archive'" :class="['fb', filter==='archive'?'fb-active':'']">📦 Archivés</button>
+          </div>
+        </div>
 
-      <div v-else-if="filteredProjects.length === 0"
-        class="text-center py-12 bg-white rounded-xl shadow text-gray-400">
-        <div class="text-3xl mb-2">📂</div>
-        <p class="text-sm italic">Aucun projet {{ activeTabLabel }} trouvé.</p>
-      </div>
+        <!-- Loading -->
+        <div v-if="loading" class="loading"><svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/></svg> Chargement...</div>
 
-      <table v-else class="w-full bg-white shadow rounded text-sm">
-        <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
-          <tr>
-            <th class="px-4 py-3 text-left">Nom</th>
-            <th class="px-4 py-3 text-left">Description</th>
-            <th class="px-4 py-3 text-left">Début</th>
-            <th class="px-4 py-3 text-left">Fin</th>
-            <th class="px-4 py-3 text-left">Membres</th>
-            <th class="px-4 py-3 text-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          <template v-for="project in filteredProjects" :key="project.id">
-            <tr class="hover:bg-gray-50">
-              <td class="px-4 py-3 font-medium">{{ project.nom }}</td>
-              <td class="px-4 py-3 text-gray-500 max-w-xs truncate">{{ project.description || '—' }}</td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(project.date_debut) }}</td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ formatDate(project.date_fin) }}</td>
-              <td class="px-4 py-3 text-gray-500 text-xs">
-                <span v-if="project.users?.length">
-                  {{ project.users.map(u => u.prenom + ' ' + u.nom).join(', ') }}
-                </span>
-                <span v-else class="italic text-gray-400">Aucun membre</span>
-              </td>
-              <td class="px-4 py-3 text-center space-x-1">
-                <!-- Modifier — sauf si fermé -->
-                <button v-if="project.statut !== 'Archive'" @click="openEditModal(project)"
-                  class="px-2 py-1 bg-yellow-500 text-white text-xs rounded hover:bg-yellow-600 font-semibold">
-                  ✏️ Modifier
-                </button>
-                <!-- Membres — sauf si fermé -->
-                <button v-if="project.statut !== 'Archive'" @click="openAssignModal(project)"
-                  class="px-2 py-1 bg-indigo-500 text-white text-xs rounded hover:bg-indigo-600 font-semibold">
-                  👥 Membres
-                </button>
-                <!-- ✅ CORRIGÉ : Archiver — si ouvert OU en_cours (CDC §4.2) -->
-                <button v-if="project.statut !== 'Archive'" @click="demanderArchiveture(project.id)"
-                  class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 font-semibold">
-                  🔒 Archiver
-                </button>
-                <!-- Badge fermé -->
-                <span v-if="project.statut === 'Archive'"
-                  class="px-2 py-1 bg-gray-200 text-gray-500 text-xs rounded font-semibold">
-                  🔒 Fermé
-                </span>
-              </td>
-            </tr>
+        <!-- Empty -->
+        <div v-else-if="!filteredProjects.length" class="empty">
+          <div class="ei">📁</div>
+          <h3 class="et">Aucun projet</h3>
+          <p class="es">{{ filter ? 'Aucun projet avec ce statut.' : 'Créez votre premier projet.' }}</p>
+        </div>
 
-            <!-- Confirmation Archiveture inline -->
-            <tr v-if="confirmArchivetureId === project.id" class="bg-red-50 border-t border-red-200">
-              <td colspan="6" class="px-4 py-3">
-                <div class="flex items-center justify-between">
-                  <p class="text-sm text-red-700 font-medium">
-                    ⚠️ Confirmer la Archiveture de <strong>{{ project.nom }}</strong> ? Action irréversible.
-                  </p>
-                  <div class="flex gap-2 ml-4 shrink-0">
-                    <button @click="confirmArchivetureId = null"
-                      class="px-3 py-1 text-xs text-gray-600 border rounded hover:bg-gray-100 font-semibold">
-                      Annuler
-                    </button>
-                    <button @click="confirmerArchiveture(project.id)"
-                      class="px-3 py-1 text-xs text-white bg-red-600 rounded hover:bg-red-700 font-semibold">
-                      Oui, Archiver
-                    </button>
+        <!-- Projects Table -->
+        <div v-else class="card">
+          <table class="tbl">
+            <thead><tr><th>Projet</th><th>Statut</th><th>Membres</th><th>Dates</th><th class="tc">Actions</th></tr></thead>
+            <tbody>
+              <tr v-for="p in filteredProjects" :key="p.id">
+                <td>
+                  <p class="pn">{{ p.nom }}</p>
+                  <p class="pd">{{ p.description || '—' }}</p>
+                </td>
+                <td>
+                  <span class="st-chip" :class="stClass(p.statut)">{{ stLabel(p.statut) }}</span>
+                </td>
+                <td>
+                  <div class="mavs" v-if="p.users?.length">
+                    <div v-for="(m,i) in p.users.slice(0,3)" :key="m.id" class="mav" :style="{zIndex:10-i}" :title="m.prenom+' '+m.nom">{{ (m.prenom[0]||'')+(m.nom[0]||'') }}</div>
+                    <div v-if="p.users.length>3" class="mav mmore">+{{p.users.length-3}}</div>
                   </div>
-                </div>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-
-      <!-- Pagination -->
-      <div v-if="pagination.last_page > 1" class="flex justify-center items-center gap-2 mt-2">
-        <button @click="changePage(pagination.current_page - 1)" :disabled="pagination.current_page === 1"
-          class="px-3 py-1 text-xs border rounded hover:bg-gray-100 disabled:opacity-40">← Préc.</button>
-        <span class="text-sm text-gray-500">Page {{ pagination.current_page }} / {{ pagination.last_page }}</span>
-        <button @click="changePage(pagination.current_page + 1)" :disabled="pagination.current_page === pagination.last_page"
-          class="px-3 py-1 text-xs border rounded hover:bg-gray-100 disabled:opacity-40">Suiv. →</button>
-      </div>
-    </div>
-
-    <!-- ═══════ MODAL CRÉER ═══════ -->
-    <div v-if="showCreateModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-        <h3 class="text-lg font-bold text-gray-900 mb-4 border-l-4 border-blue-500 pl-3">Nouveau projet</h3>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Nom *</label>
-            <input v-model="createForm.nom" type="text"
-              class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring focus:ring-blue-200" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
-            <textarea v-model="createForm.description" rows="3"
-              class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring focus:ring-blue-200"></textarea>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Date de début</label>
-              <input v-model="createForm.date_debut" type="date"
-                class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring focus:ring-blue-200" />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-700 mb-1">Date de fin</label>
-              <input v-model="createForm.date_fin" type="date"
-                class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring focus:ring-blue-200" />
-            </div>
-          </div>
-          <p v-if="modalError" class="text-red-600 text-xs bg-red-50 p-2 rounded">{{ modalError }}</p>
+                  <span v-else class="mu">Aucun</span>
+                </td>
+                <td>
+                  <p class="dt">{{ fmt(p.date_debut) }} → {{ fmt(p.date_fin) }}</p>
+                </td>
+                <td class="tc">
+                  <div class="ab">
+                    <button @click="openEdit(p)" class="btn-edit">✏</button>
+                    <button @click="openAssign(p)" class="btn-assign">👥</button>
+                    <button v-if="p.statut !== 'archive'" @click="archiveProject(p.id)" class="btn-archive">📦</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button @click="closeModals" class="px-4 py-2 text-sm border rounded hover:bg-gray-100 font-semibold">Annuler</button>
-          <button @click="createProject" :disabled="modalLoading"
-            class="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold disabled:opacity-50">
-            {{ modalLoading ? 'Création...' : 'Créer' }}
-          </button>
+
+        <!-- Pagination -->
+        <div v-if="pagination.last_page > 1" class="pagination">
+          <button @click="loadPage(pagination.current_page-1)" :disabled="pagination.current_page===1" class="page-btn">← Précédent</button>
+          <span class="page-info">Page {{ pagination.current_page }} / {{ pagination.last_page }}</span>
+          <button @click="loadPage(pagination.current_page+1)" :disabled="pagination.current_page===pagination.last_page" class="page-btn">Suivant →</button>
         </div>
       </div>
-    </div>
+    </main>
 
-    <!-- ═══════ MODAL MODIFIER ═══════ -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-        <h3 class="text-lg font-bold text-gray-900 mb-4 border-l-4 border-yellow-500 pl-3">
-          Modifier — {{ editForm.nom }}
-        </h3>
-        <div class="space-y-3">
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Nom *</label>
-            <input v-model="editForm.nom" type="text"
-              class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring focus:ring-yellow-200" />
+    <!-- ═══ MODAL CREATE / EDIT ═══ -->
+    <div v-if="showModal" class="overlay" @click.self="showModal=false">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">{{ editing ? 'Modifier le projet' : 'Nouveau projet' }}</h3>
+          <button @click="showModal=false" class="close-btn">✕</button>
+        </div>
+        <form @submit.prevent="saveProject" class="mform">
+          <div class="field">
+            <label class="label">Nom du projet *</label>
+            <input v-model="form.nom" required placeholder="Ex : Refonte du site web" class="input" />
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 mb-1">Statut *</label>
-            <select v-model="editForm.statut"
-              class="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring focus:ring-yellow-200">
-              <!-- ✅ CORRIGÉ : ouvert/en_cours uniquement (Archive = bouton dédié) -->
-              <option value="ouvert">Ouvert</option>
-              <option value="en_cours">En cours</option>
+          <div class="field">
+            <label class="label">Description</label>
+            <textarea v-model="form.description" placeholder="Décrivez brièvement l'objectif du projet..." class="input ta" rows="3"></textarea>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label class="label">Date de début</label>
+              <input v-model="form.date_debut" type="date" class="input" />
+            </div>
+            <div class="field">
+              <label class="label">Date de fin</label>
+              <input v-model="form.date_fin" type="date" class="input" />
+            </div>
+          </div>
+          <div v-if="editing" class="field">
+            <label class="label">Statut</label>
+            <select v-model="form.statut" class="input sel">
+              <option value="ouvert">🟢 Ouvert</option>
+              <option value="en_cours">🔵 En cours</option>
+              <option value="archive">📦 Archivé</option>
             </select>
           </div>
-          <p v-if="modalError" class="text-red-600 text-xs bg-red-50 p-2 rounded">{{ modalError }}</p>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button @click="closeModals" class="px-4 py-2 text-sm border rounded hover:bg-gray-100 font-semibold">Annuler</button>
-          <button @click="updateProject" :disabled="modalLoading"
-            class="px-4 py-2 text-sm bg-yellow-500 text-white rounded hover:bg-yellow-600 font-semibold disabled:opacity-50">
-            {{ modalLoading ? 'Mise à jour...' : 'Enregistrer' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══════ MODAL MEMBRES ═══════ -->
-    <div v-if="showAssignModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div class="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-        <h3 class="text-lg font-bold text-gray-900 mb-4 border-l-4 border-indigo-500 pl-3">
-          Membres — {{ selectedProject?.nom }}
-        </h3>
-        <div v-if="usersLoading" class="text-gray-400 text-sm py-4 text-center">Chargement...</div>
-        <div v-else>
-          <p class="text-xs text-gray-500 mb-3">Sélectionnez les membres à affecter :</p>
-          <div class="max-h-64 overflow-y-auto space-y-2 border rounded p-3">
-            <label v-for="user in activeUsers" :key="user.id"
-              class="flex items-center gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
-              <input type="checkbox" :value="user.id" v-model="assignedUserIds" class="w-4 h-4 accent-indigo-600" />
-              <span class="text-sm">
-                <span class="font-medium">{{ user.prenom }} {{ user.nom }}</span>
-                <span :class="roleClass(user.role)" class="ml-2 px-1.5 py-0.5 rounded-full text-xs font-semibold">
-                  {{ user.role }}
-                </span>
-              </span>
-            </label>
-            <p v-if="activeUsers.length === 0" class="text-gray-400 text-xs italic text-center py-2">
-              Aucun utilisateur actif disponible.
-            </p>
+          <div v-if="formError" class="alert alert-err">✕ {{ formError }}</div>
+          <div class="modal-footer">
+            <button type="button" @click="showModal=false" class="btn-cancel">Annuler</button>
+            <button type="submit" :disabled="saving" class="btn-primary">
+              <svg v-if="saving" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/></svg>
+              <span v-else>{{ editing ? 'Enregistrer' : 'Créer le projet' }}</span>
+            </button>
           </div>
-          <p class="text-xs text-gray-400 mt-2">{{ assignedUserIds.length }} membre(s) sélectionné(s)</p>
-          <p v-if="modalError" class="text-red-600 text-xs bg-red-50 p-2 rounded mt-2">{{ modalError }}</p>
-        </div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button @click="closeModals" class="px-4 py-2 text-sm border rounded hover:bg-gray-100 font-semibold">Annuler</button>
-          <button @click="assignUsers" :disabled="modalLoading || usersLoading"
-            class="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 font-semibold disabled:opacity-50">
-            {{ modalLoading ? 'Enregistrement...' : 'Confirmer' }}
-          </button>
-        </div>
+        </form>
       </div>
     </div>
 
+    <!-- ═══ MODAL ASSIGN ═══ -->
+    <div v-if="showAssign" class="overlay" @click.self="showAssign=false">
+      <div class="modal modal-wide">
+        <div class="modal-header">
+          <h3 class="modal-title">Affecter des membres — {{ currentProject?.nom }}</h3>
+          <button @click="showAssign=false" class="close-btn">✕</button>
+        </div>
+        <div class="assign-body">
+          <p class="assign-hint">Sélectionnez les membres actifs à affecter à ce projet.</p>
+          <div class="member-grid">
+            <label v-for="u in activeMembers" :key="u.id" class="member-check" :class="{selected: selectedIds.includes(u.id)}">
+              <input type="checkbox" :value="u.id" v-model="selectedIds" class="hidden-cb"/>
+              <div class="mc-av">{{ (u.prenom[0]||'')+(u.nom[0]||'') }}</div>
+              <div class="mc-info">
+                <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
+                <p class="mc-role">{{ u.role }}</p>
+              </div>
+              <span class="check-mark">{{ selectedIds.includes(u.id) ? '✓' : '' }}</span>
+            </label>
+          </div>
+          <div class="modal-footer">
+            <button @click="showAssign=false" class="btn-cancel">Annuler</button>
+            <button @click="saveAssign" :disabled="assigning" class="btn-primary">
+              <span>Confirmer l'affectation ({{ selectedIds.length }})</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '../../stores/authStore';
-import { useRouter } from 'vue-router';
 import api from '../../services/api';
+import AppSidebar from '../../components/AppSidebar.vue';
 
-const authStore = useAuthStore();
-const router    = useRouter();
+const projects = ref([]);
+const allUsers = ref([]);
+const loading = ref(false);
+const saving = ref(false);
+const assigning = ref(false);
+const globalMsg = ref('');
+const globalOk = ref(true);
+const search = ref('');
+const filter = ref('');
+const pagination = ref({ current_page: 1, last_page: 1 });
 
-// ─── Onglets ─────────────────────────────────────────────────────────────────
-// ✅ CORRIGÉ : ouvert/en_cours/Archive selon CDC §4.1 (supprimé : termine)
-const tabs = [
-  { key: 'ouvert',   label: 'Ouverts',   dot: 'bg-green-500' },
-  { key: 'en_cours', label: 'En cours',  dot: 'bg-blue-500'  },
-  { key: 'Archive',    label: 'Archivés',    dot: 'bg-gray-400'  },
-];
-// ✅ CORRIGÉ : onglet actif par défaut = ouvert
-const activeTab = ref('ouvert');
-const activeTabLabel = computed(() => tabs.find(t => t.key === activeTab.value)?.label ?? '');
+const showModal = ref(false);
+const showAssign = ref(false);
+const editing = ref(false);
+const currentProject = ref(null);
+const formError = ref('');
+const selectedIds = ref([]);
 
-// ─── État ─────────────────────────────────────────────────────────────────────
-const allProjects        = ref([]);
-const loading            = ref(false);
-const searchQuery        = ref('');
-const pagination         = ref({ current_page: 1, last_page: 1, total: 0 });
-const globalMessage      = ref('');
-const globalSuccess      = ref(true);
-const confirmArchivetureId = ref(null);
-
-// Modals
-const showCreateModal = ref(false);
-const showEditModal   = ref(false);
-const showAssignModal = ref(false);
-const selectedProject = ref(null);
-const modalLoading    = ref(false);
-const modalError      = ref('');
-
-const createForm = ref({ nom: '', description: '', date_debut: '', date_fin: '' });
-// ✅ CORRIGÉ : valeur par défaut du formulaire = ouvert
-const editForm   = ref({ nom: '', statut: 'ouvert' });
-
-const activeUsers     = ref([]);
-const assignedUserIds = ref([]);
-const usersLoading    = ref(false);
-
-// ─── Computed : projets filtrés par onglet ────────────────────────────────────
-const filteredProjects = computed(() =>
-  allProjects.value.filter(p => p.statut === activeTab.value)
-);
-
-const count = (key) => allProjects.value.filter(p => p.statut === key).length;
-
-// ─── Fetch ────────────────────────────────────────────────────────────────────
-const fetchProjects = async () => {
-  loading.value = true;
-  try {
-    const params = {};
-    if (searchQuery.value) params.search = searchQuery.value;
-    params.per_page = 200;
-    const res = await api.get('/projects', { params });
-    allProjects.value = res.data.data ?? res.data;
-  } catch {
-    showMessage('Erreur lors du chargement des projets.', false);
-  } finally {
-    loading.value = false;
-  }
-};
-
-onMounted(() => fetchProjects());
+const form = ref({ nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert' });
 
 let searchTimer = null;
-const debouncedSearch = () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => fetchProjects(), 400);
-};
 
-const changePage = (page) => {
-  if (page < 1 || page > pagination.value.last_page) return;
-  fetchProjects();
-};
+const filteredProjects = computed(() =>
+  filter.value ? projects.value.filter(p => p.statut === filter.value) : projects.value
+);
+const activeMembers = computed(() =>
+  allUsers.value.filter(u => u.statut === 'actif' && !['admin','super_admin'].includes(u.role))
+);
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const showMessage = (msg, success = true) => {
-  globalMessage.value = msg;
-  globalSuccess.value  = success;
-  setTimeout(() => { globalMessage.value = ''; }, 4000);
-};
-
-const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
-
-const roleClass = (role) => ({
-  admin:       'bg-red-100 text-red-700',
-  developpeur: 'bg-blue-100 text-blue-700',
-  testeur:     'bg-purple-100 text-purple-700',
-}[role] ?? 'bg-gray-100 text-gray-600');
-
-const closeModals = () => {
-  showCreateModal.value = false;
-  showEditModal.value   = false;
-  showAssignModal.value = false;
-  selectedProject.value = null;
-  modalError.value      = '';
-  modalLoading.value    = false;
-};
-
-// ─── Créer ────────────────────────────────────────────────────────────────────
-const openCreateModal = () => {
-  createForm.value = { nom: '', description: '', date_debut: '', date_fin: '' };
-  modalError.value  = '';
-  showCreateModal.value = true;
-};
-
-const createProject = async () => {
-  if (!createForm.value.nom.trim()) { modalError.value = 'Le nom est obligatoire.'; return; }
-  modalLoading.value = true; modalError.value = '';
+const fetchProjects = async (page = 1) => {
+  loading.value = true;
   try {
-    await api.post('/projects', createForm.value);
-    closeModals();
-    showMessage('Projet créé avec succès.', true);
-    // ✅ CORRIGÉ : après création, aller sur l'onglet Ouverts
-    activeTab.value = 'ouvert';
+    const r = await api.get('/projects', { params: { search: search.value || undefined, page } });
+    projects.value = r.data.data || r.data;
+    if (r.data.current_page) pagination.value = r.data;
+  } catch { msg('Erreur chargement.', false); }
+  finally { loading.value = false; }
+};
+const fetchUsers = async () => {
+  try { const r = await api.get('/users'); allUsers.value = r.data; } catch {}
+};
+onMounted(() => { fetchProjects(); fetchUsers(); });
+
+const onSearch = () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => fetchProjects(1), 350); };
+const loadPage = (p) => { if (p >= 1 && p <= pagination.value.last_page) fetchProjects(p); };
+
+const msg = (m, ok = true) => {
+  globalMsg.value = m; globalOk.value = ok;
+  setTimeout(() => globalMsg.value = '', 4000);
+};
+const fmt = d => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+const stLabel = s => ({ ouvert: 'Ouvert', en_cours: 'En cours', archive: 'Archivé' }[s] || s);
+const stClass = s => ({ ouvert: 'st-open', en_cours: 'st-prog', archive: 'st-arch' }[s] || '');
+
+const openCreate = () => {
+  editing.value = false;
+  form.value = { nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert' };
+  formError.value = '';
+  showModal.value = true;
+};
+const openEdit = (p) => {
+  editing.value = true;
+  currentProject.value = p;
+  form.value = { nom: p.nom, description: p.description || '', date_debut: p.date_debut || '', date_fin: p.date_fin || '', statut: p.statut };
+  formError.value = '';
+  showModal.value = true;
+};
+const saveProject = async () => {
+  saving.value = true; formError.value = '';
+  try {
+    if (editing.value) {
+      await api.put(`/projects/${currentProject.value.id}`, form.value);
+      msg('Projet mis à jour ✓');
+    } else {
+      await api.post('/projects', form.value);
+      msg('Projet créé ✓');
+    }
+    showModal.value = false;
     await fetchProjects();
-  } catch (err) {
-    modalError.value = err.response?.data?.message || 'Erreur lors de la création.';
-  } finally { modalLoading.value = false; }
+  } catch (e) {
+    const errs = e.response?.data?.errors;
+    formError.value = errs ? String(Object.values(errs).flat()[0]) : e.response?.data?.message || 'Erreur.';
+  } finally { saving.value = false; }
 };
 
-// ─── Modifier ─────────────────────────────────────────────────────────────────
-const openEditModal = (project) => {
-  selectedProject.value = project;
-  editForm.value = { nom: project.nom, statut: project.statut };
-  modalError.value = '';
-  showEditModal.value = true;
+const archiveProject = async (id) => {
+  if (!confirm('Archiver ce projet ?')) return;
+  try { await api.delete(`/projects/${id}`); msg('Projet archivé.'); await fetchProjects(); }
+  catch { msg('Erreur.', false); }
 };
 
-const updateProject = async () => {
-  if (!editForm.value.nom.trim()) { modalError.value = 'Le nom est obligatoire.'; return; }
-  modalLoading.value = true; modalError.value = '';
+const openAssign = (p) => {
+  currentProject.value = p;
+  selectedIds.value = (p.users || []).map(u => u.id);
+  showAssign.value = true;
+};
+const saveAssign = async () => {
+  assigning.value = true;
   try {
-    await api.put(`/projects/${selectedProject.value.id}`, editForm.value);
-    closeModals();
-    showMessage('Projet mis à jour.', true);
+    await api.post(`/projects/${currentProject.value.id}/assign`, { user_ids: selectedIds.value });
+    msg('Membres affectés ✓');
+    showAssign.value = false;
     await fetchProjects();
-  } catch (err) {
-    modalError.value = err.response?.data?.message || 'Erreur lors de la mise à jour.';
-  } finally { modalLoading.value = false; }
-};
-
-// ─── Archiver ───────────────────────────────────────────────────────────────────
-const demanderArchiveture  = (id) => { confirmArchivetureId.value = id; };
-
-const confirmerArchiveture = async (id) => {
-  confirmArchivetureId.value = null;
-  try {
-    await api.delete(`/projects/${id}`);
-    showMessage('Projet fermé avec succès.', true);
-    await fetchProjects();
-    activeTab.value = 'Archive';
-  } catch (err) {
-    showMessage(err.response?.data?.message || 'Erreur lors de la Archiveture.', false);
-  }
-};
-
-// ─── Membres ──────────────────────────────────────────────────────────────────
-const openAssignModal = async (project) => {
-  selectedProject.value = project;
-  assignedUserIds.value = project.users?.map(u => u.id) ?? [];
-  modalError.value = '';
-  showAssignModal.value = true;
-  usersLoading.value = true;
-  try {
-    const res = await api.get('/users');
-    activeUsers.value = res.data.filter(u => u.statut === 'actif' && u.role !== 'admin');
-  } catch { modalError.value = 'Impossible de charger les utilisateurs.'; }
-  finally { usersLoading.value = false; }
-};
-
-const assignUsers = async () => {
-  modalLoading.value = true; modalError.value = '';
-  try {
-    await api.post(`/projects/${selectedProject.value.id}/assign`, { user_ids: assignedUserIds.value });
-    closeModals();
-    showMessage('Membres affectés avec succès.', true);
-    await fetchProjects();
-  } catch (err) {
-    modalError.value = err.response?.data?.message || "Erreur lors de l'affectation.";
-  } finally { modalLoading.value = false; }
-};
-
-// ─── Logout ───────────────────────────────────────────────────────────────────
-const logout = () => {
-  authStore.logout();
-  router.push({ name: 'Login' });
+  } catch (e) { msg(e.response?.data?.message || 'Erreur.', false); }
+  finally { assigning.value = false; }
 };
 </script>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+*{font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;}
+.layout{display:flex;min-height:100vh;background:#f8fafc;}
+.main{flex:1;overflow-y:auto;}
+.page-header{display:flex;align-items:center;justify-content:space-between;padding:2rem 2.5rem 1.5rem;border-bottom:1px solid #e2e8f0;background:white;gap:1rem;flex-wrap:wrap;}
+.page-title{font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;letter-spacing:-.02em;}
+.page-sub{font-size:.875rem;color:#64748b;margin:.25rem 0 0;}
+.btn-new{padding:.625rem 1.25rem;background:#1e293b;color:white;border:none;border-radius:9px;font-size:.875rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s;flex-shrink:0;}
+.btn-new:hover{background:#0f172a;}
+.page-content{padding:1.75rem 2.5rem;display:flex;flex-direction:column;gap:1.25rem;}
+.alert{padding:.75rem 1rem;border-radius:8px;font-size:.875rem;font-weight:500;}
+.alert-ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
+.alert-err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
+.toolbar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+.search-wrap{position:relative;}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;}
+.search-input{padding:.5625rem .875rem .5625rem 2.125rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;color:#1e293b;background:white;outline:none;width:220px;font-family:inherit;transition:border-color .2s;}
+.search-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+.search-input::placeholder{color:#cbd5e1;}
+.filters{display:flex;gap:.375rem;}
+.fb{padding:.4375rem .875rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;font-weight:500;color:#64748b;background:white;cursor:pointer;font-family:inherit;transition:all .15s;}
+.fb:hover{border-color:#cbd5e1;color:#1e293b;}
+.fb-active{background:#1e293b;color:white;border-color:#1e293b;}
+.loading{display:flex;align-items:center;gap:.5rem;color:#94a3b8;font-size:.875rem;padding:3rem 0;}
+.spin{animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
+.empty{text-align:center;padding:5rem 2rem;}
+.ei{font-size:3.5rem;margin-bottom:1rem;}
+.et{font-size:1.125rem;font-weight:700;color:#1e293b;margin:0 0 .5rem;}
+.es{font-size:.875rem;color:#94a3b8;margin:0;}
+.card{background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
+.tbl{width:100%;border-collapse:collapse;font-size:.875rem;}
+.tbl thead{background:#f8fafc;}
+.tbl th{padding:.75rem 1.25rem;text-align:left;font-size:.6875rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e2e8f0;}
+.tbl td{padding:1rem 1.25rem;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+.tbl tbody tr:last-child td{border-bottom:none;}
+.tbl tbody tr:hover td{background:#fafafa;}
+.tc{text-align:center;}
+.pn{font-size:.9rem;font-weight:700;color:#1e293b;margin:0;}
+.pd{font-size:.75rem;color:#94a3b8;margin:.125rem 0 0;max-width:200px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.st-chip{font-size:.6875rem;font-weight:700;padding:4px 10px;border-radius:20px;}
+.st-open{background:#dcfce7;color:#16a34a;}
+.st-prog{background:#dbeafe;color:#1d4ed8;}
+.st-arch{background:#f1f5f9;color:#64748b;}
+.mavs{display:flex;}
+.mav{width:26px;height:26px;border-radius:50%;background:#dbeafe;color:#1d4ed8;font-size:.5625rem;font-weight:800;display:flex;align-items:center;justify-content:center;text-transform:uppercase;border:2px solid white;margin-left:-6px;flex-shrink:0;}
+.mav:first-child{margin-left:0;}
+.mmore{background:#f1f5f9;color:#64748b;}
+.mu{font-size:.8125rem;color:#cbd5e1;}
+.dt{font-size:.75rem;color:#64748b;margin:0;}
+.ab{display:flex;gap:.375rem;justify-content:center;}
+.btn-edit,.btn-assign,.btn-archive{width:30px;height:30px;border-radius:7px;border:1px solid #e2e8f0;background:white;cursor:pointer;font-size:.875rem;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.btn-edit:hover{background:#f0f9ff;border-color:#bae6fd;}
+.btn-assign:hover{background:#f0fdf4;border-color:#bbf7d0;}
+.btn-archive:hover{background:#fff7ed;border-color:#fed7aa;}
+.pagination{display:flex;align-items:center;justify-content:center;gap:1rem;}
+.page-btn{padding:.5rem 1rem;background:white;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;font-weight:600;color:#475569;cursor:pointer;font-family:inherit;transition:all .15s;}
+.page-btn:hover:not(:disabled){border-color:#3b82f6;color:#3b82f6;}
+.page-btn:disabled{opacity:.4;cursor:not-allowed;}
+.page-info{font-size:.875rem;color:#64748b;}
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem;}
+.modal{background:white;border-radius:16px;width:100%;max-width:480px;box-shadow:0 24px 48px rgba(0,0,0,.25);overflow:hidden;}
+.modal-wide{max-width:560px;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;}
+.modal-title{font-size:1rem;font-weight:800;color:#0f172a;margin:0;}
+.close-btn{background:none;border:none;font-size:1rem;color:#94a3b8;cursor:pointer;padding:4px;border-radius:6px;line-height:1;transition:color .15s;}
+.close-btn:hover{color:#1e293b;}
+.mform{padding:1.5rem;display:flex;flex-direction:column;gap:1rem;}
+.field{display:flex;flex-direction:column;gap:.35rem;}
+.label{font-size:.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
+.input{width:100%;padding:.625rem .875rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;color:#1e293b;font-size:.9rem;font-family:inherit;outline:none;transition:border-color .2s;}
+.input::placeholder{color:#cbd5e1;}
+.input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);background:white;}
+.ta{resize:vertical;min-height:80px;}
+.sel{cursor:pointer;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+.modal-footer{display:flex;gap:.75rem;justify-content:flex-end;padding-top:.5rem;border-top:1px solid #f1f5f9;margin-top:.5rem;}
+.btn-cancel{padding:.5625rem 1rem;background:white;color:#64748b;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn-primary{padding:.5625rem 1rem;background:#1e293b;color:white;border:none;border-radius:8px;font-size:.875rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:.5rem;transition:background .15s;}
+.btn-primary:hover:not(:disabled){background:#0f172a;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+/* Assign modal */
+.assign-body{padding:1.5rem;}
+.assign-hint{font-size:.875rem;color:#64748b;margin:0 0 1.25rem;}
+.member-grid{display:flex;flex-direction:column;gap:.5rem;max-height:320px;overflow-y:auto;padding-right:.25rem;margin-bottom:1.25rem;}
+.member-check{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-radius:10px;border:1px solid #f1f5f9;cursor:pointer;transition:all .15s;user-select:none;}
+.member-check:hover{background:#f8fafc;border-color:#e2e8f0;}
+.selected{background:#eff6ff;border-color:#bfdbfe;}
+.hidden-cb{display:none;}
+.mc-av{width:32px;height:32px;border-radius:8px;background:#dbeafe;color:#1d4ed8;font-size:.6875rem;font-weight:800;display:flex;align-items:center;justify-content:center;text-transform:uppercase;flex-shrink:0;}
+.mc-info{flex:1;}
+.mc-name{font-size:.875rem;font-weight:600;color:#1e293b;margin:0;}
+.mc-role{font-size:.75rem;color:#94a3b8;margin:0;text-transform:capitalize;}
+.check-mark{font-size:.875rem;font-weight:700;color:#1d4ed8;width:20px;text-align:center;}
+</style>

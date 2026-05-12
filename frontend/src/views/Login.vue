@@ -13,7 +13,7 @@
         <form @submit.prevent="onSubmit" class="form">
           <div class="field">
             <label class="label">Adresse email</label>
-            <input v-model="email" type="email" required placeholder="vous@exemple.com" class="input" />
+            <input v-model="email" type="email"  class="input" />
           </div>
           <div class="field">
             <div class="label-row">
