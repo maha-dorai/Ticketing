@@ -21,10 +21,10 @@
         <router-link to="/admin/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
         </router-link>
-        <router-link to="/admin/tickets" class="nav-item" active-class="nav-active">
+        <router-link to="/tickets" class="nav-item" active-class="nav-active">
           <span class="nav-icon">🎟️</span> Tickets
         </router-link>
-        <router-link to="/admin/notifications" class="nav-item" active-class="nav-active">
+        <router-link to="/notifications" class="nav-item" active-class="nav-active">
           <span class="nav-icon">🔔</span> Notifications
         </router-link>
       </template>
@@ -38,10 +38,10 @@
         <router-link to="/admin/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
         </router-link>
-        <router-link to="/admin/tickets" class="nav-item" active-class="nav-active">
+        <router-link to="/tickets" class="nav-item" active-class="nav-active">
           <span class="nav-icon">🎟️</span> Tickets
         </router-link>
-        <router-link to="/admin/notifications" class="nav-item" active-class="nav-active">
+        <router-link to="/notifications" class="nav-item" active-class="nav-active">
           <span class="nav-icon">🔔</span> Notifications
         </router-link>
       </template>

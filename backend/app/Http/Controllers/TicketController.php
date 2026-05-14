@@ -9,6 +9,22 @@ use Illuminate\Support\Facades\Auth;
 
 class TicketController extends Controller
 {
+    public function byProject($projectId)
+    {
+        $user = Auth::user();
+        $tickets = Ticket::with(['testeur', 'developpeur'])
+            ->where('project_id', $projectId)
+            ->when(!$user->isAdmin(), function ($q) use ($user) {
+                $q->where(function ($q2) use ($user) {
+                    $q2->where('testeur_id', $user->id)
+                       ->orWhere('developpeur_id', $user->id);
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+        return response()->json($tickets, 200);
+    }
+
     public function index()
     {
         $user = Auth::user();

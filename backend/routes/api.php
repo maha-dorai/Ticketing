@@ -26,9 +26,11 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
     Route::put('/users/change-password', [UserController::class, 'changePassword']);
     Route::put('/users/change-email',    [UserController::class, 'changeEmail']);
     Route::get('/projects',              [ProjectController::class, 'index']);
+    Route::get('/projects/{id}',         [ProjectController::class, 'show']);
 
     // ── Routes Sprint 3 : Tickets, Commentaires, Notifications ─────────────────
     Route::get('/tickets',               [TicketController::class, 'index']);
+    Route::get('/projects/{id}/tickets', [TicketController::class, 'byProject']);
     Route::get('/tickets/{id}',          [TicketController::class, 'show']);
     Route::post('/tickets',              [TicketController::class, 'store']);
     Route::put('/tickets/{id}',          [TicketController::class, 'update']);

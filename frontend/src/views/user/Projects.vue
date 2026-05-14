@@ -11,7 +11,6 @@
           <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
           <input v-model="search" @input="onSearch" type="text" placeholder="Rechercher un projet..." class="search-input" />
         </div>
-        </div>
       </div>
 
       <div class="page-content">
@@ -27,7 +26,7 @@
         </div>
 
         <div v-else class="projects-grid">
-          <div v-for="p in projects" :key="p.id" class="project-card">
+          <div v-for="p in projects" :key="p.id" class="project-card" @click="$router.push({ name: 'ProjectDetail', params: { id: p.id } })" style="cursor:pointer">
             <!-- Top -->
             <div class="pc-top">
               <div class="pc-icon">{{ statusIcon(p.statut) }}</div>

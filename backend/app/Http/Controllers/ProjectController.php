@@ -31,6 +31,28 @@ class ProjectController extends Controller
         }
     }
 
+    public function show($id)
+    {
+        try {
+            $user    = JWTAuth::parseToken()->authenticate();
+            $project = Project::with(['users:id,nom,prenom,role,email', 'creator:id,nom,prenom'])->findOrFail($id);
+
+            // Vérifier que l'utilisateur est membre ou admin
+            if (!$user->isAdmin()) {
+                $isMember = $project->users->contains('id', $user->id);
+                if (!$isMember) {
+                    return response()->json(['message' => 'Accès non autorisé'], 403);
+                }
+            }
+
+            return response()->json($project, 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Projet introuvable'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         try {
