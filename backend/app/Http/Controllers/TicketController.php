@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Ticket;
 use App\Models\Notification;
+use App\Models\User;
+use App\Mail\TicketAssigned;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 class TicketController extends Controller
 {
@@ -96,6 +99,11 @@ class TicketController extends Controller
                 "🎫 Nouveau ticket assigné : « {$ticket->titre} » — Priorité : {$ticket->priorite}",
                 $ticket->id
             );
+            // 📧 Email au développeur
+            try {
+                $dev = User::find($ticket->developpeur_id);
+                if ($dev) Mail::to($dev->email)->send(new TicketAssigned($ticket->load('project'), $dev, 'developpeur'));
+            } catch (\Exception $e) { /* ne pas bloquer si mail échoue */ }
         }
 
         return response()->json($ticket, 201);
@@ -138,6 +146,11 @@ class TicketController extends Controller
                 "👤 Le ticket « {$ticket->titre} » vous a été assigné.",
                 $ticket->id
             );
+            // 📧 Email au nouveau développeur
+            try {
+                $dev = User::find($ticket->developpeur_id);
+                if ($dev) Mail::to($dev->email)->send(new TicketAssigned($ticket->load('project'), $dev, 'developpeur'));
+            } catch (\Exception $e) { /* ne pas bloquer si mail échoue */ }
 
             // Notifier l'ancien développeur s'il y en avait un
             if ($oldDevId) {

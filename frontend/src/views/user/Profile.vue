@@ -15,7 +15,7 @@
             <h1 class="profile-name">{{ user?.prenom }} {{ user?.nom }}</h1>
             <div class="profile-meta">
               <span class="meta-item">✉ {{ user?.email }}</span>
-              <a v-if="user?.github_link" :href="user.github_link" target="_blank" class="meta-item gh-link">
+              <a v-if="isDeveloper && user?.github_link" :href="user.github_link" target="_blank" class="meta-item gh-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                 GitHub ↗
               </a>
@@ -30,8 +30,10 @@
         <div class="card">
           <div class="card-header">
             <h2 class="card-title">👤 Informations personnelles</h2>
-            <button v-if="!editingInfo" @click="editingInfo = true" class="btn-edit">✏ Modifier</button>
-            <button v-else @click="cancelEditInfo" class="btn-cancel-sm">Annuler</button>
+            <template v-if="!isAdminRole">
+              <button v-if="!editingInfo" @click="startEdit" class="btn-edit">✏ Modifier</button>
+              <button v-else @click="cancelEditInfo" class="btn-cancel-sm">Annuler</button>
+            </template>
           </div>
           <div v-if="infoMsg" class="alert" :class="infoOk ? 'alert-ok' : 'alert-err'">{{ infoOk ? '✓' : '✕' }} {{ infoMsg }}</div>
 
@@ -52,7 +54,7 @@
               <span class="info-label">Statut</span>
               <span class="st-chip st-ok">Actif</span>
             </div>
-            <div class="info-item full">
+            <div v-if="isDeveloper" class="info-item full">
               <span class="info-label">Lien GitHub</span>
               <a v-if="user?.github_link" :href="user.github_link" target="_blank" class="gh-val">{{ user.github_link }}</a>
               <span v-else class="info-empty">Non renseigné</span>
@@ -70,7 +72,7 @@
                 <input v-model="infoForm.nom" required class="input" placeholder="Nom" />
               </div>
             </div>
-            <div class="field">
+            <div v-if="isDeveloper" class="field">
               <label class="label">Lien GitHub (optionnel)</label>
               <input v-model="infoForm.github_link" class="input" placeholder="https://github.com/votre-profil" />
             </div>
@@ -83,8 +85,8 @@
           </form>
         </div>
 
-        <!-- Changer Email -->
-        <div class="card">
+        <!-- Changer Email — utilisateurs uniquement -->
+        <div v-if="!isAdminRole" class="card">
           <div class="card-header">
             <h2 class="card-title">✉ Adresse email</h2>
           </div>
@@ -112,8 +114,8 @@
           </form>
         </div>
 
-        <!-- Changer MDP -->
-        <div class="card">
+        <!-- Changer MDP — utilisateurs uniquement -->
+        <div v-if="!isAdminRole" class="card">
           <div class="card-header">
             <h2 class="card-title">🔒 Mot de passe</h2>
           </div>
@@ -170,6 +172,11 @@ const user = computed(() => authStore.currentUser);
 const initials = computed(() => ((user.value?.prenom || '')[0] + (user.value?.nom || '')[0]).toUpperCase());
 const roleLabel = computed(() => ({ super_admin: 'Super Admin', admin: 'Administrateur', developpeur: 'Développeur', testeur: 'Testeur' }[user.value?.role] || ''));
 const roleColorClass = computed(() => ({ super_admin: 'role-super', admin: 'role-admin', developpeur: 'role-dev', testeur: 'role-test' }[user.value?.role] || ''));
+
+// Admin et super_admin : profil en lecture seule (pas de modification)
+const isAdminRole = computed(() => ['admin', 'super_admin'].includes(user.value?.role));
+// Lien GitHub : affiché uniquement pour les développeurs
+const isDeveloper = computed(() => user.value?.role === 'developpeur');
 
 // ── Eye icon component ──
 const Eye = defineComponent({ props: ['o'], setup: (p) => () => p.o

@@ -12,7 +12,7 @@ class NotificationController extends Controller
     /**
      * Crée une notification ET la diffuse en temps réel via Pusher.
      */
-    public static function createAndBroadcast(int $userId, string $message, int $ticketId): void
+    public static function createAndBroadcast(int $userId, string $message, ?int $ticketId): void
     {
         $notification = \App\Models\Notification::create([
             'user_id'   => $userId,
