@@ -29,13 +29,13 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/tickets',
+    path: '/projects/:projectId/tickets',
     name: 'Tickets',
     component: () => import('../views/user/Tickets.vue'),
     meta: { requiresAuth: true },
   },
   {
-    path: '/tickets/:id',
+    path: '/projects/:projectId/tickets/:id',
     name: 'TicketDetails',
     component: () => import('../views/user/TicketDetails.vue'),
     meta: { requiresAuth: true },
@@ -63,6 +63,12 @@ const routes = [
     path: '/admin/projects',
     name: 'ProjectManagement',
     component: () => import('../views/admin/ProjectManagement.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: '/admin/projects/:projectId/tickets',
+    name: 'AdminTickets',
+    component: () => import('../views/user/Tickets.vue'),
     meta: { requiresAuth: true, requiresAdmin: true },
   },
 

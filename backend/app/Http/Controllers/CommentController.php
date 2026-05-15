@@ -15,19 +15,16 @@ class CommentController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
-            'contenu' => 'required|string',
+            'contenu'   => 'required|string',
             'ticket_id' => 'required|exists:tickets,id'
         ]);
 
         $ticket = Ticket::findOrFail($validated['ticket_id']);
 
-        // Optionnel : vérifier si l'utilisateur a le droit de commenter ce ticket
-        // (ex: admin, ou assigné au projet, ou créateur/developpeur du ticket)
-
         $comment = Comment::create([
-            'contenu' => $validated['contenu'],
+            'contenu'   => $validated['contenu'],
             'ticket_id' => $validated['ticket_id'],
-            'user_id' => $user->id
+            'user_id'   => $user->id
         ]);
 
         // Notifier les personnes concernées
@@ -36,14 +33,48 @@ class CommentController extends Controller
             ->reject(fn($id) => $id === $user->id)
             ->unique();
 
-        foreach ($usersToNotify as $userId) {
-            Notification::create([
-                'message' => "Nouveau commentaire sur le ticket '{$ticket->titre}'",
-                'user_id' => $userId,
-                'ticket_id' => $ticket->id
-            ]);
-        }
+foreach ($usersToNotify as $userId) {
+    // ❌ قبل: Notification::create (لا يبث real-time)
+    // ✅ بعد:
+    \App\Http\Controllers\NotificationController::createAndBroadcast(
+        $userId,
+        "💬 Nouveau commentaire sur le ticket « {$ticket->titre} »",
+        $ticket->id
+    );
+}
 
         return response()->json($comment->load('user'), 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user    = Auth::user();
+        $comment = Comment::findOrFail($id);
+
+        if ($comment->user_id !== $user->id) {
+            return response()->json(['message' => 'Non autorisé. Vous ne pouvez modifier que vos propres commentaires.'], 403);
+        }
+
+        $validated = $request->validate([
+            'contenu' => 'required|string'
+        ]);
+
+        $comment->update(['contenu' => $validated['contenu']]);
+
+        return response()->json($comment->load('user'), 200);
+    }
+
+    public function destroy($id)
+    {
+        $user    = Auth::user();
+        $comment = Comment::findOrFail($id);
+
+        if ($comment->user_id !== $user->id && !$user->isAdmin()) {
+            return response()->json(['message' => 'Non autorisé. Vous ne pouvez supprimer que vos propres commentaires.'], 403);
+        }
+
+        $comment->delete();
+
+        return response()->json(['message' => 'Commentaire supprimé.'], 200);
     }
 }

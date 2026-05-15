@@ -1,67 +1,45 @@
 <template>
-  <div class="min-h-screen bg-gray-50 py-8 px-4">
-    <div class="max-w-4xl mx-auto space-y-6">
+  <div class="layout">
+    <AppSidebar />
+    <main class="main">
 
-      <!-- Header & Navigation -->
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="page-header">
         <div>
-          <h1 class="text-2xl font-extrabold text-gray-900">Notifications</h1>
-          <p class="text-gray-500 text-sm mt-0.5">Gardez un œil sur l'activité de vos tickets</p>
+          <h1 class="page-title">Notifications</h1>
+          <p class="page-sub">Gardez un œil sur l'activité de vos tickets</p>
         </div>
-        <div class="flex flex-wrap gap-2">
-          <button @click="$router.push({ name: 'Projects' })" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold transition">
-            📂 Projets
-          </button>
-          <button @click="$router.push({ name: 'Tickets' })" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold transition">
-            🎟️ Tickets
-          </button>
-          <button @click="$router.push({ name: 'Notifications' })" class="px-4 py-2 text-sm text-blue-700 bg-blue-100 rounded font-semibold ring-2 ring-blue-500">
-            🔔 Notifications
-          </button>
-          <button @click="$router.push({ name: 'Profile' })" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold transition">
-            👤 Mon compte
-          </button>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="flex justify-end">
-        <button v-if="unreadCount > 0" @click="markAllAsRead" :disabled="marking" class="px-4 py-2 text-sm text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg font-bold transition disabled:opacity-50">
-          ✓ Marquer tout comme lu
+        <button v-if="unreadCount > 0" @click="markAllAsRead" :disabled="marking" class="mark-btn">
+          ✓ Tout marquer comme lu
         </button>
       </div>
 
-      <!-- Chargement -->
-      <div v-if="loading" class="text-center text-gray-400 py-12 text-sm">Chargement...</div>
+      <div class="page-content">
 
-      <!-- Aucune notif -->
-      <div v-else-if="notifications.length === 0" class="text-center py-16 bg-white rounded-xl shadow border border-gray-100 text-gray-400">
-        <div class="text-4xl mb-3">📭</div>
-        <p class="font-medium text-gray-500">Vous n'avez aucune notification.</p>
-      </div>
+        <div v-if="loading" class="loading">Chargement...</div>
 
-      <!-- Liste des notifs -->
-      <div v-else class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden divide-y">
-        <div v-for="notif in notifications" :key="notif.id" 
-             @click="goToTicket(notif)"
-             class="p-4 hover:bg-gray-50 cursor-pointer transition flex items-start gap-4"
-             :class="notif.lu ? 'opacity-60' : 'bg-blue-50/30'">
-          
-          <div class="text-xl pt-1">
-            <span v-if="!notif.lu">🔵</span>
-            <span v-else>⚪</span>
-          </div>
-          
-          <div class="flex-1">
-            <p class="text-sm font-semibold text-gray-800" :class="!notif.lu ? 'text-gray-900' : 'text-gray-600'">
-              {{ notif.message }}
-            </p>
-            <p class="text-xs text-gray-400 mt-1">{{ formatTime(notif.created_at) }}</p>
+        <div v-else-if="notifications.length === 0" class="empty">
+          <div class="empty-icon">📭</div>
+          <p class="empty-title">Aucune notification.</p>
+        </div>
+
+        <div v-else class="notif-list">
+          <div
+            v-for="notif in notifications"
+            :key="notif.id"
+            @click="goToTicket(notif)"
+            class="notif-item"
+            :class="notif.lu ? 'is-read' : 'is-unread'"
+          >
+            <span class="notif-dot">{{ notif.lu ? '⚪' : '🔵' }}</span>
+            <div class="notif-body">
+              <p class="notif-msg">{{ notif.message }}</p>
+              <p class="notif-time">{{ formatTime(notif.created_at) }}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-    </div>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -69,6 +47,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../../services/api';
+import AppSidebar from '../../components/AppSidebar.vue';
 
 const router = useRouter();
 const notifications = ref([]);
@@ -82,7 +61,7 @@ const fetchNotifications = async () => {
     const res = await api.get('/notifications');
     notifications.value = res.data;
   } catch (e) {
-    console.error("Erreur notifications", e);
+    console.error('Erreur notifications', e);
   } finally {
     loading.value = false;
   }
@@ -91,11 +70,12 @@ const fetchNotifications = async () => {
 const markAllAsRead = async () => {
   const unreadIds = notifications.value.filter(n => !n.lu).map(n => n.id);
   if (!unreadIds.length) return;
-  
   marking.value = true;
   try {
     await api.put('/notifications/read', { notification_ids: unreadIds });
-    notifications.value.forEach(n => n.lu = true);
+    notifications.value.forEach(n => (n.lu = true));
+    // Refresh badge dans le sidebar
+    document.dispatchEvent(new CustomEvent('notifications-read'));
   } catch (e) {
     console.error(e);
   } finally {
@@ -104,22 +84,65 @@ const markAllAsRead = async () => {
 };
 
 const goToTicket = async (notif) => {
-  // Mark as read locally and in API if not read
   if (!notif.lu) {
     try {
       await api.put('/notifications/read', { notification_ids: [notif.id] });
       notif.lu = true;
-    } catch(e) {}
+      document.dispatchEvent(new CustomEvent('notifications-read'));
+    } catch (e) {}
   }
-  
-  if (notif.ticket_id) {
-    router.push({ name: 'TicketDetails', params: { id: notif.ticket_id } });
+
+  if (!notif.ticket_id) return;
+
+  const projectId = notif.ticket?.project_id;
+
+  if (projectId) {
+    router.push({ name: 'TicketDetails', params: { projectId, id: notif.ticket_id } });
+    return;
+  }
+
+  try {
+    const res = await api.get(`/tickets/${notif.ticket_id}`);
+    const pid = res.data?.project_id ?? res.data?.project?.id;
+    if (pid) {
+      router.push({ name: 'TicketDetails', params: { projectId: pid, id: notif.ticket_id } });
+    }
+  } catch (e) {
+    console.error('Impossible de naviguer vers le ticket', e);
   }
 };
 
-onMounted(() => {
-  fetchNotifications();
-});
+onMounted(() => fetchNotifications());
 
-const formatTime = (d) => d ? new Date(d).toLocaleString('fr-FR', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+const formatTime = (d) =>
+  d ? new Date(d).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 </script>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+* { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
+.layout { display: flex; min-height: 100vh; background: #f8fafc; }
+.main { flex: 1; overflow-y: auto; }
+.page-header { display: flex; align-items: center; justify-content: space-between; padding: 2rem 2.5rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: white; gap: 1rem; flex-wrap: wrap; }
+.page-title { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -.02em; }
+.page-sub { font-size: .875rem; color: #64748b; margin: .25rem 0 0; }
+.mark-btn { padding: .5rem 1.125rem; background: #eff6ff; color: #2563eb; border: none; border-radius: 8px; font-size: .875rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .15s; }
+.mark-btn:hover:not(:disabled) { background: #dbeafe; }
+.mark-btn:disabled { opacity: .5; cursor: not-allowed; }
+.page-content { padding: 2rem 2.5rem; max-width: 760px; }
+.loading { color: #94a3b8; font-size: .875rem; padding: 3rem 0; }
+.empty { text-align: center; padding: 5rem 2rem; }
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-title { font-size: 1rem; font-weight: 600; color: #94a3b8; margin: 0; }
+.notif-list { background: white; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+.notif-item { display: flex; align-items: flex-start; gap: .875rem; padding: 1rem 1.25rem; cursor: pointer; transition: background .15s; border-bottom: 1px solid #f1f5f9; }
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: #f8fafc; }
+.is-unread { background: #eff6ff; }
+.is-unread:hover { background: #dbeafe; }
+.notif-dot { font-size: 1rem; padding-top: 2px; flex-shrink: 0; }
+.notif-body { flex: 1; }
+.notif-msg { font-size: .875rem; font-weight: 500; color: #1e293b; margin: 0 0 .25rem; line-height: 1.5; }
+.is-read .notif-msg { color: #64748b; font-weight: 400; }
+.notif-time { font-size: .75rem; color: #94a3b8; margin: 0; }
+</style>
