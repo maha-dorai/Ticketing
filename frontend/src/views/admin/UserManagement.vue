@@ -16,105 +16,149 @@
 
       <div class="page-content">
         <div v-if="globalMessage" class="alert" :class="globalSuccess ? 'alert-ok' : 'alert-err'">{{ globalSuccess ? '✓' : '✕' }} {{ globalMessage }}</div>
-        <div v-if="loading" class="loading-state"><svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/></svg> Chargement...</div>
+        <div v-if="loading" class="loading-state">
+          <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/></svg>
+          Chargement...
+        </div>
 
         <template v-else>
-          <!-- EN ATTENTE -->
-          <section v-if="pendingUsers.length > 0" class="section">
-            <div class="sh"><span class="dot yellow-bg"></span><h2 class="st">Dossiers en attente</h2><span class="cnt">{{ pendingUsers.length }}</span></div>
-            <div class="card">
-              <table class="tbl">
-                <thead><tr><th>Membre</th><th>Rôle</th><th>GitHub</th><th>Inscrit le</th><th class="tc">Actions</th></tr></thead>
-                <tbody>
-                  <tr v-for="u in pendingUsers" :key="u.id">
-                    <td><div class="uc"><div class="av blue-av">{{ini(u)}}</div><div><p class="un">{{u.prenom}} {{u.nom}}</p><p class="ue">{{u.email}}</p></div></div></td>
-                    <td><span class="rb" :class="rc(u.role)">{{u.role}}</span></td>
+          <!-- TABS Statut -->
+          <div class="tab-bar">
+            <button v-for="t in statusTabs" :key="t.key" @click="activeStatus = t.key" :class="['tab', activeStatus === t.key ? 'tab-active' : '']">
+              <span class="tab-dot" :class="t.dot"></span>
+              {{ t.label }}
+              <span class="tab-cnt">{{ t.count }}</span>
+            </button>
+          </div>
+
+          <!-- FILTRES Rôle + Recherche -->
+          <div class="toolbar">
+            <div class="role-filters">
+              <button @click="roleFilter = ''" :class="['rfb', roleFilter === '' ? 'rfb-active' : '']">Tous</button>
+              <button @click="roleFilter = 'testeur'" :class="['rfb', roleFilter === 'testeur' ? 'rfb-active rfb-test' : '']">🧪 Testeurs</button>
+              <button @click="roleFilter = 'developpeur'" :class="['rfb', roleFilter === 'developpeur' ? 'rfb-active rfb-dev' : '']">💻 Développeurs</button>
+            </div>
+            <div class="search-wrap">
+              <svg class="si" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+              <input v-model="search" placeholder="Rechercher un membre..." class="search-input" />
+            </div>
+          </div>
+
+          <!-- TABLE UNIQUE -->
+          <div v-if="!filteredUsers.length" class="empty">
+            <div class="ei">👥</div>
+            <p class="et">Aucun membre dans cette catégorie.</p>
+          </div>
+          <div v-else class="card">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Membre</th>
+                  <th>Rôle</th>
+                  <th>GitHub</th>
+                  <th>Statut</th>
+                  <th>Inscrit le</th>
+                  <th class="tc">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="u in filteredUsers" :key="u.id">
+                  <tr>
+                    <td>
+                      <div class="uc">
+                        <div class="av" :class="u.statut === 'actif' ? 'blue-av' : 'gray-av'">{{ ini(u) }}</div>
+                        <div>
+                          <p class="un">{{ u.prenom }} {{ u.nom }}</p>
+                          <p class="ue">{{ u.email }}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="rb" :class="rc(u.role)">{{ roleLabel(u.role) }}</span></td>
                     <td><a v-if="u.github_link" :href="u.github_link" target="_blank" class="gh-link">GitHub ↗</a><span v-else class="mu">—</span></td>
-                    <td class="mu">{{fmt(u.created_at)}}</td>
-                    <td class="tc"><div class="ab"><button @click="valider(u.id)" :disabled="pid===u.id" class="ba">{{pid===u.id?'...':'✓ Valider'}}</button><button @click="rejeter(u.id)" :disabled="pid===u.id" class="br">{{pid===u.id?'...':'✕ Rejeter'}}</button></div></td>
+                    <td><span class="st-chip" :class="stClass(u.statut)">{{ stLabel(u.statut) }}</span></td>
+                    <td class="mu">{{ fmt(u.created_at) }}</td>
+                    <td class="tc">
+                      <div class="ab">
+                        <template v-if="u.statut === 'en_attente'">
+                          <button @click="valider(u.id)" :disabled="pid === u.id" class="ba">{{ pid === u.id ? '...' : '✓ Valider' }}</button>
+                          <button @click="rejeter(u.id)" :disabled="pid === u.id" class="br">{{ pid === u.id ? '...' : '✕ Rejeter' }}</button>
+                        </template>
+                        <button v-else-if="u.statut === 'actif'" @click="cid = u.id" class="bw">⊘ Désactiver</button>
+                        <button v-else-if="u.statut === 'desactive'" @click="reactiver(u.id)" class="bs">↺ Réactiver</button>
+                        <span v-else class="mu">—</span>
+                      </div>
+                    </td>
                   </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <!-- ACTIFS -->
-          <section class="section">
-            <div class="sh"><span class="dot green-bg"></span><h2 class="st">Membres actifs</h2><span class="cnt">{{activeUsers.length}}</span></div>
-            <div v-if="!activeUsers.length" class="empty">Aucun membre actif.</div>
-            <div v-else class="card">
-              <table class="tbl">
-                <thead><tr><th>Membre</th><th>Rôle</th><th>Depuis</th><th class="tc">Action</th></tr></thead>
-                <tbody>
-                  <template v-for="u in activeUsers" :key="u.id">
-                    <tr><td><div class="uc"><div class="av blue-av">{{ini(u)}}</div><div><p class="un">{{u.prenom}} {{u.nom}}</p><p class="ue">{{u.email}}</p></div></div></td><td><span class="rb" :class="rc(u.role)">{{u.role}}</span></td><td class="mu">{{fmt(u.created_at)}}</td><td class="tc"><button @click="cid=u.id" class="bw">⊘ Désactiver</button></td></tr>
-                    <tr v-if="cid===u.id" class="crow"><td colspan="4"><div class="cbar"><p class="ct">⚠ Désactiver <strong>{{u.prenom}} {{u.nom}}</strong> ?</p><div class="ca"><button @click="cid=null" class="bcc">Annuler</button><button @click="desactiver(u.id)" class="bcw">Oui, désactiver</button></div></div></td></tr>
-                  </template>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <!-- DÉSACTIVÉS -->
-          <section v-if="disabledUsers.length" class="section">
-            <div class="sh"><span class="dot gray-bg"></span><h2 class="st">Comptes désactivés</h2><span class="cnt">{{disabledUsers.length}}</span></div>
-            <div class="card">
-              <table class="tbl">
-                <thead><tr><th>Membre</th><th>Rôle</th><th class="tc">Action</th></tr></thead>
-                <tbody>
-                  <tr v-for="u in disabledUsers" :key="u.id" class="dim">
-                    <td><div class="uc"><div class="av gray-av">{{ini(u)}}</div><div><p class="un">{{u.prenom}} {{u.nom}}</p><p class="ue">{{u.email}}</p></div></div></td>
-                    <td><span class="rb gray-rb">{{u.role}}</span></td>
-                    <td class="tc"><button @click="reactiver(u.id)" class="bs">↺ Réactiver</button></td>
+                  <tr v-if="cid === u.id" class="crow">
+                    <td colspan="6">
+                      <div class="cbar">
+                        <p class="ct">⚠ Désactiver <strong>{{ u.prenom }} {{ u.nom }}</strong> ?</p>
+                        <div class="ca">
+                          <button @click="cid = null" class="bcc">Annuler</button>
+                          <button @click="desactiver(u.id)" class="bcw">Oui, désactiver</button>
+                        </div>
+                      </div>
+                    </td>
                   </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <!-- REJETÉS -->
-          <section v-if="rejectedUsers.length" class="section">
-            <div class="sh"><span class="dot red-bg"></span><h2 class="st">Comptes rejetés</h2><span class="cnt">{{rejectedUsers.length}}</span></div>
-            <div class="card">
-              <table class="tbl">
-                <thead><tr><th>Membre</th><th>Rôle</th><th>Date</th></tr></thead>
-                <tbody>
-                  <tr v-for="u in rejectedUsers" :key="u.id" class="dim">
-                    <td><div class="uc"><div class="av gray-av">{{ini(u)}}</div><div><p class="un">{{u.prenom}} {{u.nom}}</p><p class="ue">{{u.email}}</p></div></div></td>
-                    <td><span class="rb gray-rb">{{u.role}}</span></td>
-                    <td class="mu">{{fmt(u.created_at)}}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
+                </template>
+              </tbody>
+            </table>
+          </div>
         </template>
       </div>
     </main>
   </div>
 </template>
+
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
 import AppSidebar from '../../components/AppSidebar.vue';
 
-const allUsers=ref([]),loading=ref(false),globalMessage=ref(''),globalSuccess=ref(true),cid=ref(null),pid=ref(null);
-const members=computed(()=>allUsers.value.filter(u=>!['admin','super_admin'].includes(u.role)));
-const pendingUsers=computed(()=>members.value.filter(u=>u.statut==='en_attente'));
-const activeUsers=computed(()=>members.value.filter(u=>u.statut==='actif'));
-const disabledUsers=computed(()=>members.value.filter(u=>u.statut==='desactive'));
-const rejectedUsers=computed(()=>members.value.filter(u=>u.statut==='rejete'));
-const fetchUsers=async()=>{loading.value=true;try{const r=await api.get('/users');allUsers.value=r.data;}catch{msg('Erreur.',false);}finally{loading.value=false;}};
+const allUsers = ref([]), loading = ref(false), globalMessage = ref(''), globalSuccess = ref(true), cid = ref(null), pid = ref(null);
+const activeStatus = ref('en_attente');
+const roleFilter = ref('');
+const search = ref('');
+
+const members = computed(() => allUsers.value.filter(u => !['admin', 'super_admin'].includes(u.role)));
+const pendingUsers  = computed(() => members.value.filter(u => u.statut === 'en_attente'));
+const activeUsers   = computed(() => members.value.filter(u => u.statut === 'actif'));
+const disabledUsers = computed(() => members.value.filter(u => u.statut === 'desactive'));
+
+const statusTabs = computed(() => [
+  { key: 'en_attente', label: 'En attente', count: pendingUsers.value.length,  dot: 'dot-yellow' },
+  { key: 'actif',      label: 'Actifs',     count: activeUsers.value.length,   dot: 'dot-green'  },
+  { key: 'desactive',  label: 'Désactivés', count: disabledUsers.value.length, dot: 'dot-gray'   },
+  { key: 'rejete',     label: 'Rejetés',    count: members.value.filter(u => u.statut === 'rejete').length, dot: 'dot-red' },
+]);
+
+const filteredUsers = computed(() => {
+  let list = members.value.filter(u => u.statut === activeStatus.value);
+  if (roleFilter.value) list = list.filter(u => u.role === roleFilter.value);
+  if (search.value.trim()) {
+    const q = search.value.toLowerCase();
+    list = list.filter(u => u.nom.toLowerCase().includes(q) || u.prenom.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+  }
+  return list;
+});
+
+const fetchUsers = async () => { loading.value = true; try { const r = await api.get('/users'); allUsers.value = r.data; } catch { msg('Erreur de chargement.', false); } finally { loading.value = false; } };
 onMounted(fetchUsers);
-const msg=(m,ok=true)=>{globalMessage.value=m;globalSuccess.value=ok;setTimeout(()=>globalMessage.value='',4000);};
-const fmt=d=>d?new Date(d).toLocaleDateString('fr-FR'):'—';
-const ini=u=>((u.prenom||'')[0]+(u.nom||'')[0]).toUpperCase();
-const rc=r=>({developpeur:'dev-rb',testeur:'test-rb',admin:'admin-rb'}[r]||'');
-const valider=async(id)=>{if(pid.value)return;pid.value=id;try{await api.put(`/users/${id}/validate`,{action:'accepter'});msg('✓ Compte validé');await fetchUsers();}catch{msg('Erreur.',false);}finally{pid.value=null;}};
-const rejeter=async(id)=>{if(pid.value)return;pid.value=id;try{await api.put(`/users/${id}/validate`,{action:'rejeter'});msg('Compte rejeté.');await fetchUsers();}catch{msg('Erreur.',false);}finally{pid.value=null;}};
-const desactiver=async(id)=>{cid.value=null;try{await api.put(`/users/${id}/deactivate`);msg('Compte désactivé.');await fetchUsers();}catch(e){msg(e.response?.data?.message||'Erreur.',false);}};
-const reactiver=async(id)=>{try{await api.put(`/users/${id}/reactivate`);msg('✓ Compte réactivé');await fetchUsers();}catch{msg('Erreur.',false);}};
+
+const msg = (m, ok = true) => { globalMessage.value = m; globalSuccess.value = ok; setTimeout(() => globalMessage.value = '', 4000); };
+const fmt = d => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
+const ini = u => ((u.prenom || '')[0] + (u.nom || '')[0]).toUpperCase();
+const rc = r => ({ developpeur: 'dev-rb', testeur: 'test-rb' }[r] || '');
+const roleLabel = r => ({ developpeur: 'Développeur', testeur: 'Testeur' }[r] || r);
+const stLabel = s => ({ en_attente: 'En attente', actif: 'Actif', desactive: 'Désactivé', rejete: 'Rejeté' }[s] || s);
+const stClass = s => ({ en_attente: 'st-wait', actif: 'st-ok', desactive: 'st-off', rejete: 'st-rej' }[s] || '');
+
+const valider  = async (id) => { if (pid.value) return; pid.value = id; try { await api.put(`/users/${id}/validate`, { action: 'accepter' }); msg('✓ Compte validé'); await fetchUsers(); } catch { msg('Erreur.', false); } finally { pid.value = null; } };
+const rejeter  = async (id) => { if (pid.value) return; pid.value = id; try { await api.put(`/users/${id}/validate`, { action: 'rejeter'  }); msg('Compte rejeté.');  await fetchUsers(); } catch { msg('Erreur.', false); } finally { pid.value = null; } };
+const desactiver = async (id) => { cid.value = null; try { await api.put(`/users/${id}/deactivate`); msg('Compte désactivé.'); await fetchUsers(); } catch (e) { msg(e.response?.data?.message || 'Erreur.', false); } };
+const reactiver  = async (id) => { try { await api.put(`/users/${id}/reactivate`); msg('✓ Compte réactivé'); await fetchUsers(); } catch { msg('Erreur.', false); } };
 </script>
+
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 *{font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;}
@@ -128,26 +172,42 @@ const reactiver=async(id)=>{try{await api.put(`/users/${id}/reactivate`);msg('�
 .stat-num{display:block;font-size:1.5rem;font-weight:800;line-height:1;}
 .yellow{color:#d97706;}.green{color:#16a34a;}.gray{color:#94a3b8;}
 .stat-label{font-size:.75rem;color:#94a3b8;}
-.page-content{padding:1.5rem 2.5rem;display:flex;flex-direction:column;gap:1.75rem;}
+.page-content{padding:1.5rem 2.5rem;display:flex;flex-direction:column;gap:1.25rem;}
 .alert{padding:.75rem 1rem;border-radius:8px;font-size:.875rem;font-weight:500;}
 .alert-ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
 .alert-err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
 .loading-state{display:flex;align-items:center;gap:.5rem;color:#94a3b8;font-size:.875rem;padding:2rem 0;}
 .spin{animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
-.section{display:flex;flex-direction:column;gap:.875rem;}
-.sh{display:flex;align-items:center;gap:.5rem;}
-.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.yellow-bg{background:#f59e0b;}.green-bg{background:#22c55e;}.gray-bg{background:#94a3b8;}.red-bg{background:#ef4444;}
-.st{font-size:.9375rem;font-weight:700;color:#1e293b;margin:0;}
-.cnt{background:#f1f5f9;color:#64748b;font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:20px;border:1px solid #e2e8f0;}
-.empty{color:#94a3b8;font-size:.875rem;font-style:italic;}
+.tab-bar{display:flex;gap:.375rem;background:white;border:1px solid #e2e8f0;border-radius:12px;padding:.375rem;width:fit-content;}
+.tab{display:flex;align-items:center;gap:.5rem;padding:.5rem 1.125rem;border-radius:8px;border:none;background:none;font-size:.8125rem;font-weight:600;color:#64748b;cursor:pointer;font-family:inherit;transition:all .15s;}
+.tab:hover{background:#f8fafc;color:#1e293b;}
+.tab-active{background:#1e293b;color:white;}
+.tab-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dot-yellow{background:#f59e0b;}.dot-green{background:#22c55e;}.dot-gray{background:#94a3b8;}.dot-red{background:#ef4444;}
+.tab-cnt{font-size:.6875rem;font-weight:700;padding:1px 7px;border-radius:10px;background:#f1f5f9;color:#64748b;}
+.tab-active .tab-cnt{background:rgba(255,255,255,.2);color:white;}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.role-filters{display:flex;gap:.375rem;}
+.rfb{padding:.4375rem .875rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;font-weight:500;color:#64748b;background:white;cursor:pointer;font-family:inherit;transition:all .15s;}
+.rfb:hover{border-color:#cbd5e1;color:#1e293b;}
+.rfb-active{background:#1e293b;color:white;border-color:#1e293b;}
+.rfb-test.rfb-active{background:#7c3aed;border-color:#7c3aed;}
+.rfb-dev.rfb-active{background:#1d4ed8;border-color:#1d4ed8;}
+.search-wrap{position:relative;}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;}
+.search-input{padding:.5rem .875rem .5rem 2rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;color:#1e293b;background:white;outline:none;width:220px;font-family:inherit;transition:border-color .2s;}
+.search-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);}
+.search-input::placeholder{color:#cbd5e1;}
+.empty{text-align:center;padding:4rem 2rem;}
+.ei{font-size:3rem;margin-bottom:.75rem;}
+.et{font-size:.9375rem;font-weight:600;color:#64748b;margin:0;}
 .card{background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
 .tbl{width:100%;border-collapse:collapse;font-size:.875rem;}
 .tbl thead{background:#f8fafc;}
 .tbl th{padding:.75rem 1rem;text-align:left;font-size:.6875rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e2e8f0;}
 .tbl td{padding:.875rem 1rem;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
 .tbl tbody tr:last-child td{border-bottom:none;}
-.tbl tbody tr:hover:not(.crow):not(.dim) td{background:#f8fafc;}
+.tbl tbody tr:hover:not(.crow) td{background:#f8fafc;}
 .tc{text-align:center;}
 .mu{color:#94a3b8;font-size:.8125rem;}
 .uc{display:flex;align-items:center;gap:.625rem;}
@@ -155,14 +215,16 @@ const reactiver=async(id)=>{try{await api.put(`/users/${id}/reactivate`);msg('�
 .blue-av{background:#dbeafe;color:#1d4ed8;}.gray-av{background:#f1f5f9;color:#94a3b8;}
 .un{font-size:.875rem;font-weight:600;color:#1e293b;margin:0;}
 .ue{font-size:.75rem;color:#94a3b8;margin:0;}
-.rb{font-size:.6875rem;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:capitalize;}
-.dev-rb{background:#dbeafe;color:#1d4ed8;}.test-rb{background:#f3e8ff;color:#7c3aed;}.admin-rb{background:#fee2e2;color:#dc2626;}.gray-rb{background:#f1f5f9;color:#94a3b8;}
+.rb{font-size:.6875rem;font-weight:700;padding:3px 9px;border-radius:20px;}
+.dev-rb{background:#dbeafe;color:#1d4ed8;}.test-rb{background:#f3e8ff;color:#7c3aed;}
 .gh-link{color:#3b82f6;font-size:.8125rem;text-decoration:none;}
 .gh-link:hover{text-decoration:underline;}
+.st-chip{font-size:.6875rem;font-weight:700;padding:3px 9px;border-radius:20px;}
+.st-wait{background:#fef9c3;color:#92400e;}.st-ok{background:#dcfce7;color:#166534;}.st-off{background:#f1f5f9;color:#64748b;}.st-rej{background:#fee2e2;color:#dc2626;}
 .ab{display:flex;gap:.375rem;justify-content:center;}
-.ba{padding:5px 12px;background:#22c55e;color:white;border:none;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;}
+.ba{padding:5px 12px;background:#22c55e;color:white;border:none;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;}
 .ba:hover:not(:disabled){background:#16a34a;}.ba:disabled{opacity:.5;cursor:not-allowed;}
-.br{padding:5px 12px;background:#ef4444;color:white;border:none;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;}
+.br{padding:5px 12px;background:#ef4444;color:white;border:none;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;}
 .br:hover:not(:disabled){background:#dc2626;}.br:disabled{opacity:.5;cursor:not-allowed;}
 .bw{padding:5px 12px;background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;}
 .bw:hover{background:#ea580c;color:white;}
@@ -174,5 +236,4 @@ const reactiver=async(id)=>{try{await api.put(`/users/${id}/reactivate`);msg('�
 .ca{display:flex;gap:.5rem;}
 .bcc{padding:5px 12px;background:white;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;}
 .bcw{padding:5px 12px;background:#ea580c;color:white;border:none;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;}
-.dim td{opacity:.6;}
 </style>

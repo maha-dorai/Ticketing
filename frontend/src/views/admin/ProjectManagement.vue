@@ -100,8 +100,8 @@
           </div>
           <div class="row2">
             <div class="field">
-              <label class="label">Date de début</label>
-              <input v-model="form.date_debut" type="date" class="input" />
+              <label class="label">Date de début *</label>
+              <input v-model="form.date_debut" type="date" class="input" required />
             </div>
             <div class="field">
               <label class="label">Date de fin</label>
