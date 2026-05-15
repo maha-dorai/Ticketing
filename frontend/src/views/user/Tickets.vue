@@ -41,7 +41,7 @@
         <div v-else-if="!filteredTickets.length" class="empty">
           <div class="ei">🎫</div>
           <h3 class="et">Aucun ticket trouvé</h3>
-          <p class="es">{{ etatFilter ? 'Aucun ticket avec ce statut.' : currentUser?.role === \'testeur\' ? \'Créez le premier ticket !\' : \'Aucun ticket pour ce projet.\' }}</p>
+          <p class="es">{{ etatFilter ? 'Aucun ticket avec ce statut.' : emptyMessage }}</p>
         </div>
 
         <!-- Grille de tickets -->
@@ -154,6 +154,10 @@ const goBack = () => {
 
 const filteredTickets = computed(() =>
   etatFilter.value ? tickets.value.filter(t => t.etat === etatFilter.value) : tickets.value
+);
+
+const emptyMessage = computed(() =>
+  currentUser?.role === 'testeur' ? 'Créez le premier ticket !' : 'Aucun ticket pour ce projet.'
 );
 
 const fetchProjectInfo = async () => {

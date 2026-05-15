@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Mail\ProjectAssigned;
 use Illuminate\Http\Request;
 use App\Http\Requests\AssignMembersRequest;
+use Illuminate\Support\Facades\Mail;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ProjectController extends Controller
@@ -139,7 +141,36 @@ class ProjectController extends Controller
                 ], 422);
             }
 
-            $project->users()->sync($request->user_ids);
+            // ✅ Vérifier qu'il n'y a qu'un seul testeur par projet
+            $testeurs = User::whereIn('id', $request->user_ids)
+                            ->where('role', 'testeur')
+                            ->get();
+
+            if ($testeurs->count() > 1) {
+                return response()->json([
+                    'message' => 'Un projet ne peut avoir qu\'un seul testeur. Vous avez sélectionné : ' .
+                                 $testeurs->map(fn($u) => "{$u->prenom} {$u->nom}")->join(', ') . '.',
+                ], 422);
+            }
+
+
+
+            // 🔔 Notification in-app + 📧 Email pour les nouveaux membres
+            $newUserIds = array_diff($request->user_ids, $project->users()->pluck('users.id')->toArray());
+            $newUsers   = User::whereIn('id', $request->user_ids)->get();
+
+            foreach ($newUsers as $user) {
+                // In-app notification
+                \App\Http\Controllers\NotificationController::createAndBroadcast(
+                    $user->id,
+                    "📁 Vous avez été ajouté(e) au projet « {$project->nom} ».",
+                    null
+                );
+                // Email
+                try {
+                    Mail::to($user->email)->send(new ProjectAssigned($project, $user));
+                } catch (\Exception $e) { /* ne pas bloquer si mail échoue */ }
+            }
 
             return response()->json(['message' => 'Membres affectés avec succès.']);
         } catch (\Exception $e) {
