@@ -29,19 +29,13 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/projects/:id',
-    name: 'ProjectDetail',
-    component: () => import('../views/user/ProjectDetail.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/tickets',
+    path: '/projects/:projectId/tickets',
     name: 'Tickets',
     component: () => import('../views/user/Tickets.vue'),
     meta: { requiresAuth: true },
   },
   {
-    path: '/tickets/:id',
+    path: '/projects/:projectId/tickets/:id',
     name: 'TicketDetails',
     component: () => import('../views/user/TicketDetails.vue'),
     meta: { requiresAuth: true },
@@ -71,6 +65,12 @@ const routes = [
     component: () => import('../views/admin/ProjectManagement.vue'),
     meta: { requiresAuth: true, requiresAdmin: true },
   },
+  {
+    path: '/admin/projects/:projectId/tickets',
+    name: 'AdminTickets',
+    component: () => import('../views/user/Tickets.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
 
   {
     path: '/super-admin/admins',
@@ -92,12 +92,6 @@ const publicRoutes = ['Login', 'Register', 'ForgotPassword', 'ResetPassword'];
 
 router.beforeEach((to, _from) => {
   const authStore = useAuthStore();
-
-  // Si le store n'est pas encore initialisé (ex: refresh de page),
-  // on restaure depuis localStorage directement
-  if (!authStore.isAuthenticated) {
-    authStore.init();
-  }
 
   // 1. صفحة محمية وما دخلش بعد
   if (to.meta.requiresAuth && !authStore.isAuthenticated)

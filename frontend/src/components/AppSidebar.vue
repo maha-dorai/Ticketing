@@ -21,11 +21,9 @@
         <router-link to="/admin/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
         </router-link>
-        <router-link to="/tickets" class="nav-item" active-class="nav-active">
-          <span class="nav-icon">🎟️</span> Tickets
-        </router-link>
-        <router-link to="/notifications" class="nav-item" active-class="nav-active">
+        <router-link to="/admin/notifications" class="nav-item" active-class="nav-active">
           <span class="nav-icon">🔔</span> Notifications
+          <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
         </router-link>
       </template>
 
@@ -38,11 +36,9 @@
         <router-link to="/admin/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
         </router-link>
-        <router-link to="/tickets" class="nav-item" active-class="nav-active">
-          <span class="nav-icon">🎟️</span> Tickets
-        </router-link>
-        <router-link to="/notifications" class="nav-item" active-class="nav-active">
+        <router-link to="/admin/notifications" class="nav-item" active-class="nav-active">
           <span class="nav-icon">🔔</span> Notifications
+          <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
         </router-link>
       </template>
 
@@ -52,11 +48,9 @@
         <router-link to="/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Mes Projets
         </router-link>
-        <router-link to="/tickets" class="nav-item" active-class="nav-active">
-          <span class="nav-icon">🎟️</span> Mes Tickets
-        </router-link>
         <router-link to="/notifications" class="nav-item" active-class="nav-active">
           <span class="nav-icon">🔔</span> Notifications
+          <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
         </router-link>
       </template>
 
@@ -86,9 +80,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
+import api from '../services/api';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -96,6 +91,7 @@ const router = useRouter();
 const user = computed(() => authStore.currentUser);
 const isAdmin = computed(() => authStore.isAdmin());
 const isSuperAdmin = computed(() => authStore.isSuperAdmin());
+const unreadCount = ref(0);
 
 const initials = computed(() => {
   const u = user.value;
@@ -109,6 +105,29 @@ const roleLabel = computed(() => ({
   developpeur: 'Développeur',
   testeur: 'Testeur',
 }[user.value?.role] || ''));
+
+const fetchUnreadCount = async () => {
+  try {
+    const res = await api.get('/notifications/unread-count');
+    unreadCount.value = res.data.count;
+  } catch {}
+};
+
+// Polling toutes les 30 secondes
+let pollInterval = null;
+onMounted(() => {
+  fetchUnreadCount();
+  pollInterval = setInterval(fetchUnreadCount, 30000);
+  // Refresh immédiat quand une notification est lue
+  document.addEventListener('notifications-read', fetchUnreadCount);
+});
+onUnmounted(() => {
+  clearInterval(pollInterval);
+  document.removeEventListener('notifications-read', fetchUnreadCount);
+});
+
+// Exposer pour que Notifications.vue puisse reset le badge
+defineExpose({ fetchUnreadCount });
 
 const doLogout = async () => {
   await authStore.logout();
@@ -182,4 +201,25 @@ const doLogout = async () => {
   flex-shrink: 0;
 }
 .logout-btn:hover { color: #ef4444; }
+
+.nav-item { position: relative; }
+.notif-badge {
+  margin-left: auto;
+  background: #ef4444;
+  color: white;
+  font-size: 0.625rem;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  animation: pulse-badge 2s infinite;
+}
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
 </style>

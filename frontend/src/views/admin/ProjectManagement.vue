@@ -44,8 +44,8 @@
             <thead><tr><th>Projet</th><th>Statut</th><th>Membres</th><th>Dates</th><th class="tc">Actions</th></tr></thead>
             <tbody>
               <tr v-for="p in filteredProjects" :key="p.id">
-                <td>
-                  <p class="pn">{{ p.nom }}</p>
+                <td @click="$router.push({ name: 'Tickets', params: { projectId: p.id } })" style="cursor:pointer;" title="Voir les tickets">
+                  <p class="pn" style="color:#2563eb;">{{ p.nom }} <span style="font-size:11px;opacity:.7;">→ tickets</span></p>
                   <p class="pd">{{ p.description || '—' }}</p>
                 </td>
                 <td>

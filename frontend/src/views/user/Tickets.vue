@@ -5,18 +5,17 @@
       <!-- Header & Navigation -->
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-extrabold text-gray-900">Mes Tickets</h1>
+          <button @click="$router.push({ name: 'Projects' })" class="text-sm text-blue-600 hover:underline mb-1 flex items-center gap-1">
+            ← Retour aux projets
+          </button>
+          <h1 class="text-2xl font-extrabold text-gray-900">
+            📂 {{ projectName || 'Chargement...' }}
+          </h1>
           <p class="text-gray-500 text-sm mt-0.5">
             {{ currentUser?.prenom }} {{ currentUser?.nom }} — {{ currentUser?.role }}
           </p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <button @click="$router.push({ name: 'Projects' })" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold transition">
-            📂 Projets
-          </button>
-          <button @click="$router.push({ name: 'Tickets' })" class="px-4 py-2 text-sm text-blue-700 bg-blue-100 rounded font-semibold ring-2 ring-blue-500">
-            🎟️ Tickets
-          </button>
           <button @click="$router.push({ name: 'Notifications' })" class="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-semibold transition">
             🔔 Notifications
           </button>
@@ -31,7 +30,7 @@
 
       <!-- Actions bar -->
       <div class="flex items-center justify-between bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <h2 class="text-lg font-bold text-gray-800">Liste des tickets</h2>
+        <h2 class="text-lg font-bold text-gray-800">Tickets du projet</h2>
         <button v-if="currentUser?.role === 'testeur'" @click="showCreateModal = true" class="px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 font-bold transition shadow-sm">
           + Créer un ticket
         </button>
@@ -43,13 +42,14 @@
       <!-- Aucun ticket -->
       <div v-else-if="tickets.length === 0" class="text-center py-16 bg-white rounded-xl shadow border border-gray-100 text-gray-400">
         <div class="text-4xl mb-3">🎫</div>
-        <p class="font-medium text-gray-500">Aucun ticket trouvé.</p>
-        <p class="text-sm mt-1">Vous n'avez pas encore de tickets associés.</p>
+        <p class="font-medium text-gray-500">Aucun ticket trouvé pour ce projet.</p>
+        <p class="text-sm mt-1">Créez le premier ticket !</p>
       </div>
 
       <!-- Grille de tickets -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        <div v-for="ticket in tickets" :key="ticket.id" @click="$router.push({ name: 'TicketDetails', params: { id: ticket.id } })"
+        <div v-for="ticket in tickets" :key="ticket.id"
+          @click="$router.push({ name: 'TicketDetails', params: { projectId: projectId, id: ticket.id } })"
           class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-blue-300 transition cursor-pointer flex flex-col justify-between gap-4">
           
           <div>
@@ -66,20 +66,16 @@
 
           <div class="space-y-2 border-t pt-3">
             <div class="flex items-center justify-between text-xs text-gray-500 font-medium">
-              <span class="flex items-center gap-1">
-                <span>📁</span> <span class="truncate max-w-[120px]">{{ ticket.project?.nom || 'Projet inconnu' }}</span>
-              </span>
               <span :class="prioriteClass(ticket.priorite)" class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase">
                 {{ ticket.priorite }}
               </span>
+              <span class="text-gray-400">{{ formatDate(ticket.created_at) }}</span>
             </div>
             <div class="flex items-center justify-between text-xs text-gray-500">
               <span v-if="ticket.developpeur" class="flex items-center gap-1" title="Développeur assigné">
                 <span>👨‍💻</span> <span class="truncate">{{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}</span>
               </span>
               <span v-else class="italic text-gray-400">Non assigné</span>
-
-              <span class="text-gray-400">{{ formatDate(ticket.created_at) }}</span>
             </div>
           </div>
         </div>
@@ -91,17 +87,10 @@
     <div v-if="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-          <h3 class="text-lg font-bold text-gray-900">Créer un nouveau ticket</h3>
+          <h3 class="text-lg font-bold text-gray-900">Créer un ticket — {{ projectName }}</h3>
           <button @click="closeModal" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
         </div>
-        <form @submit.prevent="submitTicket" class="p-6 space-y-4">
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Projet</label>
-            <select v-model="form.project_id" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 outline-none text-sm bg-white">
-              <option disabled value="">Sélectionnez un projet...</option>
-              <option v-for="p in myProjects" :key="p.id" :value="p.id">{{ p.nom }}</option>
-            </select>
-          </div>
+        <div class="p-6 space-y-4">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-1">Titre</label>
             <input v-model="form.titre" required type="text" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-200 outline-none text-sm" placeholder="Titre du ticket">
@@ -130,12 +119,12 @@
           </div>
           <div v-if="formError" class="text-sm text-red-600 bg-red-50 p-2 rounded">{{ formError }}</div>
           <div class="pt-4 flex justify-end gap-2 border-t">
-            <button type="button" @click="closeModal" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold transition">Annuler</button>
-            <button type="submit" :disabled="submitting" class="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg font-bold transition shadow-sm">
+            <button @click="closeModal" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-semibold transition">Annuler</button>
+            <button @click="submitTicket" :disabled="submitting" class="px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg font-bold transition shadow-sm">
               {{ submitting ? 'Création...' : 'Créer le ticket' }}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
 
@@ -143,17 +132,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../../stores/authStore';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import api from '../../services/api';
 
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
+
+const projectId = route.params.projectId;
 const currentUser = authStore.currentUser;
 
 const tickets = ref([]);
-const myProjects = ref([]);
+const projectName = ref('');
+const projectDevs = ref([]);
 const loading = ref(false);
 
 const showCreateModal = ref(false);
@@ -163,54 +156,43 @@ const form = ref({
   titre: '',
   description: '',
   priorite: 'BASSE',
-  project_id: '',
   developpeur_id: ''
 });
+
+const fetchProjectInfo = async () => {
+  try {
+    const res = await api.get('/projects');
+    const allProjects = res.data.data || res.data;
+    const current = allProjects.find(p => p.id == projectId);
+    if (current) {
+      projectName.value = current.nom;
+      projectDevs.value = (current.users || []).filter(u => u.role === 'developpeur');
+    }
+  } catch (e) {
+    console.error('Erreur projet', e);
+  }
+};
 
 const fetchTickets = async () => {
   loading.value = true;
   try {
-    const res = await api.get('/tickets');
+    const res = await api.get(`/projects/${projectId}/tickets`);
     tickets.value = res.data;
   } catch (e) {
-    console.error("Erreur lors du chargement des tickets", e);
+    console.error('Erreur tickets', e);
   } finally {
     loading.value = false;
   }
 };
 
-const fetchProjects = async () => {
-  if (currentUser?.role !== 'testeur') return;
-  try {
-    // Fetch all projects (to populate dropdown)
-    const res = await api.get('/projects');
-    myProjects.value = res.data.data || res.data;
-  } catch (e) {
-    console.error("Erreur projets", e);
-  }
-};
-
-// Filter developers based on selected project
-const projectDevs = computed(() => {
-  if (!form.value.project_id) return [];
-  const project = myProjects.value.find(p => p.id === form.value.project_id);
-  if (!project || !project.users) return [];
-  return project.users.filter(u => u.role === 'developpeur');
-});
-
-// Reset developer if project changes
-watch(() => form.value.project_id, () => {
-  form.value.developpeur_id = '';
-});
-
 const submitTicket = async () => {
+  if (!form.value.titre) { formError.value = 'Le titre est requis'; return; }
   submitting.value = true;
   formError.value = '';
   try {
     const payload = { ...form.value };
     if (!payload.developpeur_id) delete payload.developpeur_id;
-    
-    await api.post('/tickets', payload);
+    await api.post(`/projects/${projectId}/tickets`, payload);
     await fetchTickets();
     closeModal();
   } catch (e) {
@@ -223,7 +205,7 @@ const submitTicket = async () => {
 const closeModal = () => {
   showCreateModal.value = false;
   formError.value = '';
-  form.value = { titre: '', description: '', priorite: 'BASSE', project_id: '', developpeur_id: '' };
+  form.value = { titre: '', description: '', priorite: 'BASSE', developpeur_id: '' };
 };
 
 const logout = () => {
@@ -232,11 +214,10 @@ const logout = () => {
 };
 
 onMounted(() => {
+  fetchProjectInfo();
   fetchTickets();
-  fetchProjects();
 });
 
-// Helpers UI
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '';
 
 const etatClass = (etat) => {

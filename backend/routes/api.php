@@ -26,21 +26,22 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
     Route::put('/users/change-password', [UserController::class, 'changePassword']);
     Route::put('/users/change-email',    [UserController::class, 'changeEmail']);
     Route::get('/projects',              [ProjectController::class, 'index']);
-    Route::get('/projects/{id}',         [ProjectController::class, 'show']);
 
-    // ── Routes Sprint 3 : Tickets, Commentaires, Notifications ─────────────────
-    Route::get('/tickets',               [TicketController::class, 'index']);
-    Route::get('/projects/{id}/tickets', [TicketController::class, 'byProject']);
-    Route::get('/tickets/{id}',          [TicketController::class, 'show']);
-    Route::post('/tickets',              [TicketController::class, 'store']);
-    Route::put('/tickets/{id}',          [TicketController::class, 'update']);
-    Route::put('/tickets/{id}/status',   [TicketController::class, 'changeStatus']);
-    Route::put('/tickets/{id}/close',    [TicketController::class, 'close']);
+    // ── Routes Sprint 3 : Tickets (imbriqués dans les projets) ─────────────────
+    Route::get('/projects/{projectId}/tickets',        [TicketController::class, 'index']);
+    Route::post('/projects/{projectId}/tickets',       [TicketController::class, 'store']);
+    Route::get('/tickets/{id}',                        [TicketController::class, 'show']);
+    Route::put('/tickets/{id}',                        [TicketController::class, 'update']);
+    Route::put('/tickets/{id}/status',                 [TicketController::class, 'changeStatus']);
+    Route::put('/tickets/{id}/close',                  [TicketController::class, 'close']);
 
     Route::post('/comments',             [CommentController::class, 'store']);
+    Route::put('/comments/{id}',         [CommentController::class, 'update']);
+    Route::delete('/comments/{id}',      [CommentController::class, 'destroy']);
 
-    Route::get('/notifications',         [NotificationController::class, 'index']);
-    Route::put('/notifications/read',    [NotificationController::class, 'markAsRead']);
+    Route::get('/notifications',              [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::put('/notifications/read',         [NotificationController::class, 'markAsRead']);
 
     // ── Routes Admin (admin + super_admin) ───────────────────────────────────
     Route::middleware('is_admin')->group(function () {
