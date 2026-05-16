@@ -155,9 +155,15 @@ class ProjectController extends Controller
 
 
 
-            // 🔔 Notification in-app + 📧 Email pour les nouveaux membres
-            $newUserIds = array_diff($request->user_ids, $project->users()->pluck('users.id')->toArray());
-            $newUsers   = User::whereIn('id', $request->user_ids)->get();
+            // ✅ Fix : récupérer les anciens membres AVANT le sync
+            $oldUserIds = $project->users()->pluck('users.id')->toArray();
+            $newUserIds = array_diff($request->user_ids, $oldUserIds);
+
+            // ✅ Fix principal : sauvegarder les membres en base de données
+            $project->users()->sync($request->user_ids);
+
+            // 🔔 Notification in-app + 📧 Email uniquement pour les NOUVEAUX membres
+            $newUsers = User::whereIn('id', $newUserIds)->get();
 
             foreach ($newUsers as $user) {
                 // In-app notification

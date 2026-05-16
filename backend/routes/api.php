@@ -8,6 +8,13 @@ use App\Http\Controllers\TicketController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Http\Request;
+
+// ✅ Fix : Pusher private channel authentication
+Route::post('/broadcasting/auth', function (Request $request) {
+    return Broadcast::auth($request);
+})->middleware('auth:api');
 
 // ── Routes publiques (limitées à 5 req/min) ──────────────────────────────────
 Route::middleware('throttle:5,1')->group(function () {
