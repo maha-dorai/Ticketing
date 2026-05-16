@@ -152,9 +152,16 @@ const goBack = () => {
   else router.push({ name: 'Projects' });
 };
 
-const filteredTickets = computed(() =>
-  etatFilter.value ? tickets.value.filter(t => t.etat === etatFilter.value) : tickets.value
-);
+const PRIO_ORDER = { CRITIQUE: 0, HAUTE: 1, MOYENNE: 2, BASSE: 3 };
+
+const filteredTickets = computed(() => {
+  const list = etatFilter.value
+    ? tickets.value.filter(t => t.etat === etatFilter.value)
+    : tickets.value;
+  return [...list].sort((a, b) =>
+    (PRIO_ORDER[a.priorite] ?? 99) - (PRIO_ORDER[b.priorite] ?? 99)
+  );
+});
 
 const emptyMessage = computed(() =>
   currentUser?.role === 'testeur' ? 'Créez le premier ticket !' : 'Aucun ticket pour ce projet.'

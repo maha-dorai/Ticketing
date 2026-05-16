@@ -137,6 +137,8 @@
         </div>
         <div class="assign-body">
           <p class="assign-hint">Sélectionnez les membres actifs à affecter à ce projet.</p>
+          <!-- ✅ Fix : afficher l'erreur DANS le modal -->
+          <div v-if="assignError" class="alert alert-err" style="margin-bottom:1rem;">✕ {{ assignError }}</div>
           <div class="member-grid">
             <label v-for="u in activeMembers" :key="u.id" class="member-check" :class="{selected: selectedIds.includes(u.id)}">
               <input type="checkbox" :value="u.id" v-model="selectedIds" class="hidden-cb"/>
@@ -190,9 +192,14 @@ let searchTimer = null;
 const filteredProjects = computed(() =>
   filter.value ? projects.value.filter(p => p.statut === filter.value) : projects.value
 );
-const activeMembers = computed(() =>
-  allUsers.value.filter(u => u.statut === 'actif' && !['admin','super_admin'].includes(u.role))
-);
+const activeMembers = computed(() => {
+  const assignedIds = (currentProject.value?.users || []).map(u => u.id);
+  return allUsers.value.filter(u =>
+    u.statut === 'actif' &&
+    !['admin', 'super_admin'].includes(u.role) &&
+    !assignedIds.includes(u.id)
+  );
+});
 
 const fetchProjects = async (page = 1) => {
   loading.value = true;
@@ -256,20 +263,25 @@ const archiveProject = async (id) => {
   catch { msg('Erreur.', false); }
 };
 
+const assignError = ref('');
+
 const openAssign = (p) => {
   currentProject.value = p;
   selectedIds.value = (p.users || []).map(u => u.id);
+  assignError.value = '';
   showAssign.value = true;
 };
 const saveAssign = async () => {
   assigning.value = true;
+  assignError.value = '';
   try {
     await api.post(`/projects/${currentProject.value.id}/assign`, { user_ids: selectedIds.value });
     msg('Membres affectés ✓');
     showAssign.value = false;
     await fetchProjects();
-  } catch (e) { msg(e.response?.data?.message || 'Erreur.', false); }
-  finally { assigning.value = false; }
+  } catch (e) {
+    assignError.value = e.response?.data?.message || 'Erreur.';
+  } finally { assigning.value = false; }
 };
 </script>
 

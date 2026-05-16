@@ -76,6 +76,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import api from '../services/api';
+import echo from '../plugins/echo';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -107,15 +108,31 @@ const fetchUnreadCount = async () => {
 
 // Polling toutes les 30 secondes
 let pollInterval = null;
+let echoChannel = null;
+
 onMounted(() => {
   fetchUnreadCount();
   pollInterval = setInterval(fetchUnreadCount, 30000);
   // Refresh immédiat quand une notification est lue
   document.addEventListener('notifications-read', fetchUnreadCount);
+
+  // ✅ Fix : écoute en temps réel via Pusher (private channel)
+  const userId = user.value?.id;
+  if (userId) {
+    echoChannel = echo.private(`user.${userId}`)
+      .listen('.notification.new', () => {
+        unreadCount.value++;
+      });
+  }
 });
+
 onUnmounted(() => {
   clearInterval(pollInterval);
   document.removeEventListener('notifications-read', fetchUnreadCount);
+  // ✅ Fix : se désabonner du channel Pusher
+  if (echoChannel) {
+    echo.leave(`user.${user.value?.id}`);
+  }
 });
 
 // Exposer pour que Notifications.vue puisse reset le badge
