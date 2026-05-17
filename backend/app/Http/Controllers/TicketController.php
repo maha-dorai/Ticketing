@@ -212,24 +212,22 @@ class TicketController extends Controller
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        // ❌ Admin n'a plus le droit de fermer un ticket
-        // Seul le testeur créateur ou le développeur assigné peuvent fermer
-        $isTesteurCreateur   = $user->role === 'testeur'      && $ticket->testeur_id     === $user->id;
-        $isDeveloppeurAssigne = $user->role === 'developpeur' && $ticket->developpeur_id === $user->id;
+        // Seul le testeur créateur peut fermer un ticket
+        $isTesteurCreateur = $user->role === 'testeur' && $ticket->testeur_id === $user->id;
 
-        if (!$isTesteurCreateur && !$isDeveloppeurAssigne) {
+        if (!$isTesteurCreateur) {
             return response()->json([
-                'message' => 'Seul le testeur créateur ou le développeur assigné peuvent fermer ce ticket'
+                'message' => 'Seul le testeur créateur peut fermer ce ticket'
             ], 403);
         }
 
         $ticket->update(['etat' => 'FERME']);
 
-        // 🔔 Notifier toutes les parties concernées
+        // 🔔 Notifier le développeur assigné (si existant)
         $fermePar = "{$user->prenom} {$user->nom}";
 
         $this->notifyMany(
-            array_filter([$ticket->testeur_id, $ticket->developpeur_id], fn($uid) => $uid !== $user->id),
+            array_filter([$ticket->developpeur_id]),
             "🔒 Le ticket « {$ticket->titre} » a été fermé par {$fermePar}.",
             $ticket->id
         );
