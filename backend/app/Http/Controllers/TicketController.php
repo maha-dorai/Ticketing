@@ -124,6 +124,13 @@ class TicketController extends Controller
             return response()->json(['message' => "Non autorisé. Vous n'êtes pas le créateur de ce ticket"], 403);
         }
 
+        // ✅ Fix #4 — US09-E1 : modification impossible si ticket pris en charge
+        if (in_array($ticket->etat, ['EN_COURS', 'RESOLU', 'FERME'])) {
+            return response()->json([
+                'message' => "Modification impossible : le ticket est déjà « {$ticket->etat} ». Seuls les tickets OUVERTS peuvent être modifiés."
+            ], 403);
+        }
+
         $validated = $request->validate([
             'titre'          => 'sometimes|required|string|max:255',
             'description'    => 'nullable|string',
