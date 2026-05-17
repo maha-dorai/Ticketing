@@ -33,6 +33,7 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
     Route::put('/users/change-password', [UserController::class, 'changePassword']);
     Route::put('/users/change-email',    [UserController::class, 'changeEmail']);
     Route::get('/projects',              [ProjectController::class, 'index']);
+    Route::get('/projects/{id}',         [ProjectController::class, 'show']);      // ✅ Fix #3 — route manquante
 
     // ── Routes Sprint 3 : Tickets (imbriqués dans les projets) ─────────────────
     Route::get('/projects/{projectId}/tickets',        [TicketController::class, 'index']);
