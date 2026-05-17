@@ -47,7 +47,7 @@
                 <option value="RESOLU">RESOLU</option>
               </select>
             </div>
-            <div v-if="(currentUser?.role === 'testeur' && ticket.testeur_id === currentUser.id) || currentUser?.role === 'admin' || currentUser?.role === 'super_admin'">
+            <div v-if="currentUser?.role === 'testeur' && ticket.testeur_id === currentUser.id">
               <button v-if="ticket.etat !== 'FERME'" @click="closeTicket" class="w-full px-3 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded font-bold transition">Fermer le ticket</button>
               <div v-else class="text-sm text-red-600 font-bold text-center py-2 bg-red-50 rounded">TICKET FERMÉ</div>
             </div>
