@@ -30,7 +30,13 @@
               <div class="flex items-center gap-1"><span>✍️</span> Créé par: <span class="font-medium text-gray-700">{{ ticket.testeur?.prenom }} {{ ticket.testeur?.nom }}</span></div>
               <div class="flex items-center gap-1">
                 <span>👨‍💻</span>
-                <span v-if="ticket.developpeur">Assigné à: <span class="font-medium text-gray-700">{{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}</span></span>
+                <span v-if="ticket.assignment_status === 'approved' && ticket.developpeur">
+                  Assigné à: <span class="font-medium text-gray-700">{{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}</span>
+                </span>
+                <span v-else-if="ticket.assignment_status === 'pending' && ticket.proposed_developpeur">
+                  Proposition : <span class="font-medium text-amber-700">{{ ticket.proposed_developpeur.prenom }} {{ ticket.proposed_developpeur.nom }}</span>
+                  <span class="text-amber-600 text-xs">(en attente validation admin)</span>
+                </span>
                 <span v-else class="italic">Non assigné</span>
               </div>
             </div>
@@ -39,10 +45,18 @@
           <!-- Actions -->
           <div class="bg-gray-50 p-4 rounded-lg border flex flex-col gap-3 min-w-[200px] shrink-0">
             <h3 class="text-sm font-bold text-gray-800 border-b pb-2">Actions</h3>
-            <div v-if="currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME'" class="space-y-2">
+            <div v-if="isAdmin && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'" class="space-y-2 mb-3">
+              <h4 class="text-xs font-bold text-gray-800 uppercase">Validation de l'assignation</h4>
+              <p v-if="ticket.proposed_developpeur" class="text-xs text-gray-600">
+                Proposé : {{ ticket.proposed_developpeur.prenom }} {{ ticket.proposed_developpeur.nom }}
+              </p>
+              <button @click="acceptTicket" class="w-full px-3 py-2 text-sm text-white bg-green-600 hover:bg-green-700 rounded font-bold transition">✅ Valider l'assignation</button>
+              <button @click="rejectTicket" class="w-full px-3 py-2 text-sm text-gray-700 bg-gray-200 hover:bg-gray-300 rounded font-bold transition">❌ Refuser l'assignation</button>
+            </div>
+            <div v-if="currentUser?.role === 'developpeur' && ticket.assignment_status === 'approved' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME'" class="space-y-2">
               <label class="text-xs font-semibold text-gray-600 block">Changer l'état</label>
               <select v-model="selectedState" @change="changeState" class="w-full px-2 py-1.5 text-sm border rounded focus:ring focus:ring-blue-200 outline-none">
-                <option value="OUVERT">OUVERT</option>
+                <option value="OUVERT" disabled>OUVERT</option>
                 <option value="EN_COURS">EN_COURS</option>
                 <option value="RESOLU">RESOLU</option>
               </select>
@@ -51,6 +65,25 @@
               <button v-if="ticket.etat !== 'FERME'" @click="closeTicket" class="w-full px-3 py-2 text-sm text-white bg-red-600 hover:bg-red-700 rounded font-bold transition">Fermer le ticket</button>
               <div v-else class="text-sm text-red-600 font-bold text-center py-2 bg-red-50 rounded">TICKET FERMÉ</div>
             </div>
+            
+            <div v-if="isAdmin && ticket.assignment_status !== 'pending' && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-3 mt-2 border-t pt-3">
+              <h4 class="text-xs font-bold text-gray-800 uppercase">Assignation manuelle (Admin)</h4>
+              <div v-if="workloads.length === 0" class="text-xs text-gray-500">Chargement...</div>
+              <div v-else class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <div v-for="dev in workloads" :key="dev.id" class="flex items-center justify-between p-2 bg-white rounded border">
+                  <div>
+                    <div class="text-xs font-bold">{{ dev.prenom }} {{ dev.nom }}</div>
+                    <div class="text-[10px] text-gray-500">
+                      Tickets actifs : {{ dev.active_tickets_count }}
+                    </div>
+                  </div>
+                  <button @click="reassignTicket(dev.id)" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded transition">
+                    Assigner
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div v-if="stateUpdating" class="text-xs text-blue-600 text-center animate-pulse">Mise à jour...</div>
           </div>
         </div>
@@ -137,7 +170,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
@@ -146,6 +179,7 @@ const route      = useRoute();
 const router     = useRouter();
 const authStore  = useAuthStore();
 const currentUser = authStore.currentUser;
+const isAdmin = computed(() => ['admin', 'super_admin'].includes(currentUser?.role));
 
 const ticket       = ref(null);
 const loading      = ref(true);
@@ -167,11 +201,38 @@ const fetchTicket = async () => {
     const res = await api.get(`/tickets/${route.params.id}`);
     ticket.value = res.data;
     selectedState.value = ticket.value.etat;
+    if (isAdmin.value && ticket.value.assignment_status !== 'pending' && ticket.value.assignment_status !== 'approved') {
+      fetchWorkloads();
+    }
   } catch (e) {
     console.error(e);
     router.push({ name: 'Tickets', params: { projectId: route.params.projectId } });
   } finally {
     loading.value = false;
+  }
+};
+
+const workloads = ref([]);
+
+const fetchWorkloads = async () => {
+  try {
+    const res = await api.get(`/projects/${ticket.value.project_id}/developers/workload`);
+    workloads.value = res.data;
+  } catch (e) {
+    console.error('Erreur workloads', e);
+  }
+};
+
+const reassignTicket = async (devId) => {
+  if (!confirm('Voulez-vous forcer l\'assignation à ce développeur ?')) return;
+  stateUpdating.value = true;
+  try {
+    await api.patch(`/tickets/${ticket.value.id}/reassign`, { developpeur_id: devId });
+    await fetchTicket();
+  } catch (e) {
+    alert("Erreur lors de la réassignation");
+  } finally {
+    stateUpdating.value = false;
   }
 };
 
@@ -184,6 +245,32 @@ const changeState = async () => {
   } catch {
     alert("Erreur lors du changement d'état");
     selectedState.value = ticket.value.etat;
+  } finally {
+    stateUpdating.value = false;
+  }
+};
+
+const acceptTicket = async () => {
+  if (!confirm('Voulez-vous valider cette assignation et notifier le développeur ?')) return;
+  stateUpdating.value = true;
+  try {
+    await api.patch(`/tickets/${ticket.value.id}/accept`);
+    await fetchTicket();
+  } catch (e) {
+    alert(e.response?.data?.message || "Erreur lors de l'acceptation");
+  } finally {
+    stateUpdating.value = false;
+  }
+};
+
+const rejectTicket = async () => {
+  if (!confirm('Voulez-vous refuser cette assignation ? Vous devrez assigner manuellement.')) return;
+  stateUpdating.value = true;
+  try {
+    await api.patch(`/tickets/${ticket.value.id}/reject`);
+    await fetchTicket();
+  } catch (e) {
+    alert("Erreur lors du refus");
   } finally {
     stateUpdating.value = false;
   }

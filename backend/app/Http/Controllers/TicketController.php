@@ -3,21 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
-use App\Models\Notification;
 use App\Models\User;
 use App\Mail\TicketAssigned;
+use App\Services\AutoAssignService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 
 class TicketController extends Controller
 {
-    // ── Helpers ────────────────────────────────────────────────────────────────
-
     private function notify(int $userId, string $message, int $ticketId): void
     {
         if ($userId) {
-            \App\Http\Controllers\NotificationController::createAndBroadcast($userId, $message, $ticketId);
+            NotificationController::createAndBroadcast($userId, $message, $ticketId);
         }
     }
 
@@ -28,8 +26,6 @@ class TicketController extends Controller
         }
     }
 
-    // ── Index ──────────────────────────────────────────────────────────────────
-
     public function index($projectId)
     {
         $user    = Auth::user();
@@ -39,160 +35,135 @@ class TicketController extends Controller
             return response()->json(['message' => 'Accès refusé à ce projet'], 403);
         }
 
-        $query = Ticket::with(['testeur', 'developpeur'])->where('project_id', $projectId);
+        $query = Ticket::with(['testeur', 'developpeur', 'proposedDeveloppeur'])
+            ->where('project_id', $projectId);
 
         if ($user->role === 'testeur') {
             $query->where('testeur_id', $user->id);
         }
 
         if ($user->role === 'developpeur') {
-            $query->where('developpeur_id', $user->id);
+            $query->where('developpeur_id', $user->id)
+                ->where('assignment_status', 'approved');
         }
 
         return response()->json($query->get(), 200);
     }
 
-    // ── Show ───────────────────────────────────────────────────────────────────
-
     public function show($id)
     {
-        $ticket = Ticket::with(['comments.user', 'project', 'testeur', 'developpeur'])->findOrFail($id);
+        $ticket = Ticket::with([
+            'comments.user',
+            'project',
+            'testeur',
+            'developpeur',
+            'proposedDeveloppeur',
+        ])->findOrFail($id);
+
         return response()->json($ticket, 200);
     }
-
-    // ── Store ──────────────────────────────────────────────────────────────────
 
     public function store(Request $request, $projectId)
     {
         $user    = Auth::user();
         $project = \App\Models\Project::findOrFail($projectId);
 
-        if ($user->role !== 'testeur' && !$user->isAdmin()) {
+        if ($user->role !== 'testeur') {
             return response()->json(['message' => 'Seuls les testeurs peuvent créer des tickets'], 403);
         }
 
-        if (!$user->isAdmin() && !$project->users->contains($user->id)) {
+        if (!$project->users->contains($user->id)) {
             return response()->json(['message' => "Vous n'êtes pas membre de ce projet"], 403);
         }
 
         $validated = $request->validate([
-            'titre'          => 'required|string|max:255',
-            'description'    => 'nullable|string',
-            'priorite'       => 'nullable|in:BASSE,MOYENNE,HAUTE,CRITIQUE',
-            'developpeur_id' => 'nullable|exists:users,id',
+            'titre'       => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'priorite'    => 'nullable|in:BASSE,MOYENNE,HAUTE,CRITIQUE',
         ]);
 
         $ticket = Ticket::create([
-            'titre'          => $validated['titre'],
-            'description'    => $validated['description'] ?? null,
-            'priorite'       => $validated['priorite'] ?? 'BASSE',
-            'etat'           => 'OUVERT',
-            'project_id'     => $projectId,
-            'testeur_id'     => $user->id,
-            'developpeur_id' => $validated['developpeur_id'] ?? null,
+            'titre'                   => $validated['titre'],
+            'description'             => $validated['description'] ?? null,
+            'priorite'                => $validated['priorite'] ?? 'BASSE',
+            'etat'                    => 'OUVERT',
+            'project_id'              => $projectId,
+            'testeur_id'              => $user->id,
+            'developpeur_id'          => null,
+            'proposed_developpeur_id' => null,
+            'assignment_status'       => 'none',
+            'force_assigned'          => false,
+            'rejected_by'             => [],
         ]);
 
-        // 🔔 Notifier le développeur assigné
-        if ($ticket->developpeur_id) {
-            $this->notify(
-                $ticket->developpeur_id,
-                "🎫 Nouveau ticket assigné : « {$ticket->titre} » — Priorité : {$ticket->priorite}",
-                $ticket->id
-            );
-            // 📧 Email au développeur
-            try {
-                $dev = User::find($ticket->developpeur_id);
-                if ($dev) Mail::to($dev->email)->send(new TicketAssigned($ticket->load('project'), $dev, 'developpeur'));
-            } catch (\Exception $e) { /* ne pas bloquer si mail échoue */ }
-        }
+        $autoAssignService = new AutoAssignService();
+        $autoAssignService->assign($ticket->load('testeur'));
 
-        return response()->json($ticket, 201);
+        $ticket = $ticket->fresh(['proposedDeveloppeur']);
+
+        $proposed = $ticket->proposedDeveloppeur;
+
+        return response()->json([
+            'ticket'      => $ticket,
+            'auto_assign' => $proposed ? [
+                'success'    => true,
+                'pending'    => true,
+                'dev_nom'    => $proposed->nom,
+                'dev_prenom' => $proposed->prenom,
+            ] : [
+                'success' => false,
+                'message' => "Aucun développeur disponible. L'administrateur assignera manuellement.",
+            ],
+        ], 201);
     }
-
-    // ── Update ─────────────────────────────────────────────────────────────────
 
     public function update(Request $request, $id)
     {
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        if ($user->role !== 'testeur' && !$user->isAdmin()) {
+        if ($user->role !== 'testeur') {
             return response()->json(['message' => 'Seuls les testeurs peuvent modifier des tickets'], 403);
         }
 
-        if ($user->role === 'testeur' && $ticket->testeur_id !== $user->id) {
+        if ($ticket->testeur_id !== $user->id) {
             return response()->json(['message' => "Non autorisé. Vous n'êtes pas le créateur de ce ticket"], 403);
         }
 
-        // ✅ Fix #4 — US09-E1 : modification impossible si ticket pris en charge
         if (in_array($ticket->etat, ['EN_COURS', 'RESOLU', 'FERME'])) {
             return response()->json([
-                'message' => "Modification impossible : le ticket est déjà « {$ticket->etat} ». Seuls les tickets OUVERTS peuvent être modifiés."
+                'message' => "Modification impossible : le ticket est déjà « {$ticket->etat} ». Seuls les tickets OUVERTS peuvent être modifiés.",
             ], 403);
         }
 
         $validated = $request->validate([
-            'titre'          => 'sometimes|required|string|max:255',
-            'description'    => 'nullable|string',
-            'priorite'       => 'sometimes|in:BASSE,MOYENNE,HAUTE,CRITIQUE',
-            'developpeur_id' => 'nullable|exists:users,id',
+            'titre'       => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'priorite'    => 'sometimes|in:BASSE,MOYENNE,HAUTE,CRITIQUE',
         ]);
 
-        $oldDevId = $ticket->developpeur_id;
         $ticket->update($validated);
-        $ticket->refresh();
 
-        // 🔔 Notifier le nouveau développeur si changement d'assignation
-        if (
-            isset($validated['developpeur_id']) &&
-            $validated['developpeur_id'] &&
-            $validated['developpeur_id'] != $oldDevId
-        ) {
-            $this->notify(
-                $ticket->developpeur_id,
-                "👤 Le ticket « {$ticket->titre} » vous a été assigné.",
-                $ticket->id
-            );
-            // 📧 Email au nouveau développeur
-            try {
-                $dev = User::find($ticket->developpeur_id);
-                if ($dev) Mail::to($dev->email)->send(new TicketAssigned($ticket->load('project'), $dev, 'developpeur'));
-            } catch (\Exception $e) { /* ne pas bloquer si mail échoue */ }
-
-            // Notifier l'ancien développeur s'il y en avait un
-            if ($oldDevId) {
-                $this->notify(
-                    $oldDevId,
-                    "🔄 Le ticket « {$ticket->titre} » ne vous est plus assigné.",
-                    $ticket->id
-                );
-            }
-        }
-
-        return response()->json($ticket, 200);
+        return response()->json($ticket->refresh(), 200);
     }
-
-    // ── Change Status ──────────────────────────────────────────────────────────
 
     public function changeStatus(Request $request, $id)
     {
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        // Seul le développeur assigné peut changer l'état (pas l'admin)
         if ($user->role !== 'developpeur') {
             return response()->json(['message' => "Seuls les développeurs assignés peuvent changer l'état du ticket"], 403);
         }
 
-        if ($ticket->developpeur_id !== $user->id) {
-            return response()->json(['message' => 'Non autorisé. Ce ticket ne vous est pas assigné'], 403);
+        if (!$ticket->isAssignmentApproved() || $ticket->developpeur_id !== $user->id) {
+            return response()->json(['message' => 'Non autorisé. Ce ticket ne vous est pas assigné ou l\'assignation n\'est pas encore validée.'], 403);
         }
 
         $validated = $request->validate([
             'etat' => 'required|in:OUVERT,EN_COURS,RESOLU',
         ]);
 
-        $oldEtat = $ticket->etat;
         $ticket->update(['etat' => $validated['etat']]);
 
         $etatLabels = [
@@ -202,7 +173,6 @@ class TicketController extends Controller
         ];
         $label = $etatLabels[$validated['etat']] ?? $validated['etat'];
 
-        // 🔔 Notifier le testeur du changement d'état
         $this->notify(
             $ticket->testeur_id,
             "🔄 Le ticket « {$ticket->titre} » est maintenant : {$label}",
@@ -212,33 +182,158 @@ class TicketController extends Controller
         return response()->json($ticket, 200);
     }
 
-    // ── Close ──────────────────────────────────────────────────────────────────
-
     public function close(Request $request, $id)
     {
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        // Seul le testeur créateur peut fermer un ticket
-        $isTesteurCreateur = $user->role === 'testeur' && $ticket->testeur_id === $user->id;
-
-        if (!$isTesteurCreateur) {
-            return response()->json([
-                'message' => 'Seul le testeur créateur peut fermer ce ticket'
-            ], 403);
+        if ($user->role !== 'testeur' || $ticket->testeur_id !== $user->id) {
+            return response()->json(['message' => 'Seul le testeur créateur peut fermer ce ticket'], 403);
         }
 
         $ticket->update(['etat' => 'FERME']);
 
-        // 🔔 Notifier le développeur assigné (si existant)
-        $fermePar = "{$user->prenom} {$user->nom}";
+        if ($ticket->isAssignmentApproved() && $ticket->developpeur_id) {
+            $fermePar = "{$user->prenom} {$user->nom}";
+            $this->notify(
+                $ticket->developpeur_id,
+                "🔒 Le ticket « {$ticket->titre} » a été fermé par {$fermePar}.",
+                $ticket->id
+            );
+        }
 
-        $this->notifyMany(
-            array_filter([$ticket->developpeur_id]),
-            "🔒 Le ticket « {$ticket->titre} » a été fermé par {$fermePar}.",
+        return response()->json($ticket, 200);
+    }
+
+    public function accept(Request $request, $id)
+    {
+        $user   = Auth::user();
+        $ticket = Ticket::findOrFail($id);
+
+        if (!$user->isAdmin()) {
+            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent valider l\'assignation'], 403);
+        }
+
+        if ($ticket->assignment_status === 'approved') {
+            return response()->json(['message' => 'Cette assignation a déjà été validée.'], 409);
+        }
+
+        if ($ticket->assignment_status !== 'pending' || !$ticket->proposed_developpeur_id) {
+            return response()->json(['message' => 'Aucune assignation en attente de validation.'], 400);
+        }
+
+        $dev = User::findOrFail($ticket->proposed_developpeur_id);
+
+        $ticket->update([
+            'developpeur_id'          => $dev->id,
+            'proposed_developpeur_id' => null,
+            'assignment_status'       => 'approved',
+        ]);
+
+        $devMessage = "🎫 Nouveau ticket assigné et validé par l'Admin : « {$ticket->titre} » — Priorité : {$ticket->priorite}";
+        if ($ticket->force_assigned) {
+            $devMessage = "🚨 URGENT: Ticket CRITIQUE assigné et validé : « {$ticket->titre} »";
+        }
+
+        $this->notify($dev->id, $devMessage, $ticket->id);
+
+        try {
+            Mail::to($dev->email)->send(new TicketAssigned($ticket->load('project'), $dev, 'developpeur'));
+        } catch (\Exception $e) {
+        }
+
+        $this->notify(
+            $ticket->testeur_id,
+            "✅ Votre ticket « {$ticket->titre} » a été assigné à {$dev->prenom} {$dev->nom} (validation admin).",
             $ticket->id
         );
 
-        return response()->json($ticket, 200);
+        return response()->json([
+            'message' => 'Assignation validée.',
+            'ticket'  => $ticket->fresh(['developpeur']),
+        ], 200);
+    }
+
+    public function reject(Request $request, $id)
+    {
+        $user   = Auth::user();
+        $ticket = Ticket::findOrFail($id);
+
+        if (!$user->isAdmin()) {
+            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent refuser l\'assignation'], 403);
+        }
+
+        if ($ticket->assignment_status === 'approved') {
+            return response()->json(['message' => 'Impossible de refuser une assignation déjà validée.'], 409);
+        }
+
+        if ($ticket->assignment_status !== 'pending' || !$ticket->proposed_developpeur_id) {
+            return response()->json(['message' => 'Aucune assignation en attente de validation.'], 400);
+        }
+
+        $rejectedBy = $ticket->rejected_by ?? [];
+        $devId      = $ticket->proposed_developpeur_id;
+
+        if (!in_array($devId, $rejectedBy)) {
+            $rejectedBy[] = $devId;
+        }
+
+        $ticket->update([
+            'developpeur_id'          => null,
+            'proposed_developpeur_id' => null,
+            'assignment_status'       => 'rejected',
+            'rejected_by'             => $rejectedBy,
+        ]);
+
+        return response()->json([
+            'message' => 'Assignation refusée. Veuillez assigner manuellement un développeur.',
+            'ticket'  => $ticket,
+        ], 200);
+    }
+
+    public function reassign(Request $request, $id)
+    {
+        $user   = Auth::user();
+        $ticket = Ticket::findOrFail($id);
+
+        if (!$user->isAdmin()) {
+            return response()->json(['message' => 'Seuls les administrateurs peuvent assigner un développeur'], 403);
+        }
+
+        $validated = $request->validate([
+            'developpeur_id' => 'required|exists:users,id',
+        ]);
+
+        $dev = User::findOrFail($validated['developpeur_id']);
+
+        if ($dev->role !== 'developpeur') {
+            return response()->json(['message' => 'L\'utilisateur sélectionné n\'est pas un développeur'], 400);
+        }
+
+        $ticket->update([
+            'developpeur_id'          => $dev->id,
+            'proposed_developpeur_id' => null,
+            'assignment_status'       => 'approved',
+            'force_assigned'          => true,
+        ]);
+
+        $this->notify(
+            $dev->id,
+            "🎫 Un administrateur vous a assigné le ticket « {$ticket->titre} ».",
+            $ticket->id
+        );
+
+        try {
+            Mail::to($dev->email)->send(new TicketAssigned($ticket->load('project'), $dev, 'developpeur'));
+        } catch (\Exception $e) {
+        }
+
+        $this->notify(
+            $ticket->testeur_id,
+            "✅ Votre ticket « {$ticket->titre} » a été assigné à {$dev->prenom} {$dev->nom}.",
+            $ticket->id
+        );
+
+        return response()->json($ticket->fresh(['developpeur']), 200);
     }
 }

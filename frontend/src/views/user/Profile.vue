@@ -30,10 +30,13 @@
         <div class="card">
           <div class="card-header">
             <h2 class="card-title">👤 Informations personnelles</h2>
-            <template v-if="!isAdminRole">
-              <button v-if="!editingInfo" @click="startEdit" class="btn-edit">✏ Modifier</button>
-              <button v-else @click="cancelEditInfo" class="btn-cancel-sm">Annuler</button>
-            </template>
+            <div class="header-actions">
+              <button @click="$router.push({ name: 'MyStats' })" class="btn-stats">📈 Mes statistiques</button>
+              <template v-if="!isAdminRole">
+                <button v-if="!editingInfo" @click="startEdit" class="btn-edit">✏ Modifier</button>
+                <button v-else @click="cancelEditInfo" class="btn-cancel-sm">Annuler</button>
+              </template>
+            </div>
           </div>
           <div v-if="infoMsg" class="alert" :class="infoOk ? 'alert-ok' : 'alert-err'">{{ infoOk ? '✓' : '✕' }} {{ infoMsg }}</div>
 
@@ -276,7 +279,10 @@ const changeEm = async () => {
 /* Cards */
 .card{background:white;border:1px solid #e2e8f0;border-radius:14px;padding:1.75rem;}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;}
+.header-actions{display:flex;align-items:center;gap:.75rem;}
 .card-title{font-size:1rem;font-weight:700;color:#1e293b;margin:0;}
+.btn-stats{padding:.375rem .875rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:7px;font-size:.8125rem;font-weight:700;color:#1d4ed8;cursor:pointer;transition:all .15s;}
+.btn-stats:hover{background:#dbeafe;}
 .btn-edit{padding:.375rem .875rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;font-weight:600;color:#475569;cursor:pointer;font-family:inherit;transition:all .15s;}
 .btn-edit:hover{background:#f1f5f9;border-color:#cbd5e1;}
 .btn-cancel-sm{padding:.375rem .875rem;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;font-size:.8125rem;font-weight:600;color:#dc2626;cursor:pointer;font-family:inherit;}

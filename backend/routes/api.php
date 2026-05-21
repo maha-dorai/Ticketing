@@ -42,7 +42,15 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
     Route::put('/tickets/{id}',                        [TicketController::class, 'update']);
     Route::put('/tickets/{id}/status',                 [TicketController::class, 'changeStatus']);
     Route::put('/tickets/{id}/close',                  [TicketController::class, 'close']);
+    
+    // ── Routes Auto-assign Flow ────────────────────────────────────────────────
+    Route::patch('/tickets/{id}/accept', [App\Http\Controllers\TicketController::class, 'accept']);
+    Route::patch('/tickets/{id}/reject', [App\Http\Controllers\TicketController::class, 'reject']);
+    Route::patch('/tickets/{id}/reassign', [App\Http\Controllers\TicketController::class, 'reassign']);
 
+    // Stats & Dashboard
+    Route::get('/dashboard/stats', [App\Http\Controllers\StatsController::class, 'getAdminDashboardStats']);
+    Route::get('/user/stats', [App\Http\Controllers\StatsController::class, 'getUserStats']);
     Route::post('/comments',             [CommentController::class, 'store']);
     Route::put('/comments/{id}',         [CommentController::class, 'update']);
     Route::delete('/comments/{id}',      [CommentController::class, 'destroy']);
@@ -57,7 +65,7 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
         Route::put('/projects/{id}',          [ProjectController::class, 'update']);
         Route::delete('/projects/{id}',       [ProjectController::class, 'destroy']);
         Route::post('/projects/{id}/assign',  [ProjectController::class, 'assignUsers']);
-
+        Route::get('/projects/{id}/developers/workload', [ProjectController::class, 'getDevelopersWorkload']);
         Route::get('/users',                     [UserController::class, 'getAllUsers']);
         Route::put('/users/{id}/validate',       [UserController::class, 'validateUser']);
         Route::put('/users/{id}/deactivate',     [UserController::class, 'deactivateUser']);

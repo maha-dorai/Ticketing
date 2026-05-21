@@ -15,6 +15,9 @@
           <span class="nav-icon">🛡️</span> Administrateurs
         </router-link>
         <p class="nav-section">Gestion</p>
+        <router-link to="/admin/dashboard" class="nav-item" active-class="nav-active">
+          <span class="nav-icon">📊</span> Tableau de bord
+        </router-link>
         <router-link to="/admin/users" class="nav-item" active-class="nav-active">
           <span class="nav-icon">👥</span> Membres
         </router-link>
@@ -26,6 +29,9 @@
       <!-- Admin -->
       <template v-else-if="isAdmin">
         <p class="nav-section">Gestion</p>
+        <router-link to="/admin/dashboard" class="nav-item" active-class="nav-active">
+          <span class="nav-icon">📊</span> Tableau de bord
+        </router-link>
         <router-link to="/admin/users" class="nav-item" active-class="nav-active">
           <span class="nav-icon">👥</span> Membres
         </router-link>
@@ -39,6 +45,9 @@
         <p class="nav-section">Espace membre</p>
         <router-link to="/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Mes Projets
+        </router-link>
+        <router-link to="/my-stats" class="nav-item" active-class="nav-active">
+          <span class="nav-icon">📈</span> Mes Statistiques
         </router-link>
         <router-link to="/notifications" class="nav-item" active-class="nav-active">
           <span class="nav-icon">🔔</span> Notifications

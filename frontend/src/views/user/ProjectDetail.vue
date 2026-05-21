@@ -62,15 +62,32 @@
             </div>
           </div>
 
+          <!-- Members Filters -->
+          <div class="members-filters" v-if="project.users?.length">
+            <div class="filter-pills">
+              <span class="filter-label-inline">Filtrer par rôle :</span>
+              <button @click="toggleRole('developpeur')" :class="['pill', filterRole.includes('developpeur') ? 'pill-dev-active' : '']">👨‍💻 Développeurs</button>
+              <button @click="toggleRole('testeur')" :class="['pill', filterRole.includes('testeur') ? 'pill-testeur-active' : '']">🕵️ Testeurs</button>
+            </div>
+            <div class="filter-slider" v-if="filterRole.length === 0 || filterRole.includes('developpeur')">
+              <label class="filter-label-inline">Charge Max. (Devs) : <span class="val-badge">{{ filterMaxTickets >= 10 ? 'Tous' : filterMaxTickets }}</span></label>
+              <input type="range" min="0" max="10" v-model="filterMaxTickets" class="slider" />
+            </div>
+          </div>
+
           <!-- Members -->
           <div class="members-section" v-if="project.users?.length">
-            <div class="section-title">Membres du projet</div>
-            <div class="members-grid">
-              <div v-for="m in project.users" :key="m.id" class="member-card">
+            <div class="section-title">Membres du projet ({{ filteredMembers.length }})</div>
+            <div v-if="filteredMembers.length === 0" class="text-sm text-gray-500 py-4">Aucun membre ne correspond à ces filtres.</div>
+            <div v-else class="members-grid">
+              <div v-for="m in filteredMembers" :key="m.id" class="member-card">
                 <div class="m-avatar" :class="roleAvatarClass(m.role)">{{ ini(m) }}</div>
                 <div class="m-info">
                   <div class="m-name">{{ m.prenom }} {{ m.nom }}</div>
-                  <span class="role-badge" :class="roleBadgeClass(m.role)">{{ roleLabel(m.role) }}</span>
+                  <div class="m-roles-wrap">
+                    <span class="role-badge" :class="roleBadgeClass(m.role)">{{ roleLabel(m.role) }}</span>
+                    <span v-if="m.role === 'developpeur'" class="charge-badge charge-normal">Tickets actifs : {{ m.active_tickets_count }}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -115,7 +132,7 @@
           <div v-else class="tickets-list">
             <div v-for="t in filteredTickets" :key="t.id"
               class="ticket-row"
-              @click="$router.push({ name: 'TicketDetails', params: { id: t.id } })">
+              @click="$router.push({ name: 'TicketDetails', params: { projectId: projectId, id: t.id } })">
 
               <!-- Priority indicator -->
               <div class="prio-bar" :class="prioBarClass(t.priorite)"></div>
@@ -135,9 +152,13 @@
                   <span class="meta-info">
                     🧑‍💻 Créé par {{ t.testeur?.prenom }} {{ t.testeur?.nom }}
                   </span>
-                  <span v-if="t.developpeur" class="meta-dot">·</span>
-                  <span v-if="t.developpeur" class="meta-info">
+                  <span v-if="t.assignment_status === 'approved' && t.developpeur" class="meta-dot">·</span>
+                  <span v-if="t.assignment_status === 'approved' && t.developpeur" class="meta-info">
                     👨‍💻 {{ t.developpeur.prenom }} {{ t.developpeur.nom }}
+                  </span>
+                  <span v-else-if="t.assignment_status === 'pending' && t.proposed_developpeur" class="meta-dot">·</span>
+                  <span v-else-if="t.assignment_status === 'pending' && t.proposed_developpeur" class="meta-info">
+                    ⏳ Proposé : {{ t.proposed_developpeur.prenom }} {{ t.proposed_developpeur.nom }}
                   </span>
                   <span class="meta-dot">·</span>
                   <span class="meta-info">{{ formatDate(t.created_at) }}</span>
@@ -155,20 +176,50 @@
     <!-- Modal Création Ticket -->
     <div v-if="showCreateModal" class="modal-overlay" @click.self="closeModal">
       <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Nouveau ticket</h3>
-          <button @click="closeModal" class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label class="form-label">Titre *</label>
-            <input v-model="form.titre" type="text" class="form-input" placeholder="Titre du ticket" />
+
+        <!-- Confirmation auto-assign (post-creation) -->
+        <template v-if="assignResult">
+          <div class="modal-header">
+            <h3 class="modal-title">Ticket créé ! ✅</h3>
+            <button @click="closeModal" class="modal-close">&times;</button>
           </div>
-          <div class="form-group">
-            <label class="form-label">Description</label>
-            <textarea v-model="form.description" rows="3" class="form-input" style="resize:none" placeholder="Description détaillée..."></textarea>
+          <div class="modal-body">
+            <div v-if="assignResult.success" class="assign-success-box">
+              <div class="assign-icon">⏳</div>
+              <div class="assign-info">
+                <p class="assign-title">Assignation automatique en cours de validation</p>
+                <p class="assign-dev">👨‍💻 Proposé à : <strong>{{ assignResult.dev_prenom }} {{ assignResult.dev_nom }}</strong></p>
+                <p class="assign-hint">L'administrateur va valider ou refuser cette assignation. Vous serez notifié(e) une fois confirmée.</p>
+              </div>
+            </div>
+            <div v-else class="assign-warn-box">
+              <div class="assign-icon">⚠️</div>
+              <div class="assign-info">
+                <p class="assign-title">Aucun développeur disponible</p>
+                <p class="assign-hint">{{ assignResult.message }}</p>
+              </div>
+            </div>
           </div>
-          <div class="form-row">
+          <div class="modal-footer">
+            <button @click="closeModal" class="btn-submit">Fermer</button>
+          </div>
+        </template>
+
+        <!-- Formulaire de création -->
+        <template v-else>
+          <div class="modal-header">
+            <h3 class="modal-title">Nouveau ticket</h3>
+            <button @click="closeModal" class="modal-close">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label class="form-label">Titre *</label>
+              <input v-model="form.titre" type="text" class="form-input" placeholder="Titre du ticket" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea v-model="form.description" rows="3" class="form-input" style="resize:none" placeholder="Description détaillée..."></textarea>
+            </div>
             <div class="form-group">
               <label class="form-label">Priorité</label>
               <select v-model="form.priorite" class="form-input">
@@ -178,24 +229,19 @@
                 <option value="CRITIQUE">🔴 Critique</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Développeur</label>
-              <select v-model="form.developpeur_id" class="form-input">
-                <option value="">Non assigné</option>
-                <option v-for="dev in projectDevs" :key="dev.id" :value="dev.id">
-                  {{ dev.prenom }} {{ dev.nom }}
-                </option>
-              </select>
+            <div class="assign-auto-info">
+              🤖 Un développeur sera assigné automatiquement selon la charge de travail.
             </div>
+            <div v-if="formError" class="form-error">{{ formError }}</div>
           </div>
-          <div v-if="formError" class="form-error">{{ formError }}</div>
-        </div>
-        <div class="modal-footer">
-          <button @click="closeModal" class="btn-cancel">Annuler</button>
-          <button @click="submitTicket" :disabled="submitting" class="btn-submit">
-            {{ submitting ? 'Création...' : 'Créer le ticket' }}
-          </button>
-        </div>
+          <div class="modal-footer">
+            <button @click="closeModal" class="btn-cancel">Annuler</button>
+            <button @click="submitTicket" :disabled="submitting" class="btn-submit">
+              {{ submitting ? 'Création...' : 'Créer le ticket' }}
+            </button>
+          </div>
+        </template>
+
       </div>
     </div>
 
@@ -222,16 +268,38 @@ const activeTab = ref('info');
 const filterEtat = ref('');
 const filterPrio = ref('');
 
+// Membres Filters
+const filterRole = ref([]);
+const filterMaxTickets = ref(10); // 10 = Tous
+
+const toggleRole = (role) => {
+  if (filterRole.value.includes(role)) {
+    filterRole.value = filterRole.value.filter(r => r !== role);
+  } else {
+    filterRole.value.push(role);
+  }
+};
+
 const showCreateModal = ref(false);
 const submitting = ref(false);
 const formError = ref('');
-const form = ref({ titre: '', description: '', priorite: 'BASSE', developpeur_id: '' });
+const assignResult = ref(null);
+const form = ref({ titre: '', description: '', priorite: 'BASSE' });
 
 const isTesteur = computed(() => authStore.currentUser?.role === 'testeur');
 
 const projectDevs = computed(() =>
   (project.value?.users || []).filter(u => u.role === 'developpeur')
 );
+
+const filteredMembers = computed(() => {
+  if (!project.value?.users) return [];
+  return project.value.users.filter(m => {
+    if (filterRole.value.length > 0 && !filterRole.value.includes(m.role)) return false;
+    if (m.role === 'developpeur' && filterMaxTickets.value < 10 && m.active_tickets_count > filterMaxTickets.value) return false;
+    return true;
+  });
+});
 
 const filteredTickets = computed(() => {
   return tickets.value.filter(t => {
@@ -267,12 +335,11 @@ const submitTicket = async () => {
   submitting.value = true;
   formError.value = '';
   try {
-    const payload = { ...form.value, project_id: Number(projectId) };
-    if (!payload.developpeur_id) delete payload.developpeur_id;
-    await api.post('/tickets', payload);
+    const res = await api.post(`/projects/${projectId}/tickets`, form.value);
     await fetchTickets();
     activeTab.value = 'tickets';
-    closeModal();
+    // Show auto-assign confirmation popup instead of closing
+    assignResult.value = res.data.auto_assign;
   } catch (e) {
     formError.value = e.response?.data?.message || 'Erreur lors de la création';
   } finally { submitting.value = false; }
@@ -281,7 +348,8 @@ const submitTicket = async () => {
 const closeModal = () => {
   showCreateModal.value = false;
   formError.value = '';
-  form.value = { titre: '', description: '', priorite: 'BASSE', developpeur_id: '' };
+  assignResult.value = null;
+  form.value = { titre: '', description: '', priorite: 'BASSE' };
 };
 
 // Helpers
@@ -341,20 +409,37 @@ const prioBadgeClass = p => ({ BASSE: 'pb-basse', MOYENNE: 'pb-moyenne', HAUTE: 
 .info-label{font-size:.6875rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;}
 .info-val{font-size:.9375rem;font-weight:600;color:#1e293b;}
 
+/* Members Filters */
+.members-filters{display:flex;align-items:center;gap:2rem;background:white;border:1px solid #e2e8f0;border-radius:12px;padding:1rem 1.5rem;margin-bottom:1rem;flex-wrap:wrap;}
+.filter-label-inline{font-size:.75rem;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.05em;}
+.filter-pills{display:flex;align-items:center;gap:.75rem;}
+.pill{padding:.4rem 1rem;border-radius:99px;border:1px solid #e2e8f0;background:white;font-size:.8125rem;font-weight:700;color:#64748b;cursor:pointer;transition:all .2s;}
+.pill:hover{border-color:#cbd5e1;background:#f8fafc;}
+.pill-dev-active{background:#dbeafe;border-color:#bfdbfe;color:#1d4ed8;}
+.pill-testeur-active{background:#dcfce7;border-color:#bbf7d0;color:#16a34a;}
+.filter-slider{display:flex;align-items:center;gap:1rem;}
+.slider{accent-color:#3b82f6;cursor:pointer;}
+.val-badge{background:#e2e8f0;color:#334155;padding:2px 8px;border-radius:6px;font-size:.75rem;}
+
 /* Members */
 .members-section{background:white;border:1px solid #e2e8f0;border-radius:12px;padding:1.5rem;}
 .section-title{font-size:.875rem;font-weight:700;color:#0f172a;margin-bottom:1rem;}
-.members-grid{display:flex;flex-wrap:wrap;gap:.75rem;}
-.member-card{display:flex;align-items:center;gap:.75rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.625rem 1rem;}
-.m-avatar{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;text-transform:uppercase;flex-shrink:0;}
+.members-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));gap:1rem;}
+.member-card{display:flex;align-items:flex-start;gap:.75rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.875rem 1rem;}
+.m-avatar{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.875rem;font-weight:800;text-transform:uppercase;flex-shrink:0;}
 .av-testeur{background:#dcfce7;color:#16a34a;}
 .av-dev{background:#dbeafe;color:#1d4ed8;}
 .av-admin{background:#f3e8ff;color:#7c3aed;}
-.m-name{font-size:.875rem;font-weight:600;color:#1e293b;}
-.role-badge{font-size:.6875rem;font-weight:700;padding:2px 8px;border-radius:99px;}
+.m-info{display:flex;flex-direction:column;gap:4px;}
+.m-name{font-size:.875rem;font-weight:700;color:#1e293b;}
+.m-roles-wrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.role-badge{font-size:.625rem;font-weight:800;padding:3px 8px;border-radius:99px;text-transform:uppercase;}
 .rb-testeur{background:#dcfce7;color:#16a34a;}
 .rb-dev{background:#dbeafe;color:#1d4ed8;}
 .rb-admin{background:#f3e8ff;color:#7c3aed;}
+.charge-badge{font-size:.625rem;font-weight:800;padding:3px 8px;border-radius:99px;}
+.charge-normal{background:#f1f5f9;color:#64748b;}
+.charge-high{background:#fee2e2;color:#dc2626;}
 
 /* Status chips */
 .status-chip{font-size:.6875rem;font-weight:700;padding:3px 10px;border-radius:99px;}
