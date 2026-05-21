@@ -1,0 +1,713 @@
+============================================================
+FILE: bootstrap/app.php
+============================================================
+<?php
+
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Auth\AuthenticationException;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            'is_admin' => \App\Http\Middleware\IsAdmin::class,
+            'check_status' => \App\Http\Middleware\CheckUserStatus::class,
+        ]);
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+        // Force l'API à toujours répondre en JSON
+        $exceptions->shouldRenderJsonWhen(function (Request $request) {
+            return $request->is('api/*');
+        });
+
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token manquant ou invalide.'
+                ], 401);
+            }
+        });
+
+        // Gérer spécifiquement les exceptions de Tymon JWT
+        $exceptions->render(function (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'Token expiré.'], 401);
+            }
+        });
+        
+        $exceptions->render(function (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'Token invalide.'], 401);
+            }
+        });
+
+        // Gérer les routes non trouvées (404)
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'Ressource ou route non trouvée.'], 404);
+            }
+        });
+
+        // Toute autre exception (500, SQL, etc.)
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur interne du serveur.',
+                    'error' => config('app.debug') ? $e->getMessage() : null
+                ], 500);
+            }
+        });
+    })
+    ->create();
+
+
+============================================================
+FILE: config/cors.php
+============================================================
+<?php
+
+return [
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'allowed_methods' => ['*'],
+    'allowed_origins' => ['http://localhost:5173'],
+    'allowed_origins_patterns' => [],
+    'allowed_headers' => ['*'],
+    'exposed_headers' => [],
+    'max_age' => 0,
+    'supports_credentials' => true,
+];
+
+
+============================================================
+FILE: routes/api.php
+============================================================
+<?php
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProjectController;
+use Illuminate\Support\Facades\Route;
+
+// Public routes with Throttle (max 5 requests per minute)
+Route::middleware('throttle:5,1')->group(function () {
+    Route::post('/auth/register',               [AuthController::class, 'register']);
+    Route::post('/auth/login',                  [AuthController::class, 'login']);
+    Route::post('/auth/forgot-password',        [AuthController::class, 'forgotPassword']);
+    Route::post('/auth/reset-password/{token}', [AuthController::class, 'resetPassword']);
+});
+
+// Protected routes (require auth + check_status)
+Route::middleware(['auth:api', 'check_status'])->group(function () {
+    Route::post('/auth/logout',          [AuthController::class, 'logout']);
+    Route::get('/users/profile',         [UserController::class, 'getProfile']);
+    Route::put('/users/profile',         [UserController::class, 'updateProfile']);
+    Route::put('/users/change-password', [UserController::class, 'changePassword']);
+    Route::get('/projects',              [ProjectController::class, 'index']);
+
+    // Admin routes
+    Route::middleware('is_admin')->group(function () {
+        Route::post('/projects',              [ProjectController::class, 'store']);
+        Route::put('/projects/{id}',          [ProjectController::class, 'update']);
+        Route::delete('/projects/{id}',       [ProjectController::class, 'destroy']);
+        Route::post('/projects/{id}/assign',  [ProjectController::class, 'assignUsers']);
+
+        Route::get('/users',                  [UserController::class, 'getAllUsers']);
+        Route::put('/users/{id}/validate',    [UserController::class, 'validateUser']);
+        Route::put('/users/{id}/deactivate',  [UserController::class, 'deactivateUser']);
+        Route::put('/users/{id}',             [UserController::class, 'updateUser']);
+        Route::delete('/users/{id}',          [UserController::class, 'deleteUser']);
+    });
+});
+
+
+============================================================
+FILE: app/Models/User.php
+============================================================
+<?php
+
+namespace App\Models;
+
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Tymon\JWTAuth\Contracts\JWTSubject;
+
+class User extends Authenticatable implements JWTSubject
+{
+    protected $table = 'users';
+
+    protected $fillable = [
+        'nom', 'prenom', 'email', 'mot_de_passe', 'role', 
+        'statut', 'github_link', 'reset_token', 'reset_token_expires',
+    ];
+
+    protected $hidden = ['mot_de_passe', 'reset_token'];
+
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [
+            'role'  => $this->role,
+            'email' => $this->email,
+        ];
+    }
+
+    public function getAuthPassword()
+    {
+        return $this->mot_de_passe;
+    }
+
+    public function projects()
+    {
+        return $this->belongsToMany(Project::class);
+    }
+}
+
+
+============================================================
+FILE: app/Models/Project.php
+============================================================
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Project extends Model
+{
+    protected $fillable = ['nom', 'description', 'date_debut', 'date_fin', 'statut'];
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class);
+    }
+}
+
+
+============================================================
+FILE: app/Http/Middleware/CheckUserStatus.php
+============================================================
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Tymon\JWTAuth\Facades\JWTAuth;
+
+class CheckUserStatus
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $user = auth()->user();
+
+        if ($user && $user->statut !== 'actif') {
+            try {
+                JWTAuth::invalidate(JWTAuth::getToken());
+            } catch (\Exception $e) {
+                // Ignore exception if token is already invalid/expired
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Accès refusé. Votre compte n\'est pas actif (statut actuel : ' . $user->statut . ').'
+            ], 403);
+        }
+
+        return $next($request);
+    }
+}
+
+
+============================================================
+FILE: app/Http/Requests/AssignMembersRequest.php
+============================================================
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class AssignMembersRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true; // L'autorisation est gérée par les middlewares
+    }
+
+    public function rules(): array
+    {
+        return [
+            'user_ids' => 'required|array',
+            'user_ids.*' => [
+                'required',
+                Rule::exists('users', 'id')->where(function ($query) {
+                    return $query->where('statut', 'actif')
+                                 ->whereIn('role', ['developpeur', 'testeur']);
+                }),
+            ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'user_ids.required' => 'La liste des utilisateurs est obligatoire.',
+            'user_ids.array' => 'La liste des utilisateurs doit être un tableau.',
+            'user_ids.*.exists' => 'Un ou plusieurs utilisateurs sont invalides, ne sont pas actifs, ou n\'ont pas le rôle adéquat (développeur/testeur).',
+        ];
+    }
+}
+
+
+============================================================
+FILE: app/Http/Controllers/AuthController.php
+============================================================
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Tymon\JWTAuth\Facades\JWTAuth;
+use Carbon\Carbon;
+
+class AuthController extends Controller
+{
+    public function register(Request $request)
+    {
+        try {
+            $request->validate([
+                'nom'          => 'required|string',
+                'prenom'       => 'required|string',
+                'email'        => 'required|email|unique:users,email',
+                'mot_de_passe' => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'],
+                'role'        => 'required|in:testeur,developpeur',
+                'github_link' => 'required_if:role,developpeur|nullable|url',
+            ]);
+
+            User::create([
+                'nom'          => $request->nom,
+                'prenom'       => $request->prenom,
+                'email'        => $request->email,
+                'mot_de_passe' => Hash::make($request->mot_de_passe),
+                'role'         => $request->role,
+                'statut'       => 'en_attente',
+                'github_link'  => $request->role === 'developpeur' ? $request->github_link : null,
+            ]);
+
+            return response()->json(['message' => "Compte créé. En attente de validation."], 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur d\'inscription.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function login(Request $request)
+    {
+        try {
+            $request->validate(['email' => 'required|email', 'mot_de_passe' => 'required']);
+
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user || !Hash::check($request->mot_de_passe, $user->mot_de_passe))
+                return response()->json(['message' => 'Email ou mot de passe incorrect.'], 401);
+
+            if ($user->statut === 'en_attente')
+                return response()->json(['message' => 'Votre compte est en attente de validation.'], 403);
+            if ($user->statut === 'rejete')
+                return response()->json(['message' => "Compte rejeté, contactez l'administrateur."], 403);
+            if ($user->statut === 'desactive')
+                return response()->json(['message' => "Votre compte est désactivé."], 403);
+
+            $token = JWTAuth::fromUser($user);
+
+            return response()->json([
+                'token' => $token,
+                'user'  => [
+                    'id'     => $user->id,
+                    'nom'    => $user->nom,
+                    'prenom' => $user->prenom,
+                    'email'  => $user->email,
+                    'role'   => $user->role,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur de connexion.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        try {
+            $request->validate(['email' => 'required|email']);
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user) return response()->json(['message' => 'Aucun compte associé à cet email.'], 404);
+
+            $token = Str::random(64);
+
+            $user->update([
+                'reset_token'         => hash('sha256', $token), // Hashing token securely
+                'reset_token_expires' => Carbon::now()->addHour(),
+            ]);
+
+            $link = env('FRONTEND_URL', 'http://localhost:5173') . '/reset-password/' . $token;
+
+            try {
+                Mail::raw("Cliquez ici pour réinitialiser votre mot de passe (valide 1h) :\n{$link}", function($m) use ($user) {
+                    $m->to($user->email)->subject('Réinitialisation du mot de passe');
+                });
+            } catch (\Exception $mailEx) {
+                // Ignore pour ne pas bloquer si le mail plante
+            }
+
+            return response()->json(['message' => 'Lien envoyé par email.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function resetPassword(Request $request, $token)
+    {
+        try {
+            $request->validate([
+                'mot_de_passe' => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'],
+            ]);
+
+            $hashedToken = hash('sha256', $token);
+
+            $user = User::where('reset_token', $hashedToken)
+                        ->where('reset_token_expires', '>', Carbon::now())
+                        ->first();
+
+            if (!$user) return response()->json(['message' => 'Lien invalide ou expiré.'], 400);
+
+            $user->update([
+                'mot_de_passe'        => Hash::make($request->mot_de_passe),
+                'reset_token'         => null,
+                'reset_token_expires' => null,
+            ]);
+
+            return response()->json(['message' => 'Mot de passe mis à jour avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function logout()
+    {
+        try {
+            JWTAuth::invalidate(JWTAuth::getToken());
+            return response()->json(['message' => 'Déconnecté avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de la déconnexion.', 'error' => $e->getMessage()], 500);
+        }
+    }
+}
+
+
+============================================================
+FILE: app/Http/Controllers/UserController.php
+============================================================
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Tymon\JWTAuth\Facades\JWTAuth;
+
+class UserController extends Controller
+{
+    public function getProfile()
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            return response()->json([
+                'id'          => $user->id,
+                'nom'         => $user->nom,
+                'prenom'      => $user->prenom,
+                'email'       => $user->email,
+                'role'        => $user->role,
+                'github_link' => $user->github_link,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateProfile(Request $request)
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            $request->validate(['nom' => 'required|string', 'prenom' => 'required|string']);
+            $user->update(['nom' => $request->nom, 'prenom' => $request->prenom]);
+            return response()->json(['message' => 'Profil mis à jour.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function changePassword(Request $request)
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            $request->validate([
+                'ancien_mot_de_passe'  => 'required',
+                'nouveau_mot_de_passe' => ['required', 'min:8', 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'],
+            ]);
+
+            if (!Hash::check($request->ancien_mot_de_passe, $user->mot_de_passe))
+                return response()->json(['message' => 'Le mot de passe actuel est incorrect.'], 400);
+
+            $user->update(['mot_de_passe' => Hash::make($request->nouveau_mot_de_passe)]);
+            return response()->json(['message' => 'Mot de passe modifié avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getAllUsers()
+    {
+        try {
+            $users = User::select('id', 'nom', 'prenom', 'email', 'role', 'statut', 'github_link', 'created_at')->get();
+            return response()->json($users);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function validateUser(Request $request, $id)
+    {
+        try {
+            $request->validate(['action' => 'required|in:accepter,rejeter']);
+            $user = User::findOrFail($id);
+
+            if ($request->action === 'accepter') {
+                $user->update(['statut' => 'actif']);
+                $msg = 'Compte activé.';
+            } else {
+                $user->update(['statut' => 'rejete']);
+                $msg = 'Compte rejeté.';
+            }
+
+            try {
+                Mail::raw("Votre compte a été {$msg}", fn($m) => $m->to($user->email)->subject("Statut du compte"));
+            } catch (\Exception $mEx) {
+                // Ignore email failure
+            }
+
+            return response()->json(['message' => $msg]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function deactivateUser(Request $request, $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            if ($id == auth()->id()) {
+                return response()->json(['message' => 'Vous ne pouvez pas désactiver votre propre compte.'], 403);
+            }
+            $user->update(['statut' => 'desactive']);
+            return response()->json(['message' => 'Utilisateur désactivé avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            $validated = $request->validate([
+                'nom'    => 'required|string',
+                'prenom' => 'required|string',
+                'email'  => 'required|email|unique:users,email,'.$id,
+                'role'   => 'required|in:testeur,developpeur,admin',
+            ]);
+            $user->update($validated);
+            return response()->json(['message' => 'Utilisateur mis à jour.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteUser($id)
+    {
+        try {
+            $user = User::findOrFail($id);
+
+            if ($id == auth()->id()) {
+                return response()->json(['message' => 'Vous ne pouvez pas supprimer votre propre compte.'], 403);
+            }
+
+            if ($user->role === 'admin') {
+                $adminCount = User::where('role', 'admin')->count();
+                if ($adminCount <= 1) {
+                    return response()->json(['message' => 'Impossible de supprimer le dernier administrateur du système.'], 403);
+                }
+            }
+
+            $user->delete();
+            return response()->json(['message' => 'Utilisateur supprimé.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+}
+
+
+============================================================
+FILE: app/Http/Controllers/ProjectController.php
+============================================================
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Project;
+use App\Models\User;
+use Illuminate\Http\Request;
+use App\Http\Requests\AssignMembersRequest;
+use Tymon\JWTAuth\Facades\JWTAuth;
+
+class ProjectController extends Controller
+{
+    public function index(Request $request)
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            $query = $user->role === 'admin' ? Project::query() : $user->projects();
+
+            // Recherche
+            if ($request->has('search') && !empty($request->search)) {
+                $query->where('nom', 'like', '%' . $request->search . '%');
+            }
+
+            // Pagination au lieu de get()
+            $projects = $query->with('users:id,nom,prenom,role')->paginate(10);
+            
+            return response()->json($projects);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function store(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'nom'         => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'date_debut'  => 'nullable|date',
+                'date_fin'    => 'nullable|date|after_or_equal:date_debut',
+            ]);
+
+            $project = Project::create($validated);
+
+            return response()->json(['message' => 'Projet créé avec succès.', 'project' => $project], 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de la création.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        try {
+            $project = Project::findOrFail($id);
+
+            $validated = $request->validate([
+                'nom'         => 'required|string|max:255',
+                'statut'      => 'required|in:en_cours,termine,ferme', // Ajout de ferme
+            ]);
+
+            $project->update($validated);
+
+            return response()->json(['message' => 'Projet mis à jour.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de la mise à jour.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $project = Project::findOrFail($id);
+            // CDC: "La suppression d'un projet est interdite, il peut seulement être fermé"
+            $project->update(['statut' => 'ferme']);
+
+            return response()->json(['message' => 'Projet fermé avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de la fermeture.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function assignUsers(AssignMembersRequest $request, $id)
+    {
+        try {
+            $project = Project::findOrFail($id);
+
+            // Validation externalisée dans AssignMembersRequest
+            $project->users()->sync($request->validated()['user_ids']);
+
+            return response()->json(['message' => 'Membres affectés avec succès.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur lors de l\'affectation.', 'error' => $e->getMessage()], 500);
+        }
+    }
+}
+
+
+============================================================
+FILE: database/migrations/2026_05_01_000000_update_enums_statut_tables.php
+============================================================
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->enum('statut', ['en_attente', 'actif', 'rejete', 'desactive'])->default('en_attente')->change();
+        });
+
+        Schema::table('projects', function (Blueprint $table) {
+            $table->enum('statut', ['en_cours', 'termine', 'ferme'])->default('en_cours')->change();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->enum('statut', ['en_attente', 'actif', 'rejete'])->default('en_attente')->change();
+        });
+
+        Schema::table('projects', function (Blueprint $table) {
+            $table->enum('statut', ['en_cours', 'termine'])->default('en_cours')->change();
+        });
+    }
+};

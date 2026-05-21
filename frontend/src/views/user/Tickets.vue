@@ -59,9 +59,12 @@
             </div>
             <div class="tc-footer">
               <div class="tc-dev">
-                <span v-if="ticket.developpeur" class="dev-info">
+                <span v-if="ticket.assignment_status === 'approved' && ticket.developpeur" class="dev-info">
                   <div class="dev-av">{{ (ticket.developpeur.prenom[0] || '') + (ticket.developpeur.nom[0] || '') }}</div>
                   <span class="dev-name">{{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}</span>
+                </span>
+                <span v-else-if="ticket.assignment_status === 'pending' && ticket.proposed_developpeur" class="dev-info pending">
+                  <span class="dev-name">⏳ {{ ticket.proposed_developpeur.prenom }} {{ ticket.proposed_developpeur.nom }}</span>
                 </span>
                 <span v-else class="unassigned">Non assigné</span>
               </div>
@@ -96,13 +99,6 @@
                 <option value="MOYENNE">🔵 Moyenne</option>
                 <option value="HAUTE">🟠 Haute</option>
                 <option value="CRITIQUE">🔴 Critique</option>
-              </select>
-            </div>
-            <div class="field">
-              <label class="label">Développeur (optionnel)</label>
-              <select v-model="form.developpeur_id" class="input sel">
-                <option value="">Non assigné</option>
-                <option v-for="dev in projectDevs" :key="dev.id" :value="dev.id">{{ dev.prenom }} {{ dev.nom }}</option>
               </select>
             </div>
           </div>
@@ -144,7 +140,7 @@ const etatFilter = ref('');
 const showCreateModal = ref(false);
 const submitting = ref(false);
 const formError = ref('');
-const form = ref({ titre: '', description: '', priorite: 'BASSE', developpeur_id: '' });
+const form = ref({ titre: '', description: '', priorite: 'BASSE' });
 
 // Back button: admin goes back to /admin/projects, user to /projects
 const goBack = () => {
@@ -191,7 +187,6 @@ const submitTicket = async () => {
   submitting.value = true; formError.value = '';
   try {
     const payload = { ...form.value };
-    if (!payload.developpeur_id) delete payload.developpeur_id;
     await api.post(`/projects/${projectId}/tickets`, payload);
     await fetchTickets();
     closeModal();
@@ -201,7 +196,7 @@ const submitTicket = async () => {
 
 const closeModal = () => {
   showCreateModal.value = false; formError.value = '';
-  form.value = { titre: '', description: '', priorite: 'BASSE', developpeur_id: '' };
+  form.value = { titre: '', description: '', priorite: 'BASSE' };
 };
 
 onMounted(() => { fetchProjectInfo(); fetchTickets(); });

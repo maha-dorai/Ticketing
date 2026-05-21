@@ -13,7 +13,16 @@ class Ticket extends Model
         'etat',
         'project_id',
         'testeur_id',
-        'developpeur_id'
+        'developpeur_id',
+        'proposed_developpeur_id',
+        'assignment_status',
+        'force_assigned',
+        'rejected_by',
+    ];
+
+    protected $casts = [
+        'force_assigned' => 'boolean',
+        'rejected_by'    => 'array',
     ];
 
     public function project()
@@ -31,13 +40,18 @@ class Ticket extends Model
         return $this->belongsTo(User::class, 'developpeur_id');
     }
 
-    public function comments()
+    public function proposedDeveloppeur()
     {
-        return $this->hasMany(Comment::class);
+        return $this->belongsTo(User::class, 'proposed_developpeur_id');
     }
 
-    public function notifications()
+    public function isAssignmentApproved(): bool
     {
-        return $this->hasMany(Notification::class);
+        return $this->assignment_status === 'approved' && $this->developpeur_id !== null;
+    }
+
+    public function isAssignmentPending(): bool
+    {
+        return $this->assignment_status === 'pending' && $this->proposed_developpeur_id !== null;
     }
 }

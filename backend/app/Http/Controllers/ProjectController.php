@@ -37,7 +37,18 @@ class ProjectController extends Controller
     {
         try {
             $user    = JWTAuth::parseToken()->authenticate();
-            $project = Project::with(['users:id,nom,prenom,role,email', 'creator:id,nom,prenom'])->findOrFail($id);
+            $project = Project::with([
+                'users' => function($q) {
+                    $q->select('users.id', 'users.nom', 'users.prenom', 'users.role', 'users.email')
+                      ->withCount([
+                          'assignedTickets as active_tickets_count' => function ($query) {
+                              $query->where('assignment_status', 'approved')
+                                    ->whereIn('etat', ['OUVERT', 'EN_COURS']);
+                          }
+                      ]);
+                },
+                'creator:id,nom,prenom'
+            ])->findOrFail($id);
 
             // Vérifier que l'utilisateur est membre ou admin
             if (!$user->isAdmin()) {
@@ -141,17 +152,6 @@ class ProjectController extends Controller
                 ], 422);
             }
 
-            // ✅ Vérifier qu'il n'y a qu'un seul testeur par projet
-            $testeurs = User::whereIn('id', $request->user_ids)
-                            ->where('role', 'testeur')
-                            ->get();
-
-            if ($testeurs->count() > 1) {
-                return response()->json([
-                    'message' => 'Un projet ne peut avoir qu\'un seul testeur. Vous avez sélectionné : ' .
-                                 $testeurs->map(fn($u) => "{$u->prenom} {$u->nom}")->join(', ') . '.',
-                ], 422);
-            }
 
 
 
@@ -181,6 +181,38 @@ class ProjectController extends Controller
             return response()->json(['message' => 'Membres affectés avec succès.']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur lors de l\'affectation.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getDevelopersWorkload($projectId)
+    {
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+            
+            if (!$user->isAdmin()) {
+                return response()->json(['message' => 'Non autorisé'], 403);
+            }
+
+            $project = Project::findOrFail($projectId);
+            
+            $developers = $project->users()->where('role', 'developpeur')->get()->map(function ($dev) {
+                $activeCount = \App\Models\Ticket::where('developpeur_id', $dev->id)
+                    ->where('assignment_status', 'approved')
+                    ->whereIn('etat', ['OUVERT', 'EN_COURS'])
+                    ->count();
+                
+                return [
+                    'id' => $dev->id,
+                    'nom' => $dev->nom,
+                    'prenom' => $dev->prenom,
+                    'statut' => $dev->statut,
+                    'active_tickets_count' => $activeCount,
+                ];
+            });
+
+            return response()->json($developers, 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
         }
     }
 }
