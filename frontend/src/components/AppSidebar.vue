@@ -24,6 +24,10 @@
         <router-link to="/admin/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
         </router-link>
+        <router-link to="/notifications" class="nav-item" active-class="nav-active">
+          <span class="nav-icon">🔔</span> Notifications
+          <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+        </router-link>
       </template>
 
       <!-- Admin -->
@@ -37,6 +41,10 @@
         </router-link>
         <router-link to="/admin/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
+        </router-link>
+        <router-link to="/notifications" class="nav-item" active-class="nav-active">
+          <span class="nav-icon">🔔</span> Notifications
+          <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
         </router-link>
       </template>
 

@@ -86,7 +86,6 @@
                 <div class="stat-lbl">Tickets Résolus</div>
               </div>
             </div>
-            <p class="mt-4 text-sm text-gray-600">D'autres données spécifiques (temps de résolution moyen, retards) pourront être exportées vers Power BI ultérieurement.</p>
           </div>
         </div>
       </div>

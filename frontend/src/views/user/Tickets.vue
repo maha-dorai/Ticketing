@@ -78,39 +78,66 @@
     <!-- Modal Création Ticket -->
     <div v-if="showCreateModal" class="overlay" @click.self="closeModal">
       <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">Nouveau ticket — {{ projectName }}</h3>
-          <button @click="closeModal" class="close-btn">✕</button>
-        </div>
-        <div class="mform">
-          <div class="field">
-            <label class="label">Titre *</label>
-            <input v-model="form.titre" required type="text" class="input" placeholder="Titre du ticket" />
+        <!-- Confirmation auto-assign -->
+        <template v-if="assignResult">
+          <div class="modal-header">
+            <h3 class="modal-title">Ticket créé ! ✅</h3>
+            <button @click="closeModal" class="close-btn">✕</button>
           </div>
-          <div class="field">
-            <label class="label">Description</label>
-            <textarea v-model="form.description" rows="3" class="input ta" placeholder="Description détaillée du problème..."></textarea>
-          </div>
-          <div class="row2">
-            <div class="field">
-              <label class="label">Priorité</label>
-              <select v-model="form.priorite" class="input sel">
-                <option value="BASSE">🟢 Basse</option>
-                <option value="MOYENNE">🔵 Moyenne</option>
-                <option value="HAUTE">🟠 Haute</option>
-                <option value="CRITIQUE">🔴 Critique</option>
-              </select>
+          <div class="mform" style="padding:1.5rem;text-align:center;">
+            <div v-if="assignResult.success">
+              <div style="font-size:2rem;margin-bottom:0.5rem;">⏳</div>
+              <p style="font-weight:700;color:#1e293b;margin:0 0 0.25rem;">Assignation automatique en cours</p>
+              <p style="font-size:0.875rem;color:#64748b;margin:0 0 1rem;">Proposé à : <strong>{{ assignResult.dev_prenom }} {{ assignResult.dev_nom }}</strong></p>
+              <p style="font-size:0.75rem;color:#94a3b8;margin:0;">L'administrateur va valider ou refuser cette assignation.</p>
+            </div>
+            <div v-else>
+              <div style="font-size:2rem;margin-bottom:0.5rem;">⚠️</div>
+              <p style="font-weight:700;color:#dc2626;margin:0 0 0.5rem;">Aucun développeur disponible</p>
+              <p style="font-size:0.875rem;color:#64748b;margin:0;">{{ assignResult.message }}</p>
             </div>
           </div>
-          <div v-if="formError" class="alert alert-err">✕ {{ formError }}</div>
-          <div class="modal-footer">
-            <button @click="closeModal" class="btn-cancel">Annuler</button>
-            <button @click="submitTicket" :disabled="submitting" class="btn-primary">
-              <svg v-if="submitting" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/></svg>
-              <span v-else>Créer le ticket</span>
-            </button>
+          <div class="modal-footer" style="padding:1rem 1.25rem;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;">
+            <button @click="closeModal" class="btn-cancel">Fermer</button>
           </div>
-        </div>
+        </template>
+
+        <!-- Formulaire de création -->
+        <template v-else>
+          <div class="modal-header">
+            <h3 class="modal-title">Nouveau ticket — {{ projectName }}</h3>
+            <button @click="closeModal" class="close-btn">✕</button>
+          </div>
+          <div class="mform">
+            <div class="field">
+              <label class="label">Titre *</label>
+              <input v-model="form.titre" required type="text" class="input" placeholder="Titre du ticket" />
+            </div>
+            <div class="field">
+              <label class="label">Description</label>
+              <textarea v-model="form.description" rows="3" class="input ta" placeholder="Description détaillée du problème..."></textarea>
+            </div>
+            <div class="row2">
+              <div class="field">
+                <label class="label">Priorité</label>
+                <select v-model="form.priorite" class="input sel">
+                  <option value="BASSE">🟢 Basse</option>
+                  <option value="MOYENNE">🔵 Moyenne</option>
+                  <option value="HAUTE">🟠 Haute</option>
+                  <option value="CRITIQUE">🔴 Critique</option>
+                </select>
+              </div>
+            </div>
+            <div v-if="formError" class="alert alert-err">✕ {{ formError }}</div>
+            <div class="modal-footer">
+              <button @click="closeModal" class="btn-cancel">Annuler</button>
+              <button @click="submitTicket" :disabled="submitting" class="btn-primary">
+                <svg v-if="submitting" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/></svg>
+                <span v-else>Créer le ticket</span>
+              </button>
+            </div>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -140,6 +167,7 @@ const etatFilter = ref('');
 const showCreateModal = ref(false);
 const submitting = ref(false);
 const formError = ref('');
+const assignResult = ref(null);
 const form = ref({ titre: '', description: '', priorite: 'BASSE' });
 
 // Back button: admin goes back to /admin/projects, user to /projects
@@ -187,15 +215,15 @@ const submitTicket = async () => {
   submitting.value = true; formError.value = '';
   try {
     const payload = { ...form.value };
-    await api.post(`/projects/${projectId}/tickets`, payload);
+    const res = await api.post(`/projects/${projectId}/tickets`, payload);
     await fetchTickets();
-    closeModal();
+    assignResult.value = res.data.auto_assign;
   } catch (e) { formError.value = e.response?.data?.message || 'Erreur lors de la création.'; }
   finally { submitting.value = false; }
 };
 
 const closeModal = () => {
-  showCreateModal.value = false; formError.value = '';
+  showCreateModal.value = false; formError.value = ''; assignResult.value = null;
   form.value = { titre: '', description: '', priorite: 'BASSE' };
 };
 

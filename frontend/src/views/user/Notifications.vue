@@ -34,11 +34,61 @@
             <div class="notif-body">
               <p class="notif-msg">{{ notif.message }}</p>
               <p class="notif-time">{{ formatTime(notif.created_at) }}</p>
+              
+              <!-- Boutons Admin pour l'auto-assignation -->
+              <div v-if="!notif.lu && (notif.message.toLowerCase().includes('validation') || notif.message.toLowerCase().includes('assignation'))" class="notif-actions" @click.stop>
+                <button @click="acceptAssignment(notif)" class="btn-sm btn-accept">✅ Valider</button>
+                <button @click="rejectAssignment(notif)" class="btn-sm btn-reject">❌ Refuser</button>
+              </div>
             </div>
           </div>
         </div>
 
       </div>
+      
+      <!-- Toast de notification -->
+      <div v-if="toast.show" class="toast-message" :class="`toast-${toast.type}`">
+        {{ toast.message }}
+      </div>
+
+      <!-- Modale de Confirmation Générique -->
+      <div v-if="confirmDialog.show" class="modal-overlay" @click.self="cancelConfirm">
+        <div class="modal-content modal-sm">
+          <h2 class="modal-title">{{ confirmDialog.title }}</h2>
+          <p class="modal-desc">{{ confirmDialog.message }}</p>
+          <div class="modal-actions">
+            <button @click="cancelConfirm" class="btn-sm btn-cancel">Annuler</button>
+            <button @click="executeConfirm" class="btn-sm btn-primary">Confirmer</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Modale d'assignation manuelle -->
+      <div v-if="showAssignModal" class="modal-overlay" @click.self="closeAssignModal">
+        <div class="modal-content">
+          <h2 class="modal-title">Assigner Manuellement</h2>
+          <p class="modal-desc">Veuillez choisir un développeur pour ce ticket.</p>
+          
+          <div v-if="loadingDevs" class="loading">Chargement des développeurs...</div>
+          <div v-else-if="projectDevs.length === 0" class="empty">Aucun développeur disponible sur ce projet.</div>
+          <div v-else class="dev-list">
+            <select v-model="selectedDevId" class="form-select">
+              <option disabled value="">Sélectionnez un développeur...</option>
+              <option v-for="dev in projectDevs" :key="dev.id" :value="dev.id">
+                {{ dev.prenom }} {{ dev.nom }} ({{ dev.active_tickets_count }} tickets actifs)
+              </option>
+            </select>
+          </div>
+          
+          <div class="modal-actions">
+            <button @click="closeAssignModal" class="btn-sm btn-cancel">Annuler</button>
+            <button @click="submitReassign" class="btn-sm btn-primary" :disabled="!selectedDevId || assignLoading">
+              {{ assignLoading ? 'Assignation...' : 'Assigner' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </template>
@@ -53,6 +103,41 @@ const router = useRouter();
 const notifications = ref([]);
 const loading = ref(true);
 const marking = ref(false);
+
+const showAssignModal = ref(false);
+const selectedTicketId = ref(null);
+const projectDevs = ref([]);
+const selectedDevId = ref('');
+const loadingDevs = ref(false);
+const assignLoading = ref(false);
+
+const toast = ref({ show: false, message: '', type: 'success' });
+let toastTimeout = null;
+
+const showToast = (message, type = 'success') => {
+  toast.value = { show: true, message, type };
+  if (toastTimeout) clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toast.value.show = false;
+  }, 3000);
+};
+
+const confirmDialog = ref({ show: false, title: '', message: '', onConfirm: null });
+
+const showConfirm = (title, message, onConfirmCallback) => {
+  confirmDialog.value = { show: true, title, message, onConfirm: onConfirmCallback };
+};
+
+const cancelConfirm = () => {
+  confirmDialog.value.show = false;
+};
+
+const executeConfirm = () => {
+  if (confirmDialog.value.onConfirm) {
+    confirmDialog.value.onConfirm();
+  }
+  confirmDialog.value.show = false;
+};
 
 const unreadCount = computed(() => notifications.value.filter(n => !n.lu).length);
 
@@ -112,6 +197,82 @@ const goToTicket = async (notif) => {
   }
 };
 
+const acceptAssignment = async (notif) => {
+  if (!notif.ticket_id) return;
+  showConfirm('Confirmation', 'Voulez-vous vraiment valider cette assignation ?', async () => {
+    try {
+      await api.patch(`/tickets/${notif.ticket_id}/accept`);
+      showToast('Assignation validée avec succès !', 'success');
+      notifications.value = notifications.value.filter(n => n.id !== notif.id);
+      document.dispatchEvent(new CustomEvent('notifications-read'));
+    } catch (e) {
+      showToast("Erreur lors de la validation : " + (e.response?.data?.message || e.message || "Erreur inconnue"), 'error');
+    }
+  });
+};
+
+const rejectAssignment = async (notif) => {
+  if (!notif.ticket_id) return;
+  showConfirm('Refuser l\'assignation', 'Voulez-vous refuser cette assignation ? Vous devrez assigner manuellement un développeur.', async () => {
+    try {
+      await api.patch(`/tickets/${notif.ticket_id}/reject`);
+      
+      // Supprimer la notification pour empêcher le double-clic
+      notifications.value = notifications.value.filter(n => n.id !== notif.id);
+      document.dispatchEvent(new CustomEvent('notifications-read'));
+      
+      // Ouvrir la modale d'assignation
+      selectedTicketId.value = notif.ticket_id;
+      if (notif.ticket && notif.ticket.project_id) {
+        await fetchProjectDevs(notif.ticket.project_id);
+      }
+      showAssignModal.value = true;
+      
+    } catch (e) {
+      showToast("Erreur lors du refus : " + (e.response?.data?.message || e.message || "Erreur inconnue"), 'error');
+    }
+  });
+};
+
+const fetchProjectDevs = async (projectId) => {
+  if (!projectId) return;
+  loadingDevs.value = true;
+  projectDevs.value = [];
+  try {
+    const res = await api.get(`/projects/${projectId}/developers/workload`);
+    // res.data should be an array directly or an object with data? ProjectController returns `return response()->json($developers, 200);` if mapped.
+    // Wait, let's look closely at `ProjectController@getDevelopersWorkload`.
+    projectDevs.value = res.data;
+  } catch (error) {
+    console.error('Erreur devs', error);
+  } finally {
+    loadingDevs.value = false;
+  }
+};
+
+const closeAssignModal = () => {
+  showAssignModal.value = false;
+  selectedTicketId.value = null;
+  selectedDevId.value = '';
+  projectDevs.value = [];
+};
+
+const submitReassign = async () => {
+  if (!selectedDevId.value || !selectedTicketId.value) return;
+  assignLoading.value = true;
+  try {
+    await api.patch(`/tickets/${selectedTicketId.value}/reassign`, {
+      developpeur_id: selectedDevId.value
+    });
+    showToast('Le ticket a été réassigné manuellement avec succès.', 'success');
+    closeAssignModal();
+  } catch (e) {
+    showToast("Erreur lors de la réassignation : " + (e.response?.data?.message || e.message), 'error');
+  } finally {
+    assignLoading.value = false;
+  }
+};
+
 onMounted(() => fetchNotifications());
 
 const formatTime = (d) =>
@@ -145,4 +306,106 @@ const formatTime = (d) =>
 .notif-msg { font-size: .875rem; font-weight: 500; color: #1e293b; margin: 0 0 .25rem; line-height: 1.5; }
 .is-read .notif-msg { color: #64748b; font-weight: 400; }
 .notif-time { font-size: .75rem; color: #94a3b8; margin: 0; }
+.notif-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.btn-sm { padding: 4px 10px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: background 0.15s; }
+.btn-accept { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.btn-accept:hover { background: #bbf7d0; }
+.btn-reject { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+.btn-reject:hover { background: #fecaca; }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-bottom: 0.5rem;
+}
+
+.modal-desc {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.form-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  background: #f8fafc;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.btn-cancel {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-sm {
+  max-width: 320px;
+}
+
+.toast-message {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  z-index: 9999;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  animation: slideUp 0.3s ease;
+}
+
+.toast-success {
+  background-color: #10b981;
+}
+
+.toast-error {
+  background-color: #ef4444;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 </style>
