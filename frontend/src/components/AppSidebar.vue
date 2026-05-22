@@ -8,11 +8,11 @@
 
     <!-- Nav -->
     <nav class="sidebar-nav">
-      <!-- Super Admin -->
+      <!-- Admin (rôle admin) -->
       <template v-if="isSuperAdmin">
         <p class="nav-section">Administration</p>
-        <router-link to="/super-admin/admins" class="nav-item" active-class="nav-active">
-          <span class="nav-icon">🛡️</span> Administrateurs
+        <router-link to="/admin/admins" class="nav-item" active-class="nav-active">
+          <span class="nav-icon">🛡️</span> Chefs de projet
         </router-link>
         <p class="nav-section">Gestion</p>
         <router-link to="/admin/dashboard" class="nav-item" active-class="nav-active">
@@ -30,7 +30,7 @@
         </router-link>
       </template>
 
-      <!-- Admin -->
+      <!-- Chef de projet -->
       <template v-else-if="isAdmin">
         <p class="nav-section">Gestion</p>
         <router-link to="/admin/dashboard" class="nav-item" active-class="nav-active">

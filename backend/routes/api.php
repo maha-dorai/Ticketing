@@ -59,7 +59,7 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::put('/notifications/read',         [NotificationController::class, 'markAsRead']);
 
-    // ── Routes Admin (admin + super_admin) ───────────────────────────────────
+    // ── Routes Admin (chef_de_projet + admin) ────────────────────────────────
     Route::middleware('is_admin')->group(function () {
         Route::post('/projects',              [ProjectController::class, 'store']);
         Route::put('/projects/{id}',          [ProjectController::class, 'update']);
@@ -74,10 +74,10 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
         Route::delete('/users/{id}',             [UserController::class, 'deleteUser']);      // retourne 403
     });
 
-    // ── Routes Super Admin uniquement ────────────────────────────────────────
-    Route::middleware('is_super_admin')->group(function () {
-        Route::post('/super-admin/admins',          [SuperAdminController::class, 'createAdmin']);
-        Route::get('/super-admin/admins',           [SuperAdminController::class, 'listAdmins']);
-        Route::put('/super-admin/admins/{id}/revoke', [SuperAdminController::class, 'revokeAdmin']);
+    // ── Routes Admin uniquement ───────────────────────────────────────────────
+    Route::middleware('is_full_admin')->group(function () {
+        Route::post('/admin/chefs',              [SuperAdminController::class, 'createAdmin']);
+        Route::get('/admin/chefs',               [SuperAdminController::class, 'listAdmins']);
+        Route::put('/admin/chefs/{id}/revoke',   [SuperAdminController::class, 'revokeAdmin']);
     });
 });

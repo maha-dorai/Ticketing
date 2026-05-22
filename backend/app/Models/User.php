@@ -17,7 +17,7 @@ class User extends Authenticatable implements JWTSubject
         'prenom',
         'email',
         'mot_de_passe',
-        'role',                   // 'testeur' | 'developpeur' | 'chef_de_projet' | 'admin'
+        'role',                   // 'admin' | 'chef_de_projet' | 'testeur' | 'developpeur'
         'statut',                 // 'en_attente' | 'actif' | 'rejete' | 'desactive'
         'github_link',
         'force_password_change',  // true = obligé de changer le mdp à la prochaine connexion

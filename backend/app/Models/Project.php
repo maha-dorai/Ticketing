@@ -24,7 +24,7 @@ class Project extends Model
         return $this->belongsToMany(User::class);
     }
  
-    // Admin ou super_admin qui a créé le projet
+    // Admin ou chef_de_projet qui a créé le projet
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');

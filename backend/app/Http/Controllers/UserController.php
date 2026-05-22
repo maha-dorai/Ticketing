@@ -182,7 +182,7 @@ class UserController extends Controller
                 'nom'    => 'required|string',
                 'prenom' => 'required|string',
                 'email'  => 'required|email|unique:users,email,' . $id,
-                'role'   => 'required|in:testeur,developpeur,admin',
+                'role'   => 'required|in:testeur,developpeur,chef_de_projet,admin',
             ]);
             $user->update($validated);
             return response()->json(['message' => 'Utilisateur mis à jour.']);

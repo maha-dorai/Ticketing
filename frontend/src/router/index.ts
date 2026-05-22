@@ -91,10 +91,10 @@ const routes = [
   },
 
   {
-    path: '/super-admin/admins',
+    path: '/admin/admins',
     name: 'AdminManagement',
-    component: () => import('../views/super-admin/AdminManagement.vue'),
-    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    component: () => import('../views/admin/AdminManagement.vue'),
+    meta: { requiresAuth: true, requiresFullAdmin: true },
   },
 
   { path: '/:pathMatch(.*)*', redirect: '/login' },
@@ -129,8 +129,8 @@ router.beforeEach((to, _from) => {
   if (to.meta.requiresAdmin && !authStore.isAdmin())
     return { name: 'Login' };
 
-  // 4. صفحة super_admin
-  if (to.meta.requiresSuperAdmin && !authStore.isSuperAdmin())
+  // 4. صفحة admin فقط (ليس chef_de_projet)
+  if (to.meta.requiresFullAdmin && !authStore.isSuperAdmin())
     return { name: 'Login' };
 
   return true;

@@ -4,8 +4,8 @@
     <main class="main">
       <div class="page-header">
         <div>
-          <h1 class="page-title">Gestion des administrateurs</h1>
-          <p class="page-sub">Créez et gérez les comptes administrateurs de la plateforme</p>
+          <h1 class="page-title">Gestion des chefs de projet</h1>
+          <p class="page-sub">Créez et gérez les comptes chefs de projet de la plateforme</p>
         </div>
       </div>
 
@@ -17,9 +17,9 @@
         <div class="two-col">
           <!-- ═══ FORMULAIRE ═══ -->
           <div class="form-card">
-            <h2 class="card-title">➕ Créer un administrateur</h2>
+            <h2 class="card-title">➕ Créer un chef de projet</h2>
             <p class="card-desc">
-              Saisissez les informations du futur administrateur.
+              Saisissez les informations du futur chef de projet.
               Le système génère automatiquement un mot de passe temporaire
               et l'envoie par email. L'administrateur devra le changer à sa
               première connexion.
@@ -51,7 +51,7 @@
           <!-- ═══ LISTE ADMINS ═══ -->
           <div class="list-card">
             <div class="list-header">
-              <h2 class="card-title">Administrateurs</h2>
+              <h2 class="card-title">Chefs de projet</h2>
               <span class="cnt-badge">{{ activeAdmins.length }} actifs</span>
             </div>
 
@@ -62,7 +62,7 @@
 
             <div v-else-if="!admins.length" class="empty-list">
               <div class="empty-icon">👑</div>
-              <p>Aucun administrateur créé</p>
+              <p>Aucun chef de projet créé</p>
             </div>
 
             <div v-else class="admin-list">
@@ -121,7 +121,7 @@ const activeAdmins = computed(() => admins.value.filter(a => a.statut === 'actif
 
 const fetchAdmins = async () => {
   loading.value = true;
-  try { const r = await api.get('/super-admin/admins'); admins.value = r.data; }
+  try { const r = await api.get('/admin/chefs'); admins.value = r.data; }
   catch { msg('Erreur de chargement.', false); }
   finally { loading.value = false; }
 };
@@ -135,7 +135,7 @@ const msg = (m, ok = true) => {
 const createAdmin = async () => {
   creating.value = true;
   try {
-    const r = await api.post('/super-admin/admins', f.value);
+    const r = await api.post('/admin/chefs', f.value);
     msg(r.data.message);
     f.value = { nom: '', prenom: '', email: '' };
     await fetchAdmins();
@@ -146,8 +146,8 @@ const createAdmin = async () => {
 const askRevoke = (a) => { adminToRevoke.value = a; };
 const confirmRevoke = async () => {
   try {
-    await api.put(`/super-admin/admins/${adminToRevoke.value.id}/revoke`);
-    msg('Administrateur désactivé.');
+    await api.put(`/admin/chefs/${adminToRevoke.value.id}/revoke`);
+    msg('Chef de projet désactivé.');
     adminToRevoke.value = null;
     await fetchAdmins();
   } catch { msg('Erreur.', false); adminToRevoke.value = null; }

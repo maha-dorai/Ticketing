@@ -11,10 +11,10 @@ use Illuminate\Support\Str;
 class SuperAdminController extends Controller
 {
     /**
-     * Créer un compte admin.
-     * Le super_admin saisit : nom, prénom, email.
+     * Créer un compte chef_de_projet.
+     * L'admin saisit : nom, prénom, email.
      * Le système génère un mot de passe temporaire et l'envoie par email.
-     * L'admin sera forcé de le changer à sa première connexion.
+     * Le chef de projet sera forcé de le changer à sa première connexion.
      */
     public function createAdmin(Request $request)
     {
@@ -71,7 +71,7 @@ class SuperAdminController extends Controller
     }
 
     /**
-     * Liste tous les admins (pour que le super_admin les gère).
+     * Liste tous les chefs de projet (pour que l'admin les gère).
      */
     public function listAdmins()
     {
