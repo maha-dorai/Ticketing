@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Ticket extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'titre',
         'description',
@@ -53,5 +56,10 @@ class Ticket extends Model
     public function isAssignmentPending(): bool
     {
         return $this->assignment_status === 'pending' && $this->proposed_developpeur_id !== null;
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
     }
 }

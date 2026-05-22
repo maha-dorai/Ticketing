@@ -42,7 +42,7 @@
         <div class="info-banner">
           <div class="banner-icon">💡</div>
           <div class="banner-text">
-            Ces statistiques sont mises à jour en temps réel. Des graphiques avancés et l'exportation vers Power BI seront disponibles lors d'une prochaine mise à jour.
+            Ces statistiques sont mises à jour en temps réel. Des graphiques avancés seront disponibles lors d'une prochaine mise à jour.
           </div>
         </div>
       </div>

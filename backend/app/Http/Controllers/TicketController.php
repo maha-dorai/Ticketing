@@ -96,23 +96,23 @@ class TicketController extends Controller
             'rejected_by'             => [],
         ]);
 
+        // 🤖 Lancer l'auto-assignation
         $autoAssignService = new AutoAssignService();
-        $autoAssignService->assign($ticket->load('testeur'));
+        $autoAssignService->assign($ticket);
 
-        $ticket = $ticket->fresh(['proposedDeveloppeur']);
-
-        $proposed = $ticket->proposedDeveloppeur;
+        // Reload avec le développeur proposé (ou assigné)
+        $ticket = $ticket->fresh(['developpeur', 'proposedDeveloppeur']);
+        $dev = $ticket->proposedDeveloppeur ?? $ticket->developpeur;
 
         return response()->json([
             'ticket'      => $ticket,
-            'auto_assign' => $proposed ? [
-                'success'    => true,
-                'pending'    => true,
-                'dev_nom'    => $proposed->nom,
-                'dev_prenom' => $proposed->prenom,
+            'auto_assign' => $dev ? [
+                'success' => true,
+                'dev_nom'    => $dev->nom,
+                'dev_prenom' => $dev->prenom,
             ] : [
                 'success' => false,
-                'message' => "Aucun développeur disponible. L'administrateur assignera manuellement.",
+                'message' => "Aucun développeur disponible. L'Admin assignera manuellement.",
             ],
         ], 201);
     }
@@ -230,6 +230,10 @@ class TicketController extends Controller
             'assignment_status'       => 'approved',
         ]);
 
+        \App\Models\Notification::where('ticket_id', $ticket->id)
+            ->where('message', 'LIKE', '%validation%')
+            ->delete();
+
         $devMessage = "🎫 Nouveau ticket assigné et validé par l'Admin : « {$ticket->titre} » — Priorité : {$ticket->priorite}";
         if ($ticket->force_assigned) {
             $devMessage = "🚨 URGENT: Ticket CRITIQUE assigné et validé : « {$ticket->titre} »";
@@ -256,18 +260,22 @@ class TicketController extends Controller
 
     public function reject(Request $request, $id)
     {
+        \Log::info("Reject called for ticket $id");
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
         if (!$user->isAdmin()) {
+            \Log::info("User not admin");
             return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent refuser l\'assignation'], 403);
         }
 
         if ($ticket->assignment_status === 'approved') {
+            \Log::info("Ticket already approved");
             return response()->json(['message' => 'Impossible de refuser une assignation déjà validée.'], 409);
         }
 
         if ($ticket->assignment_status !== 'pending' || !$ticket->proposed_developpeur_id) {
+            \Log::info("Not pending or no proposed dev. Status: {$ticket->assignment_status}, ProposedDev: {$ticket->proposed_developpeur_id}");
             return response()->json(['message' => 'Aucune assignation en attente de validation.'], 400);
         }
 
@@ -278,12 +286,23 @@ class TicketController extends Controller
             $rejectedBy[] = $devId;
         }
 
-        $ticket->update([
-            'developpeur_id'          => null,
-            'proposed_developpeur_id' => null,
-            'assignment_status'       => 'rejected',
-            'rejected_by'             => $rejectedBy,
-        ]);
+        try {
+            $ticket->update([
+                'developpeur_id'          => null,
+                'proposed_developpeur_id' => null,
+                'assignment_status'       => 'rejected',
+                'rejected_by'             => $rejectedBy,
+            ]);
+
+            \App\Models\Notification::where('ticket_id', $ticket->id)
+                ->where('message', 'LIKE', '%validation%')
+                ->delete();
+
+            \Log::info("Ticket updated successfully");
+        } catch (\Exception $e) {
+            \Log::error("Error updating ticket: " . $e->getMessage());
+            throw $e;
+        }
 
         return response()->json([
             'message' => 'Assignation refusée. Veuillez assigner manuellement un développeur.',
