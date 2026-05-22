@@ -110,7 +110,7 @@ const initials = computed(() => {
 });
 
 const roleLabel = computed(() => ({
-  super_admin: 'Super Admin',
+  admin: 'Admin',
   chef_de_projet: 'Chef de projet',
   developpeur: 'Développeur',
   testeur: 'Testeur',

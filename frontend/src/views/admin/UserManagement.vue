@@ -120,7 +120,7 @@ const activeStatus = ref('en_attente');
 const roleFilter = ref('');
 const search = ref('');
 
-const members = computed(() => allUsers.value.filter(u => !['admin', 'super_admin'].includes(u.role)));
+const members = computed(() => allUsers.value.filter(u => !['chef_de_projet', 'admin'].includes(u.role)));
 const pendingUsers  = computed(() => members.value.filter(u => u.statut === 'en_attente'));
 const activeUsers   = computed(() => members.value.filter(u => u.statut === 'actif'));
 const disabledUsers = computed(() => members.value.filter(u => u.statut === 'desactive'));

@@ -66,7 +66,7 @@ const onSubmit = async () => {
     const status = await authStore.login(email.value, password.value);
     if (status === 'success') {
       const role = authStore.currentUser?.role;
-      if (role === 'super_admin') router.push({ name: 'AdminManagement' });
+      if (role === 'admin') router.push({ name: 'AdminManagement' });
       else if (role === 'chef_de_projet') router.push({ name: 'UserManagement' });
       else router.push({ name: 'Projects' });
     } else if (status === 'en_attente') pendingMessage.value = 'Votre compte est en attente de validation par un administrateur.';

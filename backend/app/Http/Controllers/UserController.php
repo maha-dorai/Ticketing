@@ -144,13 +144,13 @@ class UserController extends Controller
             if ($id == $requester->id)
                 return response()->json(['message' => 'Vous ne pouvez pas désactiver votre propre compte.'], 403);
 
-            // Le super_admin ne peut jamais être désactivé
-            if ($user->role === 'super_admin')
-                return response()->json(['message' => 'Impossible de désactiver un super administrateur.'], 403);
+            // L'admin ne peut jamais être désactivé
+            if ($user->role === 'admin')
+                return response()->json(['message' => 'Impossible de désactiver un administrateur.'], 403);
 
-            // Seul le super_admin peut désactiver un admin
-            if ($user->role === 'admin' && $requester->role !== 'super_admin')
-                return response()->json(['message' => 'Seul le super administrateur peut désactiver un administrateur.'], 403);
+            // Seul l'admin peut désactiver un chef_de_projet
+            if ($user->role === 'chef_de_projet' && $requester->role !== 'admin')
+                return response()->json(['message' => 'Seul l\'administrateur peut désactiver un chef de projet.'], 403);
 
             $user->update(['statut' => 'desactive']);
             return response()->json(['message' => 'Utilisateur désactivé avec succès.']);

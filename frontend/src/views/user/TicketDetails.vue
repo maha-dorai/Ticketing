@@ -161,7 +161,7 @@ const route       = useRoute();
 const router      = useRouter();
 const authStore   = useAuthStore();
 const currentUser = authStore.currentUser;
-const isAdmin     = computed(() => ['chef_de_projet', 'super_admin'].includes(currentUser?.role));
+const isAdmin     = computed(() => ['chef_de_projet', 'admin'].includes(currentUser?.role));
 
 const ticket        = ref(null);
 const loading       = ref(true);

@@ -173,11 +173,11 @@ import AppSidebar from '../../components/AppSidebar.vue';
 const authStore = useAuthStore();
 const user = computed(() => authStore.currentUser);
 const initials = computed(() => ((user.value?.prenom || '')[0] + (user.value?.nom || '')[0]).toUpperCase());
-const roleLabel = computed(() => ({ super_admin: 'Super Admin', admin: 'Administrateur', developpeur: 'Développeur', testeur: 'Testeur' }[user.value?.role] || ''));
-const roleColorClass = computed(() => ({ super_admin: 'role-super', admin: 'role-admin', developpeur: 'role-dev', testeur: 'role-test' }[user.value?.role] || ''));
+const roleLabel = computed(() => ({ admin: 'Administrateur', chef_de_projet: 'Chef de Projet', developpeur: 'Développeur', testeur: 'Testeur' }[user.value?.role] || ''));
+const roleColorClass = computed(() => ({ admin: 'role-admin', chef_de_projet: 'role-admin', developpeur: 'role-dev', testeur: 'role-test' }[user.value?.role] || ''));
 
-// Admin et super_admin : profil en lecture seule (pas de modification)
-const isAdminRole = computed(() => ['admin', 'super_admin'].includes(user.value?.role));
+// Admin et chef_de_projet : profil en lecture seule (pas de modification)
+const isAdminRole = computed(() => ['admin', 'chef_de_projet'].includes(user.value?.role));
 // Lien GitHub : affiché uniquement pour les développeurs
 const isDeveloper = computed(() => user.value?.role === 'developpeur');
 

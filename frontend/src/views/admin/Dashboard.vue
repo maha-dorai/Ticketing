@@ -179,7 +179,7 @@ const ini = u => (u.prenom?.[0] || '') + (u.nom?.[0] || '');
 .role-badge{font-size:.6875rem;font-weight:700;padding:3px 10px;border-radius:99px;text-transform:uppercase;}
 .role-testeur{background:#dcfce7;color:#16a34a;}
 .role-developpeur{background:#dbeafe;color:#1d4ed8;}
-.role-admin,.role-super_admin{background:#f3e8ff;color:#7c3aed;}
+.role-admin,.role-chef_de_projet{background:#f3e8ff;color:#7c3aed;}
 
 .num-badge{background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:8px;font-size:.75rem;font-weight:800;}
 .num-badge.success{background:#dcfce7;color:#16a34a;}

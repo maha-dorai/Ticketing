@@ -64,8 +64,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  const isAdmin      = () => ['chef_de_projet', 'super_admin'].includes(currentUser.value?.role);
-  const isSuperAdmin = () => currentUser.value?.role === 'super_admin';
+  const isAdmin      = () => ['chef_de_projet', 'admin'].includes(currentUser.value?.role);
+  const isSuperAdmin = () => currentUser.value?.role === 'admin';
 
   return {
     isAuthenticated, currentUser, forcePasswordChange,

@@ -85,7 +85,7 @@ class AutoAssignService
         ?User $proposedDev,
         ?string $failureReason = null
     ): void {
-        $admins = User::whereIn('role', ['admin', 'super_admin'])->where('statut', 'actif')->get();
+        $admins = User::whereIn('role', ['chef_de_projet', 'admin'])->where('statut', 'actif')->get();
 
         $testeurName = $testeur
             ? "{$testeur->prenom} {$testeur->nom}"

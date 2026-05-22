@@ -50,25 +50,19 @@ class Ticket extends Model
 
     public function comments()
     {
-        return $this->hasMany(Comment::class)->orderBy('created_at', 'asc');
+        return $this->hasMany(Comment::class)
+                    ->orderBy('created_at', 'asc');
     }
 
     public function isAssignmentApproved(): bool
     {
-        return $this->assignment_status === 'approved' && $this->developpeur_id !== null;
+        return $this->assignment_status === 'approved'
+            && $this->developpeur_id !== null;
     }
 
     public function isAssignmentPending(): bool
     {
-        return $this->assignment_status === 'pending' && $this->proposed_developpeur_id !== null;
-    }
-<<<<<<< HEAD
-
-    public function comments()
-    {
-        return $this->hasMany(Comment::class);
+        return $this->assignment_status === 'pending'
+            && $this->proposed_developpeur_id !== null;
     }
 }
-=======
-}
->>>>>>> 8a66f62 (sprint)

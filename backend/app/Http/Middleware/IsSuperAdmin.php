@@ -11,7 +11,7 @@ class IsSuperAdmin
     {
         $user = JWTAuth::parseToken()->authenticate();
 
-        if ($user->role !== 'super_admin')
+        if ($user->role !== 'admin')
             return response()->json(['message' => 'Accès réservé au super administrateur.'], 403);
 
         return $next($request);

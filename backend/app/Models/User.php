@@ -17,7 +17,7 @@ class User extends Authenticatable implements JWTSubject
         'prenom',
         'email',
         'mot_de_passe',
-        'role',                   // 'testeur' | 'developpeur' | 'admin' | 'super_admin'
+        'role',                   // 'testeur' | 'developpeur' | 'chef_de_projet' | 'admin'
         'statut',                 // 'en_attente' | 'actif' | 'rejete' | 'desactive'
         'github_link',
         'force_password_change',  // true = obligé de changer le mdp à la prochaine connexion
@@ -50,15 +50,15 @@ class User extends Authenticatable implements JWTSubject
         return $this->mot_de_passe;
     }
 
-    // Vérifie si l'utilisateur a des droits admin (admin ou super_admin)
+    // Vérifie si l'utilisateur a des droits admin (chef_de_projet ou admin)
     public function isAdmin(): bool
     {
-        return in_array($this->role, ['chef_de_projet', 'super_admin']);
+        return in_array($this->role, ['chef_de_projet', 'admin']);
     }
 
     public function isSuperAdmin(): bool
     {
-        return $this->role === 'super_admin';
+        return $this->role === 'admin';
     }
 
     // Relation Many-to-Many avec les Projets

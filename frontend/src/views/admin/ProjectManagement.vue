@@ -196,7 +196,7 @@ const activeMembers = computed(() => {
   const assignedIds = (currentProject.value?.users || []).map(u => u.id);
   return allUsers.value.filter(u =>
     u.statut === 'actif' &&
-    !['chef_de_projet', 'super_admin'].includes(u.role) &&
+    !['chef_de_projet', 'admin'].includes(u.role) &&
     !assignedIds.includes(u.id)
   );
 });
