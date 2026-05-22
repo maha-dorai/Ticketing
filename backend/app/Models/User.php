@@ -53,7 +53,7 @@ class User extends Authenticatable implements JWTSubject
     // Vérifie si l'utilisateur a des droits admin (admin ou super_admin)
     public function isAdmin(): bool
     {
-        return in_array($this->role, ['admin', 'super_admin']);
+        return in_array($this->role, ['chef_de_projet', 'super_admin']);
     }
 
     public function isSuperAdmin(): bool

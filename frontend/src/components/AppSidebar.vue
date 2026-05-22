@@ -111,7 +111,7 @@ const initials = computed(() => {
 
 const roleLabel = computed(() => ({
   super_admin: 'Super Admin',
-  admin: 'Administrateur',
+  chef_de_projet: 'Chef de projet',
   developpeur: 'Développeur',
   testeur: 'Testeur',
 }[user.value?.role] || ''));

@@ -57,7 +57,7 @@
             </select>
           </div>
 
-          <div v-if="form.role === 'developpeur'" class="github-box">
+          <div v-if="form.role === 'developpeur' || form.role === 'testeur'" class="github-box">
             <label class="label" style="color:#93c5fd">Lien GitHub / Portfolio</label>
             <input v-model="form.github_link" type="url" placeholder="https://github.com/username" class="input" style="margin-top:0.4rem" />
           </div>
@@ -122,7 +122,7 @@ const registerCandidate = async () => {
     await authStore.register({
       nom: form.value.nom, prenom: form.value.prenom, email: form.value.email,
       mot_de_passe: form.value.mot_de_passe, role: form.value.role,
-      github_link: form.value.role === 'developpeur' ? form.value.github_link : null,
+      github_link: (form.value.role === 'developpeur' || form.value.role === 'testeur') ? form.value.github_link : null,
     });
     successMessage.value = 'Compte créé ! Votre demande est en attente de validation.';
     setTimeout(() => router.push({ name: 'Login' }), 2500);

@@ -64,7 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  const isAdmin      = () => ['admin', 'super_admin'].includes(currentUser.value?.role);
+  const isAdmin      = () => ['chef_de_projet', 'super_admin'].includes(currentUser.value?.role);
   const isSuperAdmin = () => currentUser.value?.role === 'super_admin';
 
   return {

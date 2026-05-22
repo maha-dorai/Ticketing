@@ -16,7 +16,7 @@
             <span class="filter-label">Filtrer par Rôle :</span>
             <button @click="toggleRole('developpeur')" :class="['pill', filterRole.includes('developpeur') ? 'pill-active' : '']">👨‍💻 Développeurs</button>
             <button @click="toggleRole('testeur')" :class="['pill', filterRole.includes('testeur') ? 'pill-active' : '']">🕵️ Testeurs</button>
-            <button @click="toggleRole('admin')" :class="['pill', filterRole.includes('admin') ? 'pill-active' : '']">👑 Admins</button>
+            <button @click="toggleRole('chef_de_projet')" :class="['pill', filterRole.includes('admin') ? 'pill-active' : '']">👑 Admins</button>
           </div>
         </div>
 
@@ -121,7 +121,7 @@ const fetchStats = async () => {
 };
 
 onMounted(() => {
-  if (!authStore.currentUser?.role.includes('admin')) {
+  if (!authStore.currentUser?.role.includes('chef_de_projet')) {
     router.push({ name: 'Projects' });
     return;
   }

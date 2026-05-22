@@ -35,7 +35,7 @@ class SuperAdminController extends Controller
                 'prenom'                => $request->prenom,
                 'email'                 => $request->email,
                 'mot_de_passe'          => Hash::make($tempPassword),
-                'role'                  => 'admin',
+                'role'                  => 'chef_de_projet',
                 'statut'                => 'actif',             // Directement actif, pas besoin de validation
                 'force_password_change' => true,                // Doit changer son mdp à la première connexion
             ]);
@@ -57,7 +57,7 @@ class SuperAdminController extends Controller
 
             return response()->json([
                 'message' => "Compte admin créé. Les identifiants ont été envoyés à {$admin->email}.",
-                'admin'   => [
+                'chef_de_projet'   => [
                     'id'     => $admin->id,
                     'nom'    => $admin->nom,
                     'prenom' => $admin->prenom,
@@ -76,7 +76,7 @@ class SuperAdminController extends Controller
     public function listAdmins()
     {
         try {
-            $admins = User::where('role', 'admin')
+            $admins = User::where('role', 'chef_de_projet')
                           ->select('id', 'nom', 'prenom', 'email', 'statut', 'force_password_change', 'created_at')
                           ->get();
 
@@ -92,7 +92,7 @@ class SuperAdminController extends Controller
     public function revokeAdmin($id)
     {
         try {
-            $admin = User::where('id', $id)->where('role', 'admin')->firstOrFail();
+            $admin = User::where('id', $id)->where('role', 'chef_de_projet')->firstOrFail();
             $admin->update(['statut' => 'desactive']);
 
             return response()->json(['message' => 'Compte admin désactivé.']);
@@ -110,7 +110,8 @@ class SuperAdminController extends Controller
         $upper   = strtoupper(Str::random(2));
         $lower   = strtolower(Str::random(6));
         $digits  = rand(10, 99);
-        $special = Str::of('!@#$%^&*')->split(1)->random();
+        $specials = ['!', '@', '#', '$', '%', '^', '&', '*'];
+        $special  = $specials[array_rand($specials)];
 
         // Mélange tous les éléments
         $password = str_shuffle($upper . $lower . $digits . $special);

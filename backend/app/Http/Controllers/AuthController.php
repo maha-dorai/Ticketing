@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -24,7 +25,7 @@ class AuthController extends Controller
                     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
                 ],
                 'role'        => 'required|in:testeur,developpeur',
-                'github_link' => 'required_if:role,developpeur|nullable|url',
+                'github_link' => 'required_if:role,developpeur|required_if:role,testeur|nullable|url',
             ], [
                 'nom.required'            => 'Le nom est obligatoire.',
                 'prenom.required'         => 'Le prénom est obligatoire.',
@@ -35,7 +36,7 @@ class AuthController extends Controller
                 'mot_de_passe.min'        => 'Le mot de passe doit contenir au moins 8 caractères.',
                 'mot_de_passe.regex'      => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
                 'role.required'           => 'Le rôle est obligatoire.',
-                'github_link.required_if' => 'Le lien GitHub est obligatoire pour un Développeur.',
+                'github_link.required_if' => 'Le lien GitHub est obligatoire.',
                 'github_link.url'         => 'Le lien GitHub doit être une URL valide.',
             ]);
 
@@ -46,10 +47,12 @@ class AuthController extends Controller
                 'mot_de_passe' => Hash::make($request->mot_de_passe),
                 'role'         => $request->role,
                 'statut'       => 'en_attente',
-                'github_link'  => $request->role === 'developpeur' ? $request->github_link : null,
+                'github_link'  => in_array($request->role, ['developpeur', 'testeur']) ? $request->github_link : null,
             ]);
 
             return response()->json(['message' => "Compte créé. En attente de validation."], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur d\'inscription.', 'error' => $e->getMessage()], 500);
         }

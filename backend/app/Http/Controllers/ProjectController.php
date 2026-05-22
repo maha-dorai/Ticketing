@@ -38,16 +38,8 @@ class ProjectController extends Controller
         try {
             $user    = JWTAuth::parseToken()->authenticate();
             $project = Project::with([
-                'users' => function($q) {
-                    $q->select('users.id', 'users.nom', 'users.prenom', 'users.role', 'users.email')
-                      ->withCount([
-                          'assignedTickets as active_tickets_count' => function ($query) {
-                              $query->where('assignment_status', 'approved')
-                                    ->whereIn('etat', ['OUVERT', 'EN_COURS']);
-                          }
-                      ]);
-                },
-                'creator:id,nom,prenom'
+                'users:id,nom,prenom,role,email',
+                'creator:id,nom,prenom',
             ])->findOrFail($id);
 
             // Vérifier que l'utilisateur est membre ou admin
@@ -57,6 +49,14 @@ class ProjectController extends Controller
                     return response()->json(['message' => 'Accès non autorisé'], 403);
                 }
             }
+
+            // Ajouter le workload de chaque membre manuellement
+            $project->users->each(function ($member) {
+                $member->active_tickets_count = \App\Models\Ticket::where('developpeur_id', $member->id)
+                    ->where('assignment_status', 'approved')
+                    ->whereIn('etat', ['OUVERT', 'EN_COURS'])
+                    ->count();
+            });
 
             return response()->json($project, 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
