@@ -130,7 +130,7 @@ class TicketController extends Controller
             return response()->json(['message' => "Non autorisé. Vous n'êtes pas le créateur de ce ticket"], 403);
         }
 
-        if (in_array($ticket->etat, ['EN_COURS', 'RESOLU', 'FERME'])) {
+        if (in_array($ticket->etat, ['EN_COURS', 'A_TESTER', 'RECLAMATION', 'VALIDE'])) {
             return response()->json([
                 'message' => "Modification impossible : le ticket est déjà « {$ticket->etat} ». Seuls les tickets OUVERTS peuvent être modifiés.",
             ], 403);
@@ -152,57 +152,74 @@ class TicketController extends Controller
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        if ($user->role !== 'developpeur') {
-            return response()->json(['message' => "Seuls les développeurs assignés peuvent changer l'état du ticket"], 403);
-        }
-
-        if (!$ticket->isAssignmentApproved() || $ticket->developpeur_id !== $user->id) {
-            return response()->json(['message' => 'Non autorisé. Ce ticket ne vous est pas assigné ou l\'assignation n\'est pas encore validée.'], 403);
+        // ── Transitions autorisées par rôle ───────────────────────────────────
+        // Développeur assigné : OUVERT → EN_COURS → A_TESTER
+        // Testeur créateur    : A_TESTER → RECLAMATION | A_TESTER → VALIDE
+        // Admin/chef          : toute transition
+        if ($user->isAdmin()) {
+            return response()->json(['message' => 'Les administrateurs ne peuvent pas modifier l\'état des tickets via le Kanban.'], 403);
+        } elseif ($user->role === 'developpeur') {
+            if (!$ticket->isAssignmentApproved() || $ticket->developpeur_id !== $user->id) {
+                return response()->json(['message' => 'Non autorisé. Ce ticket ne vous est pas assigné.'], 403);
+            }
+            $allowed = ['OUVERT', 'EN_COURS', 'A_TESTER'];
+        } elseif ($user->role === 'testeur') {
+            if ($ticket->testeur_id !== $user->id) {
+                return response()->json(['message' => "Non autorisé. Vous n'êtes pas le créateur de ce ticket."], 403);
+            }
+            if ($ticket->etat !== 'A_TESTER') {
+                return response()->json(['message' => 'Vous pouvez seulement agir sur un ticket « À tester ».'], 403);
+            }
+            $allowed = ['RECLAMATION', 'VALIDE'];
+        } else {
+            return response()->json(['message' => 'Non autorisé.'], 403);
         }
 
         $validated = $request->validate([
-            'etat' => 'required|in:OUVERT,EN_COURS,RESOLU',
+            'etat' => 'required|in:OUVERT,EN_COURS,A_TESTER,RECLAMATION,VALIDE',
         ]);
+
+        if (!in_array($validated['etat'], $allowed)) {
+            return response()->json(['message' => 'Transition non autorisée pour votre rôle.'], 403);
+        }
 
         $ticket->update(['etat' => $validated['etat']]);
 
         $etatLabels = [
-            'OUVERT'   => '🟢 Ouvert',
-            'EN_COURS' => '🔵 En cours',
-            'RESOLU'   => '✅ Résolu',
+            'OUVERT'      => '🟢 À traiter',
+            'EN_COURS'    => '🔵 En cours',
+            'A_TESTER'    => '🧪 À tester',
+            'RECLAMATION' => '⚠️ Réclamation',
+            'VALIDE'      => '✅ Validé',
         ];
         $label = $etatLabels[$validated['etat']] ?? $validated['etat'];
 
-        $this->notify(
-            $ticket->testeur_id,
-            "🔄 Le ticket « {$ticket->titre} » est maintenant : {$label}",
-            $ticket->id
-        );
+        if ($validated['etat'] === 'A_TESTER') {
+            $this->notify($ticket->testeur_id,
+                "🧪 Le ticket « {$ticket->titre} » est prêt à tester.",
+                $ticket->id);
+        } elseif ($validated['etat'] === 'RECLAMATION') {
+            $this->notify($ticket->developpeur_id,
+                "⚠️ Réclamation sur « {$ticket->titre} » — le testeur a rejeté la résolution.",
+                $ticket->id);
+        } elseif ($validated['etat'] === 'VALIDE') {
+            $this->notify($ticket->developpeur_id,
+                "✅ Le ticket « {$ticket->titre} » a été validé par le testeur.",
+                $ticket->id);
+        } else {
+            $this->notify($ticket->testeur_id,
+                "🔄 Le ticket « {$ticket->titre} » est maintenant : {$label}",
+                $ticket->id);
+        }
 
-        return response()->json($ticket, 200);
+        return response()->json($ticket->fresh(), 200);
     }
 
     public function close(Request $request, $id)
     {
-        $user   = Auth::user();
-        $ticket = Ticket::findOrFail($id);
-
-        if ($user->role !== 'testeur' || $ticket->testeur_id !== $user->id) {
-            return response()->json(['message' => 'Seul le testeur créateur peut fermer ce ticket'], 403);
-        }
-
-        $ticket->update(['etat' => 'FERME']);
-
-        if ($ticket->isAssignmentApproved() && $ticket->developpeur_id) {
-            $fermePar = "{$user->prenom} {$user->nom}";
-            $this->notify(
-                $ticket->developpeur_id,
-                "🔒 Le ticket « {$ticket->titre} » a été fermé par {$fermePar}.",
-                $ticket->id
-            );
-        }
-
-        return response()->json($ticket, 200);
+        // Remplacé par changeStatus avec etat=VALIDE — conservé pour compatibilité
+        $request->merge(['etat' => 'VALIDE']);
+        return $this->changeStatus($request, $id);
     }
 
     public function accept(Request $request, $id)
