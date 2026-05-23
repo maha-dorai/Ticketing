@@ -36,9 +36,6 @@
         <router-link to="/admin/dashboard" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📊</span> Tableau de bord
         </router-link>
-        <router-link to="/admin/users" class="nav-item" active-class="nav-active">
-          <span class="nav-icon">👥</span> Membres
-        </router-link>
         <router-link to="/admin/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
         </router-link>

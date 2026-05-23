@@ -33,7 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (err: any) {
       const msg = err.response?.data?.message || '';
       if (msg.includes('attente'))    return 'en_attente';
-      if (msg.includes('rejeté'))     return 'rejete';
+      if (msg.includes('rejet'))    return 'rejete';
       if (msg.includes('désactivé')) return 'desactive';
       return 'error';
     }

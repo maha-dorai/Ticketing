@@ -69,8 +69,12 @@ const submit = async () => {
     await api.put('/users/change-password', { ancien_mot_de_passe: f.value.ancien, nouveau_mot_de_passe: f.value.nouveau });
     authStore.clearForcePasswordChange();
     ok.value = true; message.value = 'Mot de passe défini. Redirection...';
-    setTimeout(() => router.push({ name: 'UserManagement' }), 1500);
-  } catch (e) { ok.value = false; message.value = e.response?.data?.message || 'Erreur.'; }
+// ✅ Corriger
+const role = authStore.currentUser?.role;
+setTimeout(() => {
+  if (role === 'admin') router.push({ name: 'UserManagement' });
+  else router.push({ name: 'AdminDashboard' });
+}, 1500);  } catch (e) { ok.value = false; message.value = e.response?.data?.message || 'Erreur.'; }
   finally { loading.value = false; }
 };
 </script>

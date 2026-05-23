@@ -44,7 +44,7 @@ const routes = [
   // ── Manager : admin + chef_de_projet ─────────────────────────────────────
   {
     path: '/admin/dashboard',
-    name: 'AdminDashboard',
+    name: 'Dashboard',
     component: () => import('../views/admin/Dashboard.vue'),
     meta: { requiresAuth: true, requiresManager: true },
   },

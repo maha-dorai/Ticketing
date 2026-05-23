@@ -70,9 +70,6 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
         Route::post('/projects/{id}/assign', [ProjectController::class, 'assignUsers']);
         Route::get('/projects/{id}/developers/workload', [ProjectController::class, 'getDevelopersWorkload']);
         Route::get('/users',                   [UserController::class, 'getAllUsers']);
-        Route::put('/users/{id}/validate',     [UserController::class, 'validateUser']);
-        Route::put('/users/{id}/deactivate',   [UserController::class, 'deactivateUser']);
-        Route::put('/users/{id}/reactivate',   [UserController::class, 'reactivateUser']);
         Route::put('/users/{id}',              [UserController::class, 'updateUser']);
         Route::delete('/users/{id}',           [UserController::class, 'deleteUser']);
     });
@@ -82,5 +79,8 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
         Route::post('/admin/chefs',            [ChefDeProjetController::class, 'create']);
         Route::get('/admin/chefs',             [ChefDeProjetController::class, 'list']);
         Route::put('/admin/chefs/{id}/revoke', [ChefDeProjetController::class, 'revoke']);
+        Route::put('/users/{id}/validate',     [UserController::class, 'validateUser']);
+        Route::put('/users/{id}/deactivate',   [UserController::class, 'deactivateUser']);
+        Route::put('/users/{id}/reactivate',   [UserController::class, 'reactivateUser']);
     });
 });

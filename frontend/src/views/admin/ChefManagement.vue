@@ -21,7 +21,7 @@
             <p class="card-desc">
               Saisissez les informations du futur chef de projet.
               Le système génère automatiquement un mot de passe temporaire
-              et l'envoie par email. L'administrateur devra le changer à sa
+              et l'envoie par email. Le chef de projet devra le changer à sa
               première connexion.
             </p>
 

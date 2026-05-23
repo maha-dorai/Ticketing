@@ -120,13 +120,7 @@ const fetchStats = async () => {
   }
 };
 
-onMounted(() => {
-  if (!authStore.isManager()) {
-    router.push({ name: 'Projects' });
-    return;
-  }
-  fetchStats();
-});
+
 
 const toggleRole = (role) => {
   if (filterRole.value.includes(role)) {
