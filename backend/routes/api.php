@@ -70,6 +70,7 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
         Route::post('/projects/{id}/assign', [ProjectController::class, 'assignUsers']);
         Route::get('/projects/{id}/developers/workload', [ProjectController::class, 'getDevelopersWorkload']);
         Route::get('/users',                   [UserController::class, 'getAllUsers']);
+        Route::get('/users/{id}',              [UserController::class, 'getUser']);
         Route::put('/users/{id}',              [UserController::class, 'updateUser']);
         Route::delete('/users/{id}',           [UserController::class, 'deleteUser']);
     });

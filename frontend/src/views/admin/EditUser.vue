@@ -46,6 +46,7 @@
               <option value="testeur">Testeur</option>
               <option value="developpeur">Développeur</option>
               <option value="chef_de_projet">Chef de projet</option>
+              <option value="admin">Administrateur</option>
             </select>
           </div>
 
@@ -93,9 +94,8 @@ const form = ref({ nom: '', prenom: '', email: '', role: '' });
 // Charger les données de l'utilisateur
 onMounted(async () => {
   try {
-    const res = await api.get('/users');
-    const user = res.data.find(u => u.id == route.params.id);
-    if (!user) { errorMsg.value = 'Utilisateur introuvable.'; return; }
+    const res = await api.get(`/users/${route.params.id}`);
+    const user = res.data;
     form.value = { nom: user.nom, prenom: user.prenom, email: user.email, role: user.role };
   } catch {
     errorMsg.value = 'Erreur lors du chargement.';

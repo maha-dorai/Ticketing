@@ -94,6 +94,17 @@ class UserController extends Controller
 
     // ─── ADMIN ────────────────────────────────────────────────────────────────
 
+    public function getUser($id)
+    {
+        try {
+            $user = User::select('id', 'nom', 'prenom', 'email', 'role', 'statut', 'github_link', 'created_at')
+                        ->findOrFail($id);
+            return response()->json($user);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Utilisateur introuvable.'], 404);
+        }
+    }
+
     public function getAllUsers()
     {
         try {
@@ -177,7 +188,19 @@ class UserController extends Controller
     public function updateUser(Request $request, $id)
     {
         try {
+            $requester = auth()->user();
             $user      = User::findOrFail($id);
+
+            // Seul un admin peut modifier un autre admin ou promouvoir en admin
+            if (
+                ($user->role === 'admin' || $request->role === 'admin')
+                && $requester->role !== 'admin'
+            ) {
+                return response()->json([
+                    'message' => 'Seul un administrateur peut modifier le rôle admin.',
+                ], 403);
+            }
+
             $validated = $request->validate([
                 'nom'    => 'required|string',
                 'prenom' => 'required|string',
