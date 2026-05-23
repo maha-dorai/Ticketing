@@ -1,0 +1,908 @@
+From 832c06327788ce431692f8f82ae44df1601a9455 Mon Sep 17 00:00:00 2001
+From: Refactor <dev@ticketing.com>
+Date: Sat, 23 May 2026 13:53:21 +0000
+Subject: [PATCH] refactor: remove super_admin concept, rename roles to
+ admin/manager/membre
+
+---
+ ...troller.php => ChefDeProjetController.php} | 68 ++++++++--------
+ .../Http/Controllers/CommentController.php    |  2 +-
+ .../Http/Controllers/ProjectController.php    |  6 +-
+ .../app/Http/Controllers/StatsController.php  |  2 +-
+ .../app/Http/Controllers/TicketController.php | 10 +--
+ backend/app/Http/Middleware/IsAdmin.php       | 11 ++-
+ backend/app/Http/Middleware/IsFullAdmin.php   | 19 -----
+ .../{IsSuperAdmin.php => IsManager.php}       | 12 ++-
+ backend/app/Models/User.php                   |  7 +-
+ backend/bootstrap/app.php                     |  5 +-
+ backend/routes/api.php                        | 79 ++++++++++---------
+ frontend/src/components/AppSidebar.vue        | 12 +--
+ frontend/src/router/index.ts                  | 65 ++++++---------
+ frontend/src/stores/authStore.ts              | 12 +--
+ frontend/src/views/Login.vue                  |  2 +-
+ ...AdminManagement.vue => ChefManagement.vue} |  0
+ frontend/src/views/admin/Dashboard.vue        |  4 +-
+ frontend/src/views/user/Profile.vue           |  8 +-
+ frontend/src/views/user/TicketDetails.vue     |  8 +-
+ frontend/src/views/user/Tickets.vue           | 12 +--
+ 20 files changed, 157 insertions(+), 187 deletions(-)
+ rename backend/app/Http/Controllers/{SuperAdminController.php => ChefDeProjetController.php} (52%)
+ delete mode 100644 backend/app/Http/Middleware/IsFullAdmin.php
+ rename backend/app/Http/Middleware/{IsSuperAdmin.php => IsManager.php} (57%)
+ rename frontend/src/views/admin/{AdminManagement.vue => ChefManagement.vue} (100%)
+
+diff --git a/backend/app/Http/Controllers/SuperAdminController.php b/backend/app/Http/Controllers/ChefDeProjetController.php
+similarity index 52%
+rename from backend/app/Http/Controllers/SuperAdminController.php
+rename to backend/app/Http/Controllers/ChefDeProjetController.php
+index f78a028..0e55abe 100644
+--- a/backend/app/Http/Controllers/SuperAdminController.php
++++ b/backend/app/Http/Controllers/ChefDeProjetController.php
+@@ -8,15 +8,15 @@
+ use Illuminate\Support\Facades\Mail;
+ use Illuminate\Support\Str;
+ 
+-class SuperAdminController extends Controller
++class ChefDeProjetController extends Controller
+ {
+     /**
+      * Créer un compte chef_de_projet.
+      * L'admin saisit : nom, prénom, email.
+-     * Le système génère un mot de passe temporaire et l'envoie par email.
+-     * Le chef de projet sera forcé de le changer à sa première connexion.
++     * Le système génère un mot de passe temporaire envoyé par email.
++     * Le chef de projet devra le changer à sa première connexion.
+      */
+-    public function createAdmin(Request $request)
++    public function create(Request $request)
+     {
+         try {
+             $request->validate([
+@@ -27,41 +27,39 @@ public function createAdmin(Request $request)
+                 'email.unique' => 'Cette adresse email est déjà associée à un compte.',
+             ]);
+ 
+-            // Génère un mot de passe temporaire sécurisé (12 caractères)
+             $tempPassword = $this->generateSecurePassword();
+ 
+-            $admin = User::create([
++            $chef = User::create([
+                 'nom'                   => $request->nom,
+                 'prenom'                => $request->prenom,
+                 'email'                 => $request->email,
+                 'mot_de_passe'          => Hash::make($tempPassword),
+                 'role'                  => 'chef_de_projet',
+-                'statut'                => 'actif',             // Directement actif, pas besoin de validation
+-                'force_password_change' => true,                // Doit changer son mdp à la première connexion
++                'statut'                => 'actif',
++                'force_password_change' => true,
+             ]);
+ 
+-            // Envoi du mot de passe temporaire par email
+             try {
+-                $body = "Bonjour {$admin->prenom},\n\n"
+-                      . "Un compte administrateur a été créé pour vous sur la plateforme Ticketing.\n\n"
++                $body = "Bonjour {$chef->prenom},\n\n"
++                      . "Un compte Chef de projet a été créé pour vous sur la plateforme Ticketing.\n\n"
+                       . "Vos identifiants de connexion :\n"
+-                      . "Email    : {$admin->email}\n"
++                      . "Email                   : {$chef->email}\n"
+                       . "Mot de passe temporaire : {$tempPassword}\n\n"
+                       . "⚠️  Vous serez obligé(e) de changer ce mot de passe lors de votre première connexion.\n\n"
+                       . "— L'équipe Ticketing";
+ 
+-                Mail::raw($body, fn($m) => $m->to($admin->email)->subject('🔐 Votre compte administrateur Ticketing'));
++                Mail::raw($body, fn($m) => $m->to($chef->email)->subject('🔐 Votre compte Chef de projet — Ticketing'));
+             } catch (\Exception $mailEx) {
+                 // Ne bloque pas la création si l'email échoue
+             }
+ 
+             return response()->json([
+-                'message' => "Compte admin créé. Les identifiants ont été envoyés à {$admin->email}.",
+-                'chef_de_projet'   => [
+-                    'id'     => $admin->id,
+-                    'nom'    => $admin->nom,
+-                    'prenom' => $admin->prenom,
+-                    'email'  => $admin->email,
++                'message'        => "Compte chef de projet créé. Les identifiants ont été envoyés à {$chef->email}.",
++                'chef_de_projet' => [
++                    'id'     => $chef->id,
++                    'nom'    => $chef->nom,
++                    'prenom' => $chef->prenom,
++                    'email'  => $chef->email,
+                 ],
+             ], 201);
+ 
+@@ -71,39 +69,38 @@ public function createAdmin(Request $request)
+     }
+ 
+     /**
+-     * Liste tous les chefs de projet (pour que l'admin les gère).
++     * Liste tous les chefs de projet.
+      */
+-    public function listAdmins()
++    public function list()
+     {
+         try {
+-            $admins = User::where('role', 'chef_de_projet')
+-                          ->select('id', 'nom', 'prenom', 'email', 'statut', 'force_password_change', 'created_at')
+-                          ->get();
++            $chefs = User::where('role', 'chef_de_projet')
++                         ->select('id', 'nom', 'prenom', 'email', 'statut', 'force_password_change', 'created_at')
++                         ->get();
+ 
+-            return response()->json($admins);
++            return response()->json($chefs);
+         } catch (\Exception $e) {
+             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+         }
+     }
+ 
+     /**
+-     * Révoquer un admin (le passer en testeur ou le désactiver).
++     * Révoquer un chef de projet (désactiver son compte).
+      */
+-    public function revokeAdmin($id)
++    public function revoke($id)
+     {
+         try {
+-            $admin = User::where('id', $id)->where('role', 'chef_de_projet')->firstOrFail();
+-            $admin->update(['statut' => 'desactive']);
++            $chef = User::where('id', $id)->where('role', 'chef_de_projet')->firstOrFail();
++            $chef->update(['statut' => 'desactive']);
+ 
+-            return response()->json(['message' => 'Compte admin désactivé.']);
++            return response()->json(['message' => 'Compte chef de projet désactivé.']);
+         } catch (\Exception $e) {
+             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
+         }
+     }
+ 
+     /**
+-     * Génère un mot de passe aléatoire respectant les critères de sécurité.
+-     * Format : majuscule + minuscules + chiffres + caractère spécial
++     * Génère un mot de passe sécurisé : majuscule + minuscules + chiffres + caractère spécial.
+      */
+     private function generateSecurePassword(): string
+     {
+@@ -113,9 +110,6 @@ private function generateSecurePassword(): string
+         $specials = ['!', '@', '#', '$', '%', '^', '&', '*'];
+         $special  = $specials[array_rand($specials)];
+ 
+-        // Mélange tous les éléments
+-        $password = str_shuffle($upper . $lower . $digits . $special);
+-
+-        return $password;
++        return str_shuffle($upper . $lower . $digits . $special);
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/backend/app/Http/Controllers/CommentController.php b/backend/app/Http/Controllers/CommentController.php
+index d3d9af3..7a4de85 100644
+--- a/backend/app/Http/Controllers/CommentController.php
++++ b/backend/app/Http/Controllers/CommentController.php
+@@ -69,7 +69,7 @@ public function destroy($id)
+         $user    = Auth::user();
+         $comment = Comment::findOrFail($id);
+ 
+-        if ($comment->user_id !== $user->id && !$user->isAdmin()) {
++        if ($comment->user_id !== $user->id && !$user->isManager()) {
+             return response()->json(['message' => 'Non autorisé. Vous ne pouvez supprimer que vos propres commentaires.'], 403);
+         }
+ 
+diff --git a/backend/app/Http/Controllers/ProjectController.php b/backend/app/Http/Controllers/ProjectController.php
+index f7f0636..40428bc 100644
+--- a/backend/app/Http/Controllers/ProjectController.php
++++ b/backend/app/Http/Controllers/ProjectController.php
+@@ -16,7 +16,7 @@ public function index(Request $request)
+     {
+         try {
+             $user  = JWTAuth::parseToken()->authenticate();
+-            $query = $user->isAdmin() ? Project::query() : $user->projects();
++            $query = $user->isManager() ? Project::query() : $user->projects();
+ 
+             if ($request->filled('search')) {
+                 $query->where('nom', 'like', '%' . $request->search . '%');
+@@ -43,7 +43,7 @@ public function show($id)
+             ])->findOrFail($id);
+ 
+             // Vérifier que l'utilisateur est membre ou admin
+-            if (!$user->isAdmin()) {
++            if (!$user->isManager()) {
+                 $isMember = $project->users->contains('id', $user->id);
+                 if (!$isMember) {
+                     return response()->json(['message' => 'Accès non autorisé'], 403);
+@@ -189,7 +189,7 @@ public function getDevelopersWorkload($projectId)
+         try {
+             $user = JWTAuth::parseToken()->authenticate();
+             
+-            if (!$user->isAdmin()) {
++            if (!$user->isManager()) {
+                 return response()->json(['message' => 'Non autorisé'], 403);
+             }
+ 
+diff --git a/backend/app/Http/Controllers/StatsController.php b/backend/app/Http/Controllers/StatsController.php
+index 822a874..e43fb1d 100644
+--- a/backend/app/Http/Controllers/StatsController.php
++++ b/backend/app/Http/Controllers/StatsController.php
+@@ -10,7 +10,7 @@ class StatsController extends Controller
+ {
+     public function getAdminDashboardStats()
+     {
+-        if (!Auth::user()->isAdmin()) {
++        if (!Auth::user()->isManager()) {
+             return response()->json(['message' => 'Non autorisé'], 403);
+         }
+ 
+diff --git a/backend/app/Http/Controllers/TicketController.php b/backend/app/Http/Controllers/TicketController.php
+index f983b65..e285279 100644
+--- a/backend/app/Http/Controllers/TicketController.php
++++ b/backend/app/Http/Controllers/TicketController.php
+@@ -31,7 +31,7 @@ public function index($projectId)
+         $user    = Auth::user();
+         $project = \App\Models\Project::findOrFail($projectId);
+ 
+-        if (!$user->isAdmin() && !$project->users->contains($user->id)) {
++        if (!$user->isManager() && !$project->users->contains($user->id)) {
+             return response()->json(['message' => 'Accès refusé à ce projet'], 403);
+         }
+ 
+@@ -156,7 +156,7 @@ public function changeStatus(Request $request, $id)
+         // Développeur assigné : OUVERT → EN_COURS → A_TESTER
+         // Testeur créateur    : A_TESTER → RECLAMATION | A_TESTER → VALIDE
+         // Admin/chef          : toute transition
+-        if ($user->isAdmin()) {
++        if ($user->isManager()) {
+             return response()->json(['message' => 'Les administrateurs ne peuvent pas modifier l\'état des tickets via le Kanban.'], 403);
+         } elseif ($user->role === 'developpeur') {
+             if (!$ticket->isAssignmentApproved() || $ticket->developpeur_id !== $user->id) {
+@@ -227,7 +227,7 @@ public function accept(Request $request, $id)
+         $user   = Auth::user();
+         $ticket = Ticket::findOrFail($id);
+ 
+-        if (!$user->isAdmin()) {
++        if (!$user->isManager()) {
+             return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent valider l\'assignation'], 403);
+         }
+ 
+@@ -281,7 +281,7 @@ public function reject(Request $request, $id)
+         $user   = Auth::user();
+         $ticket = Ticket::findOrFail($id);
+ 
+-        if (!$user->isAdmin()) {
++        if (!$user->isManager()) {
+             \Log::info("User not admin");
+             return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent refuser l\'assignation'], 403);
+         }
+@@ -332,7 +332,7 @@ public function reassign(Request $request, $id)
+         $user   = Auth::user();
+         $ticket = Ticket::findOrFail($id);
+ 
+-        if (!$user->isAdmin()) {
++        if (!$user->isManager()) {
+             return response()->json(['message' => 'Seuls les administrateurs peuvent assigner un développeur'], 403);
+         }
+ 
+diff --git a/backend/app/Http/Middleware/IsAdmin.php b/backend/app/Http/Middleware/IsAdmin.php
+index f6a5926..6536f74 100644
+--- a/backend/app/Http/Middleware/IsAdmin.php
++++ b/backend/app/Http/Middleware/IsAdmin.php
+@@ -5,16 +5,19 @@
+ use Closure;
+ use Tymon\JWTAuth\Facades\JWTAuth;
+ 
++/**
++ * Accès réservé à l'admin uniquement.
++ * (gestion des chefs de projet, actions sensibles)
++ */
+ class IsAdmin
+ {
+     public function handle($request, Closure $next)
+     {
+         $user = JWTAuth::parseToken()->authenticate();
+ 
+-        // Accès autorisé pour chef_de_projet ET admin
+-        if (!in_array($user->role, ['chef_de_projet', 'admin']))
+-            return response()->json(['message' => 'Accès réservé aux administrateurs.'], 403);
++        if ($user->role !== 'admin')
++            return response()->json(['message' => "Accès réservé à l'administrateur."], 403);
+ 
+         return $next($request);
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/backend/app/Http/Middleware/IsFullAdmin.php b/backend/app/Http/Middleware/IsFullAdmin.php
+deleted file mode 100644
+index 36a7b86..0000000
+--- a/backend/app/Http/Middleware/IsFullAdmin.php
++++ /dev/null
+@@ -1,19 +0,0 @@
+-<?php
+-
+-namespace App\Http\Middleware;
+-
+-use Closure;
+-use Tymon\JWTAuth\Facades\JWTAuth;
+-
+-class IsFullAdmin
+-{
+-    public function handle($request, Closure $next)
+-    {
+-        $user = JWTAuth::parseToken()->authenticate();
+-
+-        if ($user->role !== 'admin')
+-            return response()->json(['message' => "Accès réservé à l'administrateur."], 403);
+-
+-        return $next($request);
+-    }
+-}
+diff --git a/backend/app/Http/Middleware/IsSuperAdmin.php b/backend/app/Http/Middleware/IsManager.php
+similarity index 57%
+rename from backend/app/Http/Middleware/IsSuperAdmin.php
+rename to backend/app/Http/Middleware/IsManager.php
+index 2409a69..f1fcdda 100644
+--- a/backend/app/Http/Middleware/IsSuperAdmin.php
++++ b/backend/app/Http/Middleware/IsManager.php
+@@ -5,15 +5,19 @@
+ use Closure;
+ use Tymon\JWTAuth\Facades\JWTAuth;
+ 
+-class IsSuperAdmin
++/**
++ * Accès réservé aux rôles avec droits de gestion :
++ * chef_de_projet  ET  admin
++ */
++class IsManager
+ {
+     public function handle($request, Closure $next)
+     {
+         $user = JWTAuth::parseToken()->authenticate();
+ 
+-        if ($user->role !== 'admin')
+-            return response()->json(['message' => 'Accès réservé au super administrateur.'], 403);
++        if (!in_array($user->role, ['chef_de_projet', 'admin']))
++            return response()->json(['message' => 'Accès réservé aux managers (chef de projet / admin).'], 403);
+ 
+         return $next($request);
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/backend/app/Models/User.php b/backend/app/Models/User.php
+index 8f9ca4e..b0f3b79 100644
+--- a/backend/app/Models/User.php
++++ b/backend/app/Models/User.php
+@@ -50,13 +50,14 @@ public function getAuthPassword()
+         return $this->mot_de_passe;
+     }
+ 
+-    // Vérifie si l'utilisateur a des droits admin (chef_de_projet ou admin)
+-    public function isAdmin(): bool
++    // Vérifie si l'utilisateur a des droits de gestion (chef_de_projet ou admin)
++    public function isManager(): bool
+     {
+         return in_array($this->role, ['chef_de_projet', 'admin']);
+     }
+ 
+-    public function isSuperAdmin(): bool
++    // Vérifie si l'utilisateur est administrateur (rôle admin uniquement)
++    public function isAdmin(): bool
+     {
+         return $this->role === 'admin';
+     }
+diff --git a/backend/bootstrap/app.php b/backend/bootstrap/app.php
+index d549ec2..ea5b7f0 100644
+--- a/backend/bootstrap/app.php
++++ b/backend/bootstrap/app.php
+@@ -18,9 +18,8 @@
+         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
+ 
+         $middleware->alias([
+-            'is_admin'              => \App\Http\Middleware\IsAdmin::class,
+-            'is_super_admin'        => \App\Http\Middleware\IsSuperAdmin::class,
+-            'is_full_admin'         => \App\Http\Middleware\IsFullAdmin::class,
++            'is_admin'              => \App\Http\Middleware\IsAdmin::class,    // admin uniquement
++            'is_manager'            => \App\Http\Middleware\IsManager::class,  // admin + chef_de_projet
+             'check_status'          => \App\Http\Middleware\CheckUserStatus::class,
+             'force_password_change' => \App\Http\Middleware\ForcePasswordChange::class,
+         ]);
+diff --git a/backend/routes/api.php b/backend/routes/api.php
+index fa2baa1..d077789 100644
+--- a/backend/routes/api.php
++++ b/backend/routes/api.php
+@@ -3,7 +3,7 @@
+ use App\Http\Controllers\AuthController;
+ use App\Http\Controllers\UserController;
+ use App\Http\Controllers\ProjectController;
+-use App\Http\Controllers\SuperAdminController;
++use App\Http\Controllers\ChefDeProjetController;
+ use App\Http\Controllers\TicketController;
+ use App\Http\Controllers\CommentController;
+ use App\Http\Controllers\NotificationController;
+@@ -11,7 +11,7 @@
+ use Illuminate\Support\Facades\Broadcast;
+ use Illuminate\Http\Request;
+ 
+-// ✅ Fix : Pusher private channel authentication
++// Pusher private channel authentication
+ Route::post('/broadcasting/auth', function (Request $request) {
+     return Broadcast::auth($request);
+ })->middleware('auth:api');
+@@ -33,51 +33,54 @@
+     Route::put('/users/change-password', [UserController::class, 'changePassword']);
+     Route::put('/users/change-email',    [UserController::class, 'changeEmail']);
+     Route::get('/projects',              [ProjectController::class, 'index']);
+-    Route::get('/projects/{id}',         [ProjectController::class, 'show']);      // ✅ Fix #3 — route manquante
++    Route::get('/projects/{id}',         [ProjectController::class, 'show']);
+ 
+-    // ── Routes Sprint 3 : Tickets (imbriqués dans les projets) ─────────────────
+-    Route::get('/projects/{projectId}/tickets',        [TicketController::class, 'index']);
+-    Route::post('/projects/{projectId}/tickets',       [TicketController::class, 'store']);
+-    Route::get('/tickets/{id}',                        [TicketController::class, 'show']);
+-    Route::put('/tickets/{id}',                        [TicketController::class, 'update']);
+-    Route::put('/tickets/{id}/status',                 [TicketController::class, 'changeStatus']);
+-    Route::put('/tickets/{id}/close',                  [TicketController::class, 'close']);
+-    
+-    // ── Routes Auto-assign Flow ────────────────────────────────────────────────
+-    Route::patch('/tickets/{id}/accept', [App\Http\Controllers\TicketController::class, 'accept']);
+-    Route::patch('/tickets/{id}/reject', [App\Http\Controllers\TicketController::class, 'reject']);
+-    Route::patch('/tickets/{id}/reassign', [App\Http\Controllers\TicketController::class, 'reassign']);
++    // ── Tickets (imbriqués dans les projets) ──────────────────────────────────
++    Route::get('/projects/{projectId}/tickets',  [TicketController::class, 'index']);
++    Route::post('/projects/{projectId}/tickets', [TicketController::class, 'store']);
++    Route::get('/tickets/{id}',                  [TicketController::class, 'show']);
++    Route::put('/tickets/{id}',                  [TicketController::class, 'update']);
++    Route::put('/tickets/{id}/status',           [TicketController::class, 'changeStatus']);
++    Route::put('/tickets/{id}/close',            [TicketController::class, 'close']);
+ 
+-    // Stats & Dashboard
++    // ── Flux d'auto-assignation ───────────────────────────────────────────────
++    Route::patch('/tickets/{id}/accept',   [TicketController::class, 'accept']);
++    Route::patch('/tickets/{id}/reject',   [TicketController::class, 'reject']);
++    Route::patch('/tickets/{id}/reassign', [TicketController::class, 'reassign']);
++
++    // ── Stats & Tableau de bord ───────────────────────────────────────────────
+     Route::get('/dashboard/stats', [App\Http\Controllers\StatsController::class, 'getAdminDashboardStats']);
+-    Route::get('/user/stats', [App\Http\Controllers\StatsController::class, 'getUserStats']);
+-    Route::post('/comments',             [CommentController::class, 'store']);
+-    Route::put('/comments/{id}',         [CommentController::class, 'update']);
+-    Route::delete('/comments/{id}',      [CommentController::class, 'destroy']);
++    Route::get('/user/stats',      [App\Http\Controllers\StatsController::class, 'getUserStats']);
++
++    // ── Commentaires ─────────────────────────────────────────────────────────
++    Route::post('/comments',        [CommentController::class, 'store']);
++    Route::put('/comments/{id}',    [CommentController::class, 'update']);
++    Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
+ 
++    // ── Notifications ─────────────────────────────────────────────────────────
+     Route::get('/notifications',              [NotificationController::class, 'index']);
+     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+     Route::put('/notifications/read',         [NotificationController::class, 'markAsRead']);
+ 
+-    // ── Routes Admin (chef_de_projet + admin) ────────────────────────────────
+-    Route::middleware('is_admin')->group(function () {
+-        Route::post('/projects',              [ProjectController::class, 'store']);
+-        Route::put('/projects/{id}',          [ProjectController::class, 'update']);
+-        Route::delete('/projects/{id}',       [ProjectController::class, 'destroy']);
+-        Route::post('/projects/{id}/assign',  [ProjectController::class, 'assignUsers']);
++    // ── Routes Manager : admin + chef_de_projet ───────────────────────────────
++    Route::middleware('is_manager')->group(function () {
++        Route::post('/projects',             [ProjectController::class, 'store']);
++        Route::put('/projects/{id}',         [ProjectController::class, 'update']);
++        Route::delete('/projects/{id}',      [ProjectController::class, 'destroy']);
++        Route::post('/projects/{id}/assign', [ProjectController::class, 'assignUsers']);
+         Route::get('/projects/{id}/developers/workload', [ProjectController::class, 'getDevelopersWorkload']);
+-        Route::get('/users',                     [UserController::class, 'getAllUsers']);
+-        Route::put('/users/{id}/validate',       [UserController::class, 'validateUser']);
+-        Route::put('/users/{id}/deactivate',     [UserController::class, 'deactivateUser']);
+-        Route::put('/users/{id}/reactivate',     [UserController::class, 'reactivateUser']); // ✅ Fix Sprint 1
+-        Route::put('/users/{id}',                [UserController::class, 'updateUser']);
+-        Route::delete('/users/{id}',             [UserController::class, 'deleteUser']);      // retourne 403
++        Route::get('/users',                   [UserController::class, 'getAllUsers']);
++        Route::put('/users/{id}/validate',     [UserController::class, 'validateUser']);
++        Route::put('/users/{id}/deactivate',   [UserController::class, 'deactivateUser']);
++        Route::put('/users/{id}/reactivate',   [UserController::class, 'reactivateUser']);
++        Route::put('/users/{id}',              [UserController::class, 'updateUser']);
++        Route::delete('/users/{id}',           [UserController::class, 'deleteUser']);
+     });
+ 
+-    // ── Routes Admin uniquement ───────────────────────────────────────────────
+-    Route::middleware('is_full_admin')->group(function () {
+-        Route::post('/admin/chefs',              [SuperAdminController::class, 'createAdmin']);
+-        Route::get('/admin/chefs',               [SuperAdminController::class, 'listAdmins']);
+-        Route::put('/admin/chefs/{id}/revoke',   [SuperAdminController::class, 'revokeAdmin']);
++    // ── Routes Admin uniquement : gestion des chefs de projet ─────────────────
++    Route::middleware('is_admin')->group(function () {
++        Route::post('/admin/chefs',            [ChefDeProjetController::class, 'create']);
++        Route::get('/admin/chefs',             [ChefDeProjetController::class, 'list']);
++        Route::put('/admin/chefs/{id}/revoke', [ChefDeProjetController::class, 'revoke']);
+     });
+-});
+\ No newline at end of file
++});
+diff --git a/frontend/src/components/AppSidebar.vue b/frontend/src/components/AppSidebar.vue
+index 49d70b4..bc1b59c 100644
+--- a/frontend/src/components/AppSidebar.vue
++++ b/frontend/src/components/AppSidebar.vue
+@@ -8,10 +8,10 @@
+ 
+     <!-- Nav -->
+     <nav class="sidebar-nav">
+-      <!-- Admin (rôle admin) -->
+-      <template v-if="isSuperAdmin">
++      <!-- Admin uniquement -->
++      <template v-if="isAdmin">
+         <p class="nav-section">Administration</p>
+-        <router-link to="/admin/admins" class="nav-item" active-class="nav-active">
++        <router-link to="/admin/chefs" class="nav-item" active-class="nav-active">
+           <span class="nav-icon">🛡️</span> Chefs de projet
+         </router-link>
+         <p class="nav-section">Gestion</p>
+@@ -31,7 +31,7 @@
+       </template>
+ 
+       <!-- Chef de projet -->
+-      <template v-else-if="isAdmin">
++      <template v-else-if="isManager">
+         <p class="nav-section">Gestion</p>
+         <router-link to="/admin/dashboard" class="nav-item" active-class="nav-active">
+           <span class="nav-icon">📊</span> Tableau de bord
+@@ -99,8 +99,8 @@ const authStore = useAuthStore();
+ const router = useRouter();
+ 
+ const user = computed(() => authStore.currentUser);
+-const isAdmin = computed(() => authStore.isAdmin());
+-const isSuperAdmin = computed(() => authStore.isSuperAdmin());
++const isManager = computed(() => authStore.isManager());
++const isAdmin   = computed(() => authStore.isAdmin());
+ const unreadCount = ref(0);
+ 
+ const initials = computed(() => {
+diff --git a/frontend/src/router/index.ts b/frontend/src/router/index.ts
+index 11c5090..0a2a980 100644
+--- a/frontend/src/router/index.ts
++++ b/frontend/src/router/index.ts
+@@ -16,18 +16,12 @@ const routes = [
+     meta: { requiresAuth: true },
+   },
+ 
+-  {
+-    path: '/profile',
+-    name: 'Profile',
+-    component: () => import('../views/user/Profile.vue'),
+-    meta: { requiresAuth: true },
+-  },
+-  {
+-    path: '/projects',
+-    name: 'Projects',
+-    component: () => import('../views/user/Projects.vue'),
+-    meta: { requiresAuth: true },
+-  },
++  // ── Membre (testeur + développeur) ───────────────────────────────────────
++  { path: '/profile',   name: 'Profile',   component: () => import('../views/user/Profile.vue'),   meta: { requiresAuth: true } },
++  { path: '/projects',  name: 'Projects',  component: () => import('../views/user/Projects.vue'),  meta: { requiresAuth: true } },
++  { path: '/my-stats',  name: 'MyStats',   component: () => import('../views/user/MyStats.vue'),   meta: { requiresAuth: true } },
++  { path: '/notifications', name: 'Notifications', component: () => import('../views/user/Notifications.vue'), meta: { requiresAuth: true } },
++
+   {
+     path: '/projects/:id',
+     name: 'ProjectDetail',
+@@ -46,55 +40,45 @@ const routes = [
+     component: () => import('../views/user/TicketDetails.vue'),
+     meta: { requiresAuth: true },
+   },
+-  {
+-    path: '/notifications',
+-    name: 'Notifications',
+-    component: () => import('../views/user/Notifications.vue'),
+-    meta: { requiresAuth: true },
+-  },
+ 
++  // ── Manager : admin + chef_de_projet ─────────────────────────────────────
+   {
+     path: '/admin/dashboard',
+     name: 'AdminDashboard',
+     component: () => import('../views/admin/Dashboard.vue'),
+-    meta: { requiresAuth: true, requiresAdmin: true },
+-  },
+-  {
+-    path: '/my-stats',
+-    name: 'MyStats',
+-    component: () => import('../views/user/MyStats.vue'),
+-    meta: { requiresAuth: true },
++    meta: { requiresAuth: true, requiresManager: true },
+   },
+   {
+     path: '/admin/users',
+     name: 'UserManagement',
+     component: () => import('../views/admin/UserManagement.vue'),
+-    meta: { requiresAuth: true, requiresAdmin: true },
++    meta: { requiresAuth: true, requiresManager: true },
+   },
+   {
+     path: '/admin/users/:id/edit',
+     name: 'EditUser',
+     component: () => import('../views/admin/EditUser.vue'),
+-    meta: { requiresAuth: true, requiresAdmin: true },
++    meta: { requiresAuth: true, requiresManager: true },
+   },
+   {
+     path: '/admin/projects',
+     name: 'ProjectManagement',
+     component: () => import('../views/admin/ProjectManagement.vue'),
+-    meta: { requiresAuth: true, requiresAdmin: true },
++    meta: { requiresAuth: true, requiresManager: true },
+   },
+   {
+     path: '/admin/projects/:projectId/tickets',
+     name: 'AdminTickets',
+     component: () => import('../views/user/Tickets.vue'),
+-    meta: { requiresAuth: true, requiresAdmin: true },
++    meta: { requiresAuth: true, requiresManager: true },
+   },
+ 
++  // ── Admin uniquement : gestion des chefs de projet ───────────────────────
+   {
+-    path: '/admin/admins',
+-    name: 'AdminManagement',
+-    component: () => import('../views/admin/AdminManagement.vue'),
+-    meta: { requiresAuth: true, requiresFullAdmin: true },
++    path: '/admin/chefs',
++    name: 'ChefManagement',
++    component: () => import('../views/admin/ChefManagement.vue'),
++    meta: { requiresAuth: true, requiresAdmin: true },
+   },
+ 
+   { path: '/:pathMatch(.*)*', redirect: '/login' },
+@@ -105,17 +89,16 @@ const router = createRouter({
+   routes,
+ });
+ 
+-// الصفحات العامة — ما تتأثرش بأي guard
+ const publicRoutes = ['Login', 'Register', 'ForgotPassword', 'ResetPassword'];
+ 
+ router.beforeEach((to, _from) => {
+   const authStore = useAuthStore();
+ 
+-  // 1. صفحة محمية وما دخلش بعد
++  // 1. Page protégée — pas encore connecté
+   if (to.meta.requiresAuth && !authStore.isAuthenticated)
+     return { name: 'Login' };
+ 
+-  // 2. مجبر يغيّر كلمة المرور
++  // 2. Changement de mot de passe forcé
+   if (
+     authStore.isAuthenticated &&
+     authStore.forcePasswordChange &&
+@@ -125,15 +108,15 @@ router.beforeEach((to, _from) => {
+     return { name: 'ForceChangePassword' };
+   }
+ 
+-  // 3. صفحة admin
+-  if (to.meta.requiresAdmin && !authStore.isAdmin())
++  // 3. Page réservée aux managers (admin + chef_de_projet)
++  if (to.meta.requiresManager && !authStore.isManager())
+     return { name: 'Login' };
+ 
+-  // 4. صفحة admin فقط (ليس chef_de_projet)
+-  if (to.meta.requiresFullAdmin && !authStore.isSuperAdmin())
++  // 4. Page réservée à l'admin uniquement
++  if (to.meta.requiresAdmin && !authStore.isAdmin())
+     return { name: 'Login' };
+ 
+   return true;
+ });
+ 
+-export default router;
+\ No newline at end of file
++export default router;
+diff --git a/frontend/src/stores/authStore.ts b/frontend/src/stores/authStore.ts
+index 9b008ae..6f709ed 100644
+--- a/frontend/src/stores/authStore.ts
++++ b/frontend/src/stores/authStore.ts
+@@ -55,7 +55,6 @@ export const useAuthStore = defineStore('auth', () => {
+     await api.post('/auth/register', userData);
+   };
+ 
+-  // Appelé après le changement de mot de passe forcé
+   const clearForcePasswordChange = () => {
+     forcePasswordChange.value = false;
+     if (currentUser.value) {
+@@ -64,12 +63,15 @@ export const useAuthStore = defineStore('auth', () => {
+     }
+   };
+ 
+-  const isAdmin      = () => ['chef_de_projet', 'admin'].includes(currentUser.value?.role);
+-  const isSuperAdmin = () => currentUser.value?.role === 'admin';
++  /** admin + chef_de_projet : accès aux vues de gestion */
++  const isManager = () => ['chef_de_projet', 'admin'].includes(currentUser.value?.role);
++
++  /** admin uniquement : gestion des chefs de projet */
++  const isAdmin   = () => currentUser.value?.role === 'admin';
+ 
+   return {
+     isAuthenticated, currentUser, forcePasswordChange,
+     login, logout, register, init,
+-    clearForcePasswordChange, isAdmin, isSuperAdmin,
++    clearForcePasswordChange, isManager, isAdmin,
+   };
+-});
+\ No newline at end of file
++});
+diff --git a/frontend/src/views/Login.vue b/frontend/src/views/Login.vue
+index f2444c4..4f39bd5 100644
+--- a/frontend/src/views/Login.vue
++++ b/frontend/src/views/Login.vue
+@@ -66,7 +66,7 @@ const onSubmit = async () => {
+     const status = await authStore.login(email.value, password.value);
+     if (status === 'success') {
+       const role = authStore.currentUser?.role;
+-      if (role === 'admin') router.push({ name: 'AdminManagement' });
++      if (role === 'admin') router.push({ name: 'ChefManagement' });
+       else if (role === 'chef_de_projet') router.push({ name: 'UserManagement' });
+       else router.push({ name: 'Projects' });
+     } else if (status === 'en_attente') pendingMessage.value = 'Votre compte est en attente de validation par un administrateur.';
+diff --git a/frontend/src/views/admin/AdminManagement.vue b/frontend/src/views/admin/ChefManagement.vue
+similarity index 100%
+rename from frontend/src/views/admin/AdminManagement.vue
+rename to frontend/src/views/admin/ChefManagement.vue
+diff --git a/frontend/src/views/admin/Dashboard.vue b/frontend/src/views/admin/Dashboard.vue
+index 0f1c624..fe177f6 100644
+--- a/frontend/src/views/admin/Dashboard.vue
++++ b/frontend/src/views/admin/Dashboard.vue
+@@ -16,7 +16,7 @@
+             <span class="filter-label">Filtrer par Rôle :</span>
+             <button @click="toggleRole('developpeur')" :class="['pill', filterRole.includes('developpeur') ? 'pill-active' : '']">👨‍💻 Développeurs</button>
+             <button @click="toggleRole('testeur')" :class="['pill', filterRole.includes('testeur') ? 'pill-active' : '']">🕵️ Testeurs</button>
+-            <button @click="toggleRole('chef_de_projet')" :class="['pill', filterRole.includes('admin') ? 'pill-active' : '']">👑 Admins</button>
++            <button @click="toggleRole('chef_de_projet')" :class="['pill', filterRole.includes('chef_de_projet') ? 'pill-active' : '']">👑 Chefs de projet</button>
+           </div>
+         </div>
+ 
+@@ -121,7 +121,7 @@ const fetchStats = async () => {
+ };
+ 
+ onMounted(() => {
+-  if (!authStore.currentUser?.role.includes('chef_de_projet')) {
++  if (!authStore.isManager()) {
+     router.push({ name: 'Projects' });
+     return;
+   }
+diff --git a/frontend/src/views/user/Profile.vue b/frontend/src/views/user/Profile.vue
+index 4da9f54..adb68da 100644
+--- a/frontend/src/views/user/Profile.vue
++++ b/frontend/src/views/user/Profile.vue
+@@ -32,7 +32,7 @@
+             <h2 class="card-title">👤 Informations personnelles</h2>
+             <div class="header-actions">
+               <button @click="$router.push({ name: 'MyStats' })" class="btn-stats">📈 Mes statistiques</button>
+-              <template v-if="!isAdminRole">
++              <template v-if="!isManagerRole">
+                 <button v-if="!editingInfo" @click="startEdit" class="btn-edit">✏ Modifier</button>
+                 <button v-else @click="cancelEditInfo" class="btn-cancel-sm">Annuler</button>
+               </template>
+@@ -89,7 +89,7 @@
+         </div>
+ 
+         <!-- Changer Email — utilisateurs uniquement -->
+-        <div v-if="!isAdminRole" class="card">
++        <div v-if="!isManagerRole" class="card">
+           <div class="card-header">
+             <h2 class="card-title">✉ Adresse email</h2>
+           </div>
+@@ -118,7 +118,7 @@
+         </div>
+ 
+         <!-- Changer MDP — utilisateurs uniquement -->
+-        <div v-if="!isAdminRole" class="card">
++        <div v-if="!isManagerRole" class="card">
+           <div class="card-header">
+             <h2 class="card-title">🔒 Mot de passe</h2>
+           </div>
+@@ -177,7 +177,7 @@ const roleLabel = computed(() => ({ admin: 'Administrateur', chef_de_projet: 'Ch
+ const roleColorClass = computed(() => ({ admin: 'role-admin', chef_de_projet: 'role-admin', developpeur: 'role-dev', testeur: 'role-test' }[user.value?.role] || ''));
+ 
+ // Admin et chef_de_projet : profil en lecture seule (pas de modification)
+-const isAdminRole = computed(() => ['admin', 'chef_de_projet'].includes(user.value?.role));
++const isManagerRole = computed(() => ['admin', 'chef_de_projet'].includes(user.value?.role));
+ // Lien GitHub : affiché uniquement pour les développeurs
+ const isDeveloper = computed(() => user.value?.role === 'developpeur');
+ 
+diff --git a/frontend/src/views/user/TicketDetails.vue b/frontend/src/views/user/TicketDetails.vue
+index 0077f42..7de8cfe 100644
+--- a/frontend/src/views/user/TicketDetails.vue
++++ b/frontend/src/views/user/TicketDetails.vue
+@@ -55,7 +55,7 @@
+             <h3 class="actions-title">Actions</h3>
+ 
+             <!-- Chef de projet: valider/refuser assignation -->
+-            <div v-if="isAdmin && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'" class="space-y-2">
++            <div v-if="isManager && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'" class="space-y-2">
+               <p class="text-xs text-gray-500">Développeur proposé :</p>
+               <p class="text-sm font-bold text-gray-800">{{ ticket.proposed_developpeur?.prenom }} {{ ticket.proposed_developpeur?.nom }}</p>
+               <button @click="ask('Valider cette assignation et notifier le développeur ?', acceptTicket)" class="btn-green w-full">✅ Valider l'assignation</button>
+@@ -63,7 +63,7 @@
+             </div>
+ 
+             <!-- Chef de projet: assignation manuelle -->
+-            <div v-if="isAdmin && ticket.assignment_status !== 'pending' && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-2">
++            <div v-if="isManager && ticket.assignment_status !== 'pending' && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-2">
+               <h4 class="text-xs font-bold text-gray-700 uppercase">Assignation manuelle</h4>
+               <div v-if="workloads.length === 0" class="text-xs text-gray-400">Aucun développeur disponible</div>
+               <div v-else class="space-y-2 max-h-48 overflow-y-auto">
+@@ -161,7 +161,7 @@ const route       = useRoute();
+ const router      = useRouter();
+ const authStore   = useAuthStore();
+ const currentUser = authStore.currentUser;
+-const isAdmin     = computed(() => ['chef_de_projet', 'admin'].includes(currentUser?.role));
++const isManager   = computed(() => ['chef_de_projet', 'admin'].includes(currentUser?.role));
+ 
+ const ticket        = ref(null);
+ const loading       = ref(true);
+@@ -187,7 +187,7 @@ const fetchTicket = async () => {
+     const res = await api.get(`/tickets/${route.params.id}`);
+     ticket.value = res.data;
+     selectedState.value = ticket.value.etat;
+-    if (isAdmin.value && ticket.value.assignment_status !== 'pending' && ticket.value.assignment_status !== 'approved') {
++    if (isManager.value && ticket.value.assignment_status !== 'pending' && ticket.value.assignment_status !== 'approved') {
+       fetchWorkloads();
+     }
+   } catch (e) {
+diff --git a/frontend/src/views/user/Tickets.vue b/frontend/src/views/user/Tickets.vue
+index 0904f6f..f05eeb6 100644
+--- a/frontend/src/views/user/Tickets.vue
++++ b/frontend/src/views/user/Tickets.vue
+@@ -177,7 +177,7 @@ const route     = useRoute();
+ 
+ const projectId  = route.params.projectId;
+ const currentUser = authStore.currentUser;
+-const isAdmin    = authStore.isAdmin();
++const isManager = authStore.isManager(); // manager = admin + chef_de_projet
+ 
+ const tickets     = ref([]);
+ const projectName = ref('');
+@@ -212,10 +212,10 @@ const ticketsByEtat = (etat) =>
+ // ── Drag & drop ──────────────────────────────────────────────────────────────
+ const onDragStart = (ticket) => { dragging.value = ticket; };
+ const onDragEnd   = () => { dragging.value = null; dragTarget.value = null; };
+-const onDragOver  = (etat) => { if (!isAdmin) dragTarget.value = etat; };
++const onDragOver  = (etat) => { if (!isManager) dragTarget.value = etat; };
+ 
+ const onDrop = async (etat) => {
+-  if (isAdmin) return; // lecture seule
++  if (isManager) return; // manager = lecture seule
+   dragTarget.value = null;
+   if (!dragging.value || dragging.value.etat === etat) return;
+ 
+@@ -241,7 +241,7 @@ const onDrop = async (etat) => {
+ // Règles de transition côté client (miroir du backend)
+ const canDrag = (ticket) => {
+   const role = currentUser?.role;
+-  if (isAdmin) return false;
++  if (isManager) return false;
+   if (role === 'developpeur') return ticket.developpeur_id === currentUser?.id && ticket.assignment_status === 'approved';
+   if (role === 'testeur') return ticket.testeur_id === currentUser?.id && ticket.etat === 'A_TESTER';
+   return false;
+@@ -249,7 +249,7 @@ const canDrag = (ticket) => {
+ 
+ const canTransition = (ticket, toEtat) => {
+   const role = currentUser?.role;
+-  if (isAdmin) return false; // admin/chef = lecture seule
++  if (isManager) return false; // admin/chef = lecture seule
+   if (role === 'developpeur') {
+     return ticket.developpeur_id === currentUser?.id
+       && ticket.assignment_status === 'approved'
+@@ -265,7 +265,7 @@ const canTransition = (ticket, toEtat) => {
+ 
+ // ── Navigation ───────────────────────────────────────────────────────────────
+ const goBack = () => {
+-  if (isAdmin) router.push({ name: 'ProjectManagement' });
++  if (isManager) router.push({ name: 'ProjectManagement' });
+   else router.push({ name: 'Projects' });
+ };
+ 
+-- 
+2.43.0
+

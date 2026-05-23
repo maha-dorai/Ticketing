@@ -10,7 +10,7 @@ class StatsController extends Controller
 {
     public function getAdminDashboardStats()
     {
-        if (!Auth::user()->isAdmin()) {
+        if (!Auth::user()->isManager()) {
             return response()->json(['message' => 'Non autorisé'], 403);
         }
 

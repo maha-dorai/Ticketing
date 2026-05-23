@@ -50,13 +50,14 @@ class User extends Authenticatable implements JWTSubject
         return $this->mot_de_passe;
     }
 
-    // Vérifie si l'utilisateur a des droits admin (chef_de_projet ou admin)
-    public function isAdmin(): bool
+    // Vérifie si l'utilisateur a des droits de gestion (chef_de_projet ou admin)
+    public function isManager(): bool
     {
         return in_array($this->role, ['chef_de_projet', 'admin']);
     }
 
-    public function isSuperAdmin(): bool
+    // Vérifie si l'utilisateur est administrateur (rôle admin uniquement)
+    public function isAdmin(): bool
     {
         return $this->role === 'admin';
     }

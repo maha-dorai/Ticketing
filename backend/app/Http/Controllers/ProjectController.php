@@ -16,7 +16,7 @@ class ProjectController extends Controller
     {
         try {
             $user  = JWTAuth::parseToken()->authenticate();
-            $query = $user->isAdmin() ? Project::query() : $user->projects();
+            $query = $user->isManager() ? Project::query() : $user->projects();
 
             if ($request->filled('search')) {
                 $query->where('nom', 'like', '%' . $request->search . '%');
@@ -43,7 +43,7 @@ class ProjectController extends Controller
             ])->findOrFail($id);
 
             // Vérifier que l'utilisateur est membre ou admin
-            if (!$user->isAdmin()) {
+            if (!$user->isManager()) {
                 $isMember = $project->users->contains('id', $user->id);
                 if (!$isMember) {
                     return response()->json(['message' => 'Accès non autorisé'], 403);
@@ -189,7 +189,7 @@ class ProjectController extends Controller
         try {
             $user = JWTAuth::parseToken()->authenticate();
             
-            if (!$user->isAdmin()) {
+            if (!$user->isManager()) {
                 return response()->json(['message' => 'Non autorisé'], 403);
             }
 

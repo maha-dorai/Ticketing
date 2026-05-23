@@ -55,7 +55,6 @@ export const useAuthStore = defineStore('auth', () => {
     await api.post('/auth/register', userData);
   };
 
-  // Appelé après le changement de mot de passe forcé
   const clearForcePasswordChange = () => {
     forcePasswordChange.value = false;
     if (currentUser.value) {
@@ -64,12 +63,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   };
 
-  const isAdmin      = () => ['chef_de_projet', 'admin'].includes(currentUser.value?.role);
-  const isSuperAdmin = () => currentUser.value?.role === 'admin';
+  /** admin + chef_de_projet : accès aux vues de gestion */
+  const isManager = () => ['chef_de_projet', 'admin'].includes(currentUser.value?.role);
+
+  /** admin uniquement : gestion des chefs de projet */
+  const isAdmin   = () => currentUser.value?.role === 'admin';
 
   return {
     isAuthenticated, currentUser, forcePasswordChange,
     login, logout, register, init,
-    clearForcePasswordChange, isAdmin, isSuperAdmin,
+    clearForcePasswordChange, isManager, isAdmin,
   };
 });

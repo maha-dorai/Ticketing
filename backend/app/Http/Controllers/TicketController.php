@@ -31,7 +31,7 @@ class TicketController extends Controller
         $user    = Auth::user();
         $project = \App\Models\Project::findOrFail($projectId);
 
-        if (!$user->isAdmin() && !$project->users->contains($user->id)) {
+        if (!$user->isManager() && !$project->users->contains($user->id)) {
             return response()->json(['message' => 'Accès refusé à ce projet'], 403);
         }
 
@@ -156,7 +156,7 @@ class TicketController extends Controller
         // Développeur assigné : OUVERT → EN_COURS → A_TESTER
         // Testeur créateur    : A_TESTER → RECLAMATION | A_TESTER → VALIDE
         // Admin/chef          : toute transition
-        if ($user->isAdmin()) {
+        if ($user->isManager()) {
             return response()->json(['message' => 'Les administrateurs ne peuvent pas modifier l\'état des tickets via le Kanban.'], 403);
         } elseif ($user->role === 'developpeur') {
             if (!$ticket->isAssignmentApproved() || $ticket->developpeur_id !== $user->id) {
@@ -227,7 +227,7 @@ class TicketController extends Controller
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        if (!$user->isAdmin()) {
+        if (!$user->isManager()) {
             return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent valider l\'assignation'], 403);
         }
 
@@ -281,7 +281,7 @@ class TicketController extends Controller
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        if (!$user->isAdmin()) {
+        if (!$user->isManager()) {
             \Log::info("User not admin");
             return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent refuser l\'assignation'], 403);
         }
@@ -332,7 +332,7 @@ class TicketController extends Controller
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        if (!$user->isAdmin()) {
+        if (!$user->isManager()) {
             return response()->json(['message' => 'Seuls les administrateurs peuvent assigner un développeur'], 403);
         }
 

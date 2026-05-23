@@ -8,10 +8,10 @@
 
     <!-- Nav -->
     <nav class="sidebar-nav">
-      <!-- Admin (rôle admin) -->
-      <template v-if="isSuperAdmin">
+      <!-- Admin uniquement -->
+      <template v-if="isAdmin">
         <p class="nav-section">Administration</p>
-        <router-link to="/admin/admins" class="nav-item" active-class="nav-active">
+        <router-link to="/admin/chefs" class="nav-item" active-class="nav-active">
           <span class="nav-icon">🛡️</span> Chefs de projet
         </router-link>
         <p class="nav-section">Gestion</p>
@@ -31,7 +31,7 @@
       </template>
 
       <!-- Chef de projet -->
-      <template v-else-if="isAdmin">
+      <template v-else-if="isManager">
         <p class="nav-section">Gestion</p>
         <router-link to="/admin/dashboard" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📊</span> Tableau de bord
@@ -99,8 +99,8 @@ const authStore = useAuthStore();
 const router = useRouter();
 
 const user = computed(() => authStore.currentUser);
-const isAdmin = computed(() => authStore.isAdmin());
-const isSuperAdmin = computed(() => authStore.isSuperAdmin());
+const isManager = computed(() => authStore.isManager());
+const isAdmin   = computed(() => authStore.isAdmin());
 const unreadCount = ref(0);
 
 const initials = computed(() => {

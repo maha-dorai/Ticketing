@@ -32,7 +32,7 @@
             <h2 class="card-title">👤 Informations personnelles</h2>
             <div class="header-actions">
               <button @click="$router.push({ name: 'MyStats' })" class="btn-stats">📈 Mes statistiques</button>
-              <template v-if="!isAdminRole">
+              <template v-if="!isManagerRole">
                 <button v-if="!editingInfo" @click="startEdit" class="btn-edit">✏ Modifier</button>
                 <button v-else @click="cancelEditInfo" class="btn-cancel-sm">Annuler</button>
               </template>
@@ -89,7 +89,7 @@
         </div>
 
         <!-- Changer Email — utilisateurs uniquement -->
-        <div v-if="!isAdminRole" class="card">
+        <div v-if="!isManagerRole" class="card">
           <div class="card-header">
             <h2 class="card-title">✉ Adresse email</h2>
           </div>
@@ -118,7 +118,7 @@
         </div>
 
         <!-- Changer MDP — utilisateurs uniquement -->
-        <div v-if="!isAdminRole" class="card">
+        <div v-if="!isManagerRole" class="card">
           <div class="card-header">
             <h2 class="card-title">🔒 Mot de passe</h2>
           </div>
@@ -177,7 +177,7 @@ const roleLabel = computed(() => ({ admin: 'Administrateur', chef_de_projet: 'Ch
 const roleColorClass = computed(() => ({ admin: 'role-admin', chef_de_projet: 'role-admin', developpeur: 'role-dev', testeur: 'role-test' }[user.value?.role] || ''));
 
 // Admin et chef_de_projet : profil en lecture seule (pas de modification)
-const isAdminRole = computed(() => ['admin', 'chef_de_projet'].includes(user.value?.role));
+const isManagerRole = computed(() => ['admin', 'chef_de_projet'].includes(user.value?.role));
 // Lien GitHub : affiché uniquement pour les développeurs
 const isDeveloper = computed(() => user.value?.role === 'developpeur');
 

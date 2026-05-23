@@ -69,7 +69,7 @@ foreach ($usersToNotify as $userId) {
         $user    = Auth::user();
         $comment = Comment::findOrFail($id);
 
-        if ($comment->user_id !== $user->id && !$user->isAdmin()) {
+        if ($comment->user_id !== $user->id && !$user->isManager()) {
             return response()->json(['message' => 'Non autorisé. Vous ne pouvez supprimer que vos propres commentaires.'], 403);
         }
 

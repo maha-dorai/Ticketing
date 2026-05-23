@@ -8,15 +8,15 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
-class SuperAdminController extends Controller
+class ChefDeProjetController extends Controller
 {
     /**
      * Créer un compte chef_de_projet.
      * L'admin saisit : nom, prénom, email.
-     * Le système génère un mot de passe temporaire et l'envoie par email.
-     * Le chef de projet sera forcé de le changer à sa première connexion.
+     * Le système génère un mot de passe temporaire envoyé par email.
+     * Le chef de projet devra le changer à sa première connexion.
      */
-    public function createAdmin(Request $request)
+    public function create(Request $request)
     {
         try {
             $request->validate([
@@ -27,41 +27,39 @@ class SuperAdminController extends Controller
                 'email.unique' => 'Cette adresse email est déjà associée à un compte.',
             ]);
 
-            // Génère un mot de passe temporaire sécurisé (12 caractères)
             $tempPassword = $this->generateSecurePassword();
 
-            $admin = User::create([
+            $chef = User::create([
                 'nom'                   => $request->nom,
                 'prenom'                => $request->prenom,
                 'email'                 => $request->email,
                 'mot_de_passe'          => Hash::make($tempPassword),
                 'role'                  => 'chef_de_projet',
-                'statut'                => 'actif',             // Directement actif, pas besoin de validation
-                'force_password_change' => true,                // Doit changer son mdp à la première connexion
+                'statut'                => 'actif',
+                'force_password_change' => true,
             ]);
 
-            // Envoi du mot de passe temporaire par email
             try {
-                $body = "Bonjour {$admin->prenom},\n\n"
-                      . "Un compte administrateur a été créé pour vous sur la plateforme Ticketing.\n\n"
+                $body = "Bonjour {$chef->prenom},\n\n"
+                      . "Un compte Chef de projet a été créé pour vous sur la plateforme Ticketing.\n\n"
                       . "Vos identifiants de connexion :\n"
-                      . "Email    : {$admin->email}\n"
+                      . "Email                   : {$chef->email}\n"
                       . "Mot de passe temporaire : {$tempPassword}\n\n"
                       . "⚠️  Vous serez obligé(e) de changer ce mot de passe lors de votre première connexion.\n\n"
                       . "— L'équipe Ticketing";
 
-                Mail::raw($body, fn($m) => $m->to($admin->email)->subject('🔐 Votre compte administrateur Ticketing'));
+                Mail::raw($body, fn($m) => $m->to($chef->email)->subject('🔐 Votre compte Chef de projet — Ticketing'));
             } catch (\Exception $mailEx) {
                 // Ne bloque pas la création si l'email échoue
             }
 
             return response()->json([
-                'message' => "Compte admin créé. Les identifiants ont été envoyés à {$admin->email}.",
-                'chef_de_projet'   => [
-                    'id'     => $admin->id,
-                    'nom'    => $admin->nom,
-                    'prenom' => $admin->prenom,
-                    'email'  => $admin->email,
+                'message'        => "Compte chef de projet créé. Les identifiants ont été envoyés à {$chef->email}.",
+                'chef_de_projet' => [
+                    'id'     => $chef->id,
+                    'nom'    => $chef->nom,
+                    'prenom' => $chef->prenom,
+                    'email'  => $chef->email,
                 ],
             ], 201);
 
@@ -71,39 +69,38 @@ class SuperAdminController extends Controller
     }
 
     /**
-     * Liste tous les chefs de projet (pour que l'admin les gère).
+     * Liste tous les chefs de projet.
      */
-    public function listAdmins()
+    public function list()
     {
         try {
-            $admins = User::where('role', 'chef_de_projet')
-                          ->select('id', 'nom', 'prenom', 'email', 'statut', 'force_password_change', 'created_at')
-                          ->get();
+            $chefs = User::where('role', 'chef_de_projet')
+                         ->select('id', 'nom', 'prenom', 'email', 'statut', 'force_password_change', 'created_at')
+                         ->get();
 
-            return response()->json($admins);
+            return response()->json($chefs);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Révoquer un admin (le passer en testeur ou le désactiver).
+     * Révoquer un chef de projet (désactiver son compte).
      */
-    public function revokeAdmin($id)
+    public function revoke($id)
     {
         try {
-            $admin = User::where('id', $id)->where('role', 'chef_de_projet')->firstOrFail();
-            $admin->update(['statut' => 'desactive']);
+            $chef = User::where('id', $id)->where('role', 'chef_de_projet')->firstOrFail();
+            $chef->update(['statut' => 'desactive']);
 
-            return response()->json(['message' => 'Compte admin désactivé.']);
+            return response()->json(['message' => 'Compte chef de projet désactivé.']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Génère un mot de passe aléatoire respectant les critères de sécurité.
-     * Format : majuscule + minuscules + chiffres + caractère spécial
+     * Génère un mot de passe sécurisé : majuscule + minuscules + chiffres + caractère spécial.
      */
     private function generateSecurePassword(): string
     {
@@ -113,9 +110,6 @@ class SuperAdminController extends Controller
         $specials = ['!', '@', '#', '$', '%', '^', '&', '*'];
         $special  = $specials[array_rand($specials)];
 
-        // Mélange tous les éléments
-        $password = str_shuffle($upper . $lower . $digits . $special);
-
-        return $password;
+        return str_shuffle($upper . $lower . $digits . $special);
     }
 }

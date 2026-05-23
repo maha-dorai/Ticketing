@@ -177,7 +177,7 @@ const route     = useRoute();
 
 const projectId  = route.params.projectId;
 const currentUser = authStore.currentUser;
-const isAdmin    = authStore.isAdmin();
+const isManager = authStore.isManager(); // manager = admin + chef_de_projet
 
 const tickets     = ref([]);
 const projectName = ref('');
@@ -212,10 +212,10 @@ const ticketsByEtat = (etat) =>
 // ── Drag & drop ──────────────────────────────────────────────────────────────
 const onDragStart = (ticket) => { dragging.value = ticket; };
 const onDragEnd   = () => { dragging.value = null; dragTarget.value = null; };
-const onDragOver  = (etat) => { if (!isAdmin) dragTarget.value = etat; };
+const onDragOver  = (etat) => { if (!isManager) dragTarget.value = etat; };
 
 const onDrop = async (etat) => {
-  if (isAdmin) return; // lecture seule
+  if (isManager) return; // manager = lecture seule
   dragTarget.value = null;
   if (!dragging.value || dragging.value.etat === etat) return;
 
@@ -241,7 +241,7 @@ const onDrop = async (etat) => {
 // Règles de transition côté client (miroir du backend)
 const canDrag = (ticket) => {
   const role = currentUser?.role;
-  if (isAdmin) return false;
+  if (isManager) return false;
   if (role === 'developpeur') return ticket.developpeur_id === currentUser?.id && ticket.assignment_status === 'approved';
   if (role === 'testeur') return ticket.testeur_id === currentUser?.id && ticket.etat === 'A_TESTER';
   return false;
@@ -249,7 +249,7 @@ const canDrag = (ticket) => {
 
 const canTransition = (ticket, toEtat) => {
   const role = currentUser?.role;
-  if (isAdmin) return false; // admin/chef = lecture seule
+  if (isManager) return false; // admin/chef = lecture seule
   if (role === 'developpeur') {
     return ticket.developpeur_id === currentUser?.id
       && ticket.assignment_status === 'approved'
@@ -265,7 +265,7 @@ const canTransition = (ticket, toEtat) => {
 
 // ── Navigation ───────────────────────────────────────────────────────────────
 const goBack = () => {
-  if (isAdmin) router.push({ name: 'ProjectManagement' });
+  if (isManager) router.push({ name: 'ProjectManagement' });
   else router.push({ name: 'Projects' });
 };
 
