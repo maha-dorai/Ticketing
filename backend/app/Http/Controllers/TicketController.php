@@ -96,6 +96,11 @@ class TicketController extends Controller
             'rejected_by'             => [],
         ]);
 
+        // 🚀 Si le projet était "ouvert", il passe automatiquement "en_cours"
+        if ($project->statut === 'ouvert') {
+            $project->update(['statut' => 'en_cours']);
+        }
+
         // 🤖 Lancer l'auto-assignation
         $autoAssignService = new AutoAssignService();
         $autoAssignService->assign($ticket);
@@ -231,6 +236,10 @@ class TicketController extends Controller
             return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent valider l\'assignation'], 403);
         }
 
+        if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
+            return response()->json(['message' => 'Non autorisé. Ce projet ne vous appartient pas.'], 403);
+        }
+
         if ($ticket->assignment_status === 'approved') {
             return response()->json(['message' => 'Cette assignation a déjà été validée.'], 409);
         }
@@ -286,6 +295,10 @@ class TicketController extends Controller
             return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent refuser l\'assignation'], 403);
         }
 
+        if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
+            return response()->json(['message' => 'Non autorisé. Ce projet ne vous appartient pas.'], 403);
+        }
+
         if ($ticket->assignment_status === 'approved') {
             \Log::info("Ticket already approved");
             return response()->json(['message' => 'Impossible de refuser une assignation déjà validée.'], 409);
@@ -334,6 +347,10 @@ class TicketController extends Controller
 
         if (!$user->isManager()) {
             return response()->json(['message' => 'Seuls les administrateurs peuvent assigner un développeur'], 403);
+        }
+
+        if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
+            return response()->json(['message' => 'Non autorisé. Ce projet ne vous appartient pas.'], 403);
         }
 
         $validated = $request->validate([

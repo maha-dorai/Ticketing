@@ -120,6 +120,10 @@ const fetchStats = async () => {
   }
 };
 
+onMounted(() => {
+  fetchStats();
+});
+
 
 
 const toggleRole = (role) => {

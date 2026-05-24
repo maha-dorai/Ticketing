@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\User;
+use App\Models\Ticket;
 use App\Mail\ProjectAssigned;
 use Illuminate\Http\Request;
 use App\Http\Requests\AssignMembersRequest;
@@ -16,16 +17,32 @@ class ProjectController extends Controller
     {
         try {
             $user  = JWTAuth::parseToken()->authenticate();
-            $query = $user->isManager() ? Project::query() : $user->projects();
+            
+            // Logique de visibilité :
+            // Admin -> Tous les projets
+            // Chef de projet -> Ses propres projets créés
+            // Membres -> Projets auxquels ils sont assignés
+            if ($user->isAdmin()) {
+                $query = Project::query();
+            } elseif ($user->role === 'chef_de_projet') {
+                $query = Project::where('created_by', $user->id);
+            } else {
+                $query = $user->projects();
+            }
 
             if ($request->filled('search')) {
                 $query->where('nom', 'like', '%' . $request->search . '%');
             }
 
+            // Pour les filtres éventuels de statut
+            if ($request->filled('statut')) {
+                $query->where('statut', $request->statut);
+            }
+
             $projects = $query->with([
                 'users:id,nom,prenom,role',
                 'creator:id,nom,prenom',
-            ])->paginate(10);
+            ])->withCount('tickets')->orderBy('created_at', 'desc')->paginate(50); // Mieux pour le Kanban
 
             return response()->json($projects);
         } catch (\Exception $e) {
@@ -42,8 +59,14 @@ class ProjectController extends Controller
                 'creator:id,nom,prenom',
             ])->findOrFail($id);
 
-            // Vérifier que l'utilisateur est membre ou admin
-            if (!$user->isManager()) {
+            // Admin: tout voir. Chef: seulement les siens. Membres: seulement assignés
+            if ($user->isAdmin()) {
+                // ok
+            } elseif ($user->role === 'chef_de_projet') {
+                if ($project->created_by !== $user->id) {
+                    return response()->json(['message' => 'Accès non autorisé'], 403);
+                }
+            } else {
                 $isMember = $project->users->contains('id', $user->id);
                 if (!$isMember) {
                     return response()->json(['message' => 'Accès non autorisé'], 403);
@@ -71,8 +94,12 @@ class ProjectController extends Controller
         try {
             $creator = JWTAuth::parseToken()->authenticate();
 
+            if (!$creator->isManager()) {
+                return response()->json(['message' => 'Non autorisé'], 403);
+            }
+
             $request->validate([
-                'nom'         => 'required|string|max:255|unique:projects,nom',   // ✅ Fix US07-E2 : nom unique
+                'nom'         => 'required|string|max:255|unique:projects,nom',
                 'description' => 'nullable|string',
                 'date_debut'  => 'nullable|date',
                 'date_fin'    => 'nullable|date|after_or_equal:date_debut',
@@ -87,7 +114,7 @@ class ProjectController extends Controller
                 'date_debut'  => $request->date_debut,
                 'date_fin'    => $request->date_fin,
                 'statut'      => 'ouvert',
-                'created_by'  => $creator->id,              // ✅ Fix Sprint 2 : created_by
+                'created_by'  => $creator->id,
             ]);
 
             return response()->json(['message' => 'Projet créé avec succès.', 'project' => $project], 201);
@@ -99,48 +126,86 @@ class ProjectController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            $user = JWTAuth::parseToken()->authenticate();
             $project = Project::findOrFail($id);
+
+            // Seul le créateur peut modifier
+            if ($project->created_by !== $user->id) {
+                return response()->json(['message' => "Non autorisé. Seul le créateur du projet peut le modifier."], 403);
+            }
 
             $request->validate([
                 'nom'    => 'required|string|max:255',
-                'statut' => 'required|in:ouvert,en_cours,archive',    // ✅ Fix prof : archive au lieu de ferme
+                'statut' => 'required|in:ouvert,en_cours,archive',
             ], [
                 'nom.required'    => 'Le nom du projet est obligatoire.',
                 'statut.in'       => 'Le statut doit être : ouvert, en_cours ou archive.',
             ]);
 
+            // Vérification avant de fermer
+            if ($request->statut === 'archive' && $project->statut !== 'archive') {
+                $nonValideTickets = $project->tickets()->where('etat', '!=', 'VALIDE')->count();
+                if ($nonValideTickets > 0) {
+                    return response()->json(['message' => "Impossible de fermer le projet. $nonValideTickets ticket(s) ne sont pas validés."], 422);
+                }
+            }
+
             $project->update($request->only('nom', 'statut', 'description', 'date_debut', 'date_fin'));
 
-            return response()->json(['message' => 'Projet mis à jour.']);
+            // Notifier les membres du projet du changement
+            $members = $project->users()->pluck('users.id')->toArray();
+            foreach ($members as $memberId) {
+                \App\Http\Controllers\NotificationController::createAndBroadcast(
+                    $memberId,
+                    "📁 Le projet « {$project->nom} » a été mis à jour.",
+                    null
+                );
+            }
+
+            return response()->json(['message' => 'Projet mis à jour.', 'project' => $project]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur lors de la mise à jour.', 'error' => $e->getMessage()], 500);
         }
     }
 
-    // Archiver un projet (interdit de supprimer — traçabilité)
     public function destroy($id)
     {
         try {
+            $user = JWTAuth::parseToken()->authenticate();
             $project = Project::findOrFail($id);
-            $project->update(['statut' => 'archive']);        // ✅ Fix prof : archive au lieu de ferme
 
-            return response()->json(['message' => 'Projet archivé avec succès.']);
+            if ($project->created_by !== $user->id) {
+                return response()->json(['message' => "Non autorisé. Seul le créateur du projet peut le fermer."], 403);
+            }
+
+            $nonValideTickets = $project->tickets()->where('etat', '!=', 'VALIDE')->count();
+            if ($nonValideTickets > 0) {
+                return response()->json(['message' => "Impossible de fermer le projet. $nonValideTickets ticket(s) ne sont pas validés."], 422);
+            }
+
+            $project->update(['statut' => 'archive']);
+
+            return response()->json(['message' => 'Projet fermé (archivé) avec succès.']);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Erreur lors de l\'archivage.', 'error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Erreur lors de la fermeture.', 'error' => $e->getMessage()], 500);
         }
     }
 
     public function assignUsers(Request $request, $id)
     {
         try {
+            $user = JWTAuth::parseToken()->authenticate();
             $project = Project::findOrFail($id);
+
+            if ($project->created_by !== $user->id) {
+                return response()->json(['message' => "Non autorisé. Seul le créateur du projet peut assigner des membres."], 403);
+            }
 
             $request->validate([
                 'user_ids'   => 'required|array',
                 'user_ids.*' => 'exists:users,id',
             ]);
 
-            // ✅ Fix US09-E1 : vérifier que tous les membres ont le statut 'actif'
             $inactiveUsers = User::whereIn('id', $request->user_ids)
                                  ->where('statut', '!=', 'actif')
                                  ->pluck('email');
@@ -152,30 +217,22 @@ class ProjectController extends Controller
                 ], 422);
             }
 
-
-
-
-            // ✅ Fix : récupérer les anciens membres AVANT le sync
             $oldUserIds = $project->users()->pluck('users.id')->toArray();
             $newUserIds = array_diff($request->user_ids, $oldUserIds);
 
-            // ✅ Fix principal : sauvegarder les membres en base de données
             $project->users()->sync($request->user_ids);
 
-            // 🔔 Notification in-app + 📧 Email uniquement pour les NOUVEAUX membres
             $newUsers = User::whereIn('id', $newUserIds)->get();
 
-            foreach ($newUsers as $user) {
-                // In-app notification
+            foreach ($newUsers as $u) {
                 \App\Http\Controllers\NotificationController::createAndBroadcast(
-                    $user->id,
+                    $u->id,
                     "📁 Vous avez été ajouté(e) au projet « {$project->nom} ».",
                     null
                 );
-                // Email
                 try {
-                    Mail::to($user->email)->send(new ProjectAssigned($project, $user));
-                } catch (\Exception $e) { /* ne pas bloquer si mail échoue */ }
+                    Mail::to($u->email)->send(new ProjectAssigned($project, $u));
+                } catch (\Exception $e) {}
             }
 
             return response()->json(['message' => 'Membres affectés avec succès.']);

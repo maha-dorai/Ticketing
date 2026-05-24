@@ -220,6 +220,7 @@ const rejectAssignment = async (notif) => {
       // Supprimer la notification pour empêcher le double-clic
       notifications.value = notifications.value.filter(n => n.id !== notif.id);
       document.dispatchEvent(new CustomEvent('notifications-read'));
+      showToast('Assignation refusée. Veuillez assigner manuellement.', 'success');
       
       // Ouvrir la modale d'assignation
       selectedTicketId.value = notif.ticket_id;

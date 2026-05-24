@@ -15,13 +15,13 @@
           <span class="nav-icon">🛡️</span> Chefs de projet
         </router-link>
         <p class="nav-section">Gestion</p>
-        <router-link to="/admin/dashboard" class="nav-item" active-class="nav-active">
+        <router-link to="/manager/dashboard" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📊</span> Tableau de bord
         </router-link>
         <router-link to="/admin/users" class="nav-item" active-class="nav-active">
           <span class="nav-icon">👥</span> Membres
         </router-link>
-        <router-link to="/admin/projects" class="nav-item" active-class="nav-active">
+        <router-link to="/manager/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
         </router-link>
         <router-link to="/notifications" class="nav-item" active-class="nav-active">
@@ -33,10 +33,10 @@
       <!-- Chef de projet -->
       <template v-else-if="isManager">
         <p class="nav-section">Gestion</p>
-        <router-link to="/admin/dashboard" class="nav-item" active-class="nav-active">
+        <router-link to="/manager/dashboard" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📊</span> Tableau de bord
         </router-link>
-        <router-link to="/admin/projects" class="nav-item" active-class="nav-active">
+        <router-link to="/manager/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
         </router-link>
         <router-link to="/notifications" class="nav-item" active-class="nav-active">

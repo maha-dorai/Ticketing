@@ -5,75 +5,98 @@
       <!-- Header -->
       <div class="page-header">
         <div>
-          <h1 class="page-title">Gestion des projets</h1>
-          <p class="page-sub">Créez, modifiez et archivez les projets de la plateforme</p>
+          <h1 class="page-title">Tableau des projets</h1>
+          <p class="page-sub">Gérez le cycle de vie de vos projets via glisser-déposer.</p>
         </div>
-        <button @click="openCreate" class="btn-new">+ Nouveau projet</button>
+        <button @click="openCreate" class="btn-new">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Nouveau projet
+        </button>
       </div>
 
       <div class="page-content">
-        <div v-if="globalMsg" class="alert" :class="globalOk ? 'alert-ok' : 'alert-err'">{{ globalOk ? '✓' : '✕' }} {{ globalMsg }}</div>
+        <div v-if="globalMsg" class="alert" :class="globalOk ? 'alert-ok' : 'alert-err'">
+          {{ globalOk ? '✓' : '✕' }} {{ globalMsg }}
+        </div>
 
-        <!-- Search + Filter -->
+        <!-- Search Toolbar -->
         <div class="toolbar">
           <div class="search-wrap">
             <svg class="si" xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-            <input v-model="search" @input="onSearch" placeholder="Rechercher un projet..." class="search-input" />
-          </div>
-          <div class="filters">
-            <button @click="filter=''" :class="['fb', filter===''?'fb-active':'']">Tous</button>
-            <button @click="filter='ouvert'" :class="['fb', filter==='ouvert'?'fb-active':'']">🟢 Ouverts</button>
-            <button @click="filter='en_cours'" :class="['fb', filter==='en_cours'?'fb-active':'']">🔵 En cours</button>
-            <button @click="filter='archive'" :class="['fb', filter==='archive'?'fb-active':'']">📦 Archivés</button>
+            <input v-model="search" @input="onSearch" placeholder="Rechercher par nom..." class="search-input" />
           </div>
         </div>
 
-        <!-- Loading -->
-        <div v-if="loading" class="loading"><svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/></svg> Chargement...</div>
-
-        <!-- Empty -->
-        <div v-else-if="!filteredProjects.length" class="empty">
-          <div class="ei">📁</div>
-          <h3 class="et">Aucun projet</h3>
-          <p class="es">{{ filter ? 'Aucun projet avec ce statut.' : 'Créez votre premier projet.' }}</p>
+        <div v-if="loading" class="loading">
+          <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/></svg> 
+          Chargement des projets...
         </div>
 
-        <!-- Projects Table -->
-        <div v-else class="card">
-          <table class="tbl">
-            <thead><tr><th>Projet</th><th>Statut</th><th>Membres</th><th>Dates</th><th class="tc">Actions</th></tr></thead>
-            <tbody>
-              <tr v-for="p in filteredProjects" :key="p.id">
-                <td @click="$router.push({ name: 'Tickets', params: { projectId: p.id } })" style="cursor:pointer;" title="Voir les tickets">
-                  <p class="pn" style="color:#2563eb;">{{ p.nom }} <span style="font-size:11px;opacity:.7;">→ tickets</span></p>
-                  <p class="pd">{{ p.description || '—' }}</p>
-                </td>
-                <td>
-                  <span class="st-chip" :class="stClass(p.statut)">{{ stLabel(p.statut) }}</span>
-                </td>
-                <td>
+        <!-- KANBAN BOARD -->
+        <div v-else class="kanban-board">
+          <div 
+            v-for="col in columns" 
+            :key="col.id" 
+            class="kanban-column"
+            @dragover.prevent
+            @dragenter.prevent
+            @drop="onDrop($event, col.id)"
+          >
+            <div class="column-header" :class="'ch-' + col.id">
+              <h3>{{ col.title }}</h3>
+              <span class="col-count">{{ getProjectsByStatus(col.id).length }}</span>
+            </div>
+
+            <div class="column-body">
+              <div v-if="getProjectsByStatus(col.id).length === 0" class="empty-col">
+                <p>Aucun projet</p>
+              </div>
+
+              <div 
+                v-for="p in getProjectsByStatus(col.id)" 
+                :key="p.id" 
+                class="kanban-card"
+                :class="{ 'dragging': dragProject?.id === p.id }"
+                draggable="true"
+                @dragstart="onDragStart($event, p)"
+                @dragend="onDragEnd"
+              >
+                <div class="k-card-header">
+                  <h4 class="k-title" @click="$router.push({ name: 'Tickets', params: { projectId: p.id } })" title="Voir les tickets">
+                    {{ p.nom }}
+                  </h4>
+                  <div class="k-actions">
+                    <button @click="openEdit(p)" class="btn-icon" title="Modifier">✏</button>
+                    <button @click="openAssign(p)" class="btn-icon" title="Affecter membres">👥</button>
+                  </div>
+                </div>
+                
+                <p class="k-desc">{{ p.description || 'Aucune description' }}</p>
+                
+                <div class="k-meta">
                   <div class="mavs" v-if="p.users?.length">
                     <div v-for="(m,i) in p.users.slice(0,3)" :key="m.id" class="mav" :style="{zIndex:10-i}" :title="m.prenom+' '+m.nom">{{ (m.prenom[0]||'')+(m.nom[0]||'') }}</div>
                     <div v-if="p.users.length>3" class="mav mmore">+{{p.users.length-3}}</div>
                   </div>
-                  <span v-else class="mu">Aucun</span>
-                </td>
-                <td>
-                  <p class="dt">{{ fmt(p.date_debut) }} → {{ fmt(p.date_fin) }}</p>
-                </td>
-                <td class="tc">
-                  <div class="ab">
-                    <button @click="openEdit(p)" class="btn-edit">✏</button>
-                    <button @click="openAssign(p)" class="btn-assign">👥</button>
-                    <button v-if="p.statut !== 'archive'" @click="archiveProject(p.id)" class="btn-archive">📦</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  <span v-else class="mu">Aucun membre</span>
+                  
+                  <span class="k-tickets-badge" title="Nombre de tickets">
+                    🎫 {{ p.tickets_count || 0 }}
+                  </span>
+                </div>
+
+                <!-- Archive Summary (only for archived projects) -->
+                <div v-if="p.statut === 'archive'" class="archive-summary">
+                  <div class="arc-row"><strong>Début:</strong> {{ fmt(p.date_debut) }}</div>
+                  <div class="arc-row"><strong>Fin:</strong> {{ fmt(p.date_fin) }}</div>
+                  <div class="arc-row"><strong>Créateur:</strong> {{ p.creator?.prenom }} {{ p.creator?.nom }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Pagination -->
+        <!-- Pagination (if more than 50 projects) -->
         <div v-if="pagination.last_page > 1" class="pagination">
           <button @click="loadPage(pagination.current_page-1)" :disabled="pagination.current_page===1" class="page-btn">← Précédent</button>
           <span class="page-info">Page {{ pagination.current_page }} / {{ pagination.last_page }}</span>
@@ -100,8 +123,8 @@
           </div>
           <div class="row2">
             <div class="field">
-              <label class="label">Date de début *</label>
-              <input v-model="form.date_debut" type="date" class="input" required />
+              <label class="label">Date de début</label>
+              <input v-model="form.date_debut" type="date" class="input" />
             </div>
             <div class="field">
               <label class="label">Date de fin</label>
@@ -113,8 +136,9 @@
             <select v-model="form.statut" class="input sel">
               <option value="ouvert">🟢 Ouvert</option>
               <option value="en_cours">🔵 En cours</option>
-              <option value="archive">📦 Archivé</option>
+              <option value="archive">📦 Fermé (Archivé)</option>
             </select>
+            <span v-if="form.statut === 'archive'" class="hint-text">Un projet ne peut être fermé que si tous ses tickets sont VALIDÉS.</span>
           </div>
           <div v-if="formError" class="alert alert-err">✕ {{ formError }}</div>
           <div class="modal-footer">
@@ -137,7 +161,6 @@
         </div>
         <div class="assign-body">
           <p class="assign-hint">Sélectionnez les membres actifs à affecter à ce projet.</p>
-          <!-- ✅ Fix : afficher l'erreur DANS le modal -->
           <div v-if="assignError" class="alert alert-err" style="margin-bottom:1rem;">✕ {{ assignError }}</div>
           <div class="member-grid">
             <label v-for="u in activeMembers" :key="u.id" class="member-check" :class="{selected: selectedIds.includes(u.id)}">
@@ -175,7 +198,6 @@ const assigning = ref(false);
 const globalMsg = ref('');
 const globalOk = ref(true);
 const search = ref('');
-const filter = ref('');
 const pagination = ref({ current_page: 1, last_page: 1 });
 
 const showModal = ref(false);
@@ -183,15 +205,27 @@ const showAssign = ref(false);
 const editing = ref(false);
 const currentProject = ref(null);
 const formError = ref('');
+const assignError = ref('');
 const selectedIds = ref([]);
+
+const dragProject = ref(null);
 
 const form = ref({ nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert' });
 
+const columns = [
+  { id: 'ouvert', title: '🟢 Ouverts' },
+  { id: 'en_cours', title: '🔵 En cours' },
+  { id: 'archive', title: '📦 Fermés' }
+];
+
 let searchTimer = null;
 
-const filteredProjects = computed(() =>
-  filter.value ? projects.value.filter(p => p.statut === filter.value) : projects.value
-);
+const filteredProjects = computed(() => projects.value);
+
+const getProjectsByStatus = (status) => {
+  return filteredProjects.value.filter(p => p.statut === status);
+};
+
 const activeMembers = computed(() => {
   const assignedIds = (currentProject.value?.users || []).map(u => u.id);
   return allUsers.value.filter(u =>
@@ -207,12 +241,14 @@ const fetchProjects = async (page = 1) => {
     const r = await api.get('/projects', { params: { search: search.value || undefined, page } });
     projects.value = r.data.data || r.data;
     if (r.data.current_page) pagination.value = r.data;
-  } catch { msg('Erreur chargement.', false); }
+  } catch { msg('Erreur chargement des projets.', false); }
   finally { loading.value = false; }
 };
+
 const fetchUsers = async () => {
   try { const r = await api.get('/users'); allUsers.value = r.data; } catch {}
 };
+
 onMounted(() => { fetchProjects(); fetchUsers(); });
 
 const onSearch = () => { clearTimeout(searchTimer); searchTimer = setTimeout(() => fetchProjects(1), 350); };
@@ -222,9 +258,8 @@ const msg = (m, ok = true) => {
   globalMsg.value = m; globalOk.value = ok;
   setTimeout(() => globalMsg.value = '', 4000);
 };
+
 const fmt = d => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-const stLabel = s => ({ ouvert: 'Ouvert', en_cours: 'En cours', archive: 'Archivé' }[s] || s);
-const stClass = s => ({ ouvert: 'st-open', en_cours: 'st-prog', archive: 'st-arch' }[s] || '');
 
 const openCreate = () => {
   editing.value = false;
@@ -232,13 +267,15 @@ const openCreate = () => {
   formError.value = '';
   showModal.value = true;
 };
+
 const openEdit = (p) => {
   editing.value = true;
   currentProject.value = p;
-  form.value = { nom: p.nom, description: p.description || '', date_debut: p.date_debut || '', date_fin: p.date_fin || '', statut: p.statut };
+  form.value = { nom: p.nom, description: p.description || '', date_debut: p.date_debut ? p.date_debut.split('T')[0] : '', date_fin: p.date_fin ? p.date_fin.split('T')[0] : '', statut: p.statut };
   formError.value = '';
   showModal.value = true;
 };
+
 const saveProject = async () => {
   saving.value = true; formError.value = '';
   try {
@@ -257,20 +294,13 @@ const saveProject = async () => {
   } finally { saving.value = false; }
 };
 
-const archiveProject = async (id) => {
-  if (!confirm('Archiver ce projet ?')) return;
-  try { await api.delete(`/projects/${id}`); msg('Projet archivé.'); await fetchProjects(); }
-  catch { msg('Erreur.', false); }
-};
-
-const assignError = ref('');
-
 const openAssign = (p) => {
   currentProject.value = p;
   selectedIds.value = (p.users || []).map(u => u.id);
   assignError.value = '';
   showAssign.value = true;
 };
+
 const saveAssign = async () => {
   assigning.value = true;
   assignError.value = '';
@@ -283,101 +313,141 @@ const saveAssign = async () => {
     assignError.value = e.response?.data?.message || 'Erreur.';
   } finally { assigning.value = false; }
 };
+
+// --- DRAG AND DROP ---
+const onDragStart = (e, project) => {
+  dragProject.value = project;
+  e.dataTransfer.effectAllowed = 'move';
+  // Fallback for Firefox
+  e.dataTransfer.setData('text/plain', project.id);
+};
+
+const onDragEnd = () => {
+  dragProject.value = null;
+};
+
+const onDrop = async (e, newStatus) => {
+  const p = dragProject.value;
+  if (!p) return;
+  if (p.statut === newStatus) return;
+
+  // Save previous status for optimism (optional, doing pessimistic here to show errors properly)
+  try {
+    await api.put(`/projects/${p.id}`, {
+      nom: p.nom,
+      description: p.description,
+      date_debut: p.date_debut ? p.date_debut.split('T')[0] : '',
+      date_fin: p.date_fin ? p.date_fin.split('T')[0] : '',
+      statut: newStatus
+    });
+    msg('Projet déplacé avec succès ✓');
+    await fetchProjects(); // Refresh everything to get updated tickets counts/history
+  } catch (err) {
+    msg(err.response?.data?.message || 'Erreur lors du déplacement.', false);
+  }
+  
+  dragProject.value = null;
+};
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 *{font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;}
-.layout{display:flex;min-height:100vh;background:#f8fafc;}
-.main{flex:1;overflow-y:auto;}
-.page-header{display:flex;align-items:center;justify-content:space-between;padding:2rem 2.5rem 1.5rem;border-bottom:1px solid #e2e8f0;background:white;gap:1rem;flex-wrap:wrap;}
+.layout{display:flex;height:100vh;background:#f4f7f9;overflow:hidden;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.page-header{display:flex;align-items:center;justify-content:space-between;padding:1.5rem 2rem 1.25rem;border-bottom:1px solid #e2e8f0;background:white;gap:1rem;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.02);}
 .page-title{font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;letter-spacing:-.02em;}
 .page-sub{font-size:.875rem;color:#64748b;margin:.25rem 0 0;}
-.btn-new{padding:.625rem 1.25rem;background:#1e293b;color:white;border:none;border-radius:9px;font-size:.875rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s;flex-shrink:0;}
-.btn-new:hover{background:#0f172a;}
-.page-content{padding:1.75rem 2.5rem;display:flex;flex-direction:column;gap:1.25rem;}
-.alert{padding:.75rem 1rem;border-radius:8px;font-size:.875rem;font-weight:500;}
+.btn-new{display:flex;align-items:center;gap:.5rem;padding:.625rem 1.25rem;background:linear-gradient(135deg, #2563eb, #4f46e5);color:white;border:none;border-radius:10px;font-size:.875rem;font-weight:700;cursor:pointer;transition:transform .2s, box-shadow .2s;}
+.btn-new:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.25);}
+
+.page-content{flex:1;padding:1.5rem 2rem;display:flex;flex-direction:column;gap:1.25rem;overflow:hidden;}
+.alert{padding:.75rem 1rem;border-radius:8px;font-size:.875rem;font-weight:600;}
 .alert-ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
 .alert-err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
-.toolbar{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-shrink:0;}
 .search-wrap{position:relative;}
 .si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;}
-.search-input{padding:.5625rem .875rem .5625rem 2.125rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;color:#1e293b;background:white;outline:none;width:220px;font-family:inherit;transition:border-color .2s;}
+.search-input{padding:.5rem .875rem .5rem 2.125rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;color:#1e293b;background:white;outline:none;width:280px;transition:border-color .2s;box-shadow:0 1px 2px rgba(0,0,0,0.02);}
 .search-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);}
-.search-input::placeholder{color:#cbd5e1;}
-.filters{display:flex;gap:.375rem;}
-.fb{padding:.4375rem .875rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;font-weight:500;color:#64748b;background:white;cursor:pointer;font-family:inherit;transition:all .15s;}
-.fb:hover{border-color:#cbd5e1;color:#1e293b;}
-.fb-active{background:#1e293b;color:white;border-color:#1e293b;}
-.loading{display:flex;align-items:center;gap:.5rem;color:#94a3b8;font-size:.875rem;padding:3rem 0;}
-.spin{animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
-.empty{text-align:center;padding:5rem 2rem;}
-.ei{font-size:3.5rem;margin-bottom:1rem;}
-.et{font-size:1.125rem;font-weight:700;color:#1e293b;margin:0 0 .5rem;}
-.es{font-size:.875rem;color:#94a3b8;margin:0;}
-.card{background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
-.tbl{width:100%;border-collapse:collapse;font-size:.875rem;}
-.tbl thead{background:#f8fafc;}
-.tbl th{padding:.75rem 1.25rem;text-align:left;font-size:.6875rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #e2e8f0;}
-.tbl td{padding:1rem 1.25rem;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
-.tbl tbody tr:last-child td{border-bottom:none;}
-.tbl tbody tr:hover td{background:#fafafa;}
-.tc{text-align:center;}
-.pn{font-size:.9rem;font-weight:700;color:#1e293b;margin:0;}
-.pd{font-size:.75rem;color:#94a3b8;margin:.125rem 0 0;max-width:200px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
-.st-chip{font-size:.6875rem;font-weight:700;padding:4px 10px;border-radius:20px;}
-.st-open{background:#dcfce7;color:#16a34a;}
-.st-prog{background:#dbeafe;color:#1d4ed8;}
-.st-arch{background:#f1f5f9;color:#64748b;}
+
+.loading{display:flex;align-items:center;gap:.5rem;color:#64748b;font-weight:600;padding:3rem 0;justify-content:center;}
+.spin{animation:spin 1s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
+
+/* KANBAN CSS */
+.kanban-board{display:grid;grid-template-columns:repeat(3, 1fr);gap:1.5rem;flex:1;overflow:hidden;}
+.kanban-column{display:flex;flex-direction:column;background:#ebecf0;border-radius:12px;overflow:hidden;border:1px solid #dfe1e6;}
+.column-header{padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;background:white;border-bottom:1px solid #dfe1e6;}
+.column-header h3{margin:0;font-size:1rem;font-weight:800;color:#172b4d;}
+.col-count{background:#f1f5f9;color:#64748b;font-size:.75rem;font-weight:800;padding:2px 8px;border-radius:12px;}
+
+.ch-ouvert{border-top:4px solid #10b981;}
+.ch-en_cours{border-top:4px solid #3b82f6;}
+.ch-archive{border-top:4px solid #94a3b8;}
+
+.column-body{flex:1;padding:1rem;overflow-y:auto;display:flex;flex-direction:column;gap:1rem;}
+.empty-col{text-align:center;padding:2rem 0;color:#8f9caa;font-size:.875rem;font-weight:600;}
+
+.kanban-card{background:white;border-radius:10px;padding:1.25rem;box-shadow:0 1px 3px rgba(9,30,66,0.15);cursor:grab;transition:box-shadow .2s, transform .1s;}
+.kanban-card:hover{box-shadow:0 4px 8px rgba(9,30,66,0.15);}
+.kanban-card:active{cursor:grabbing;}
+.dragging{opacity:0.5;transform:scale(0.98);}
+
+.k-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;}
+.k-title{margin:0;font-size:1rem;font-weight:700;color:#1e293b;cursor:pointer;line-height:1.3;}
+.k-title:hover{color:#2563eb;text-decoration:underline;}
+.k-actions{display:flex;gap:.25rem;}
+.btn-icon{background:none;border:none;font-size:1rem;cursor:pointer;opacity:0.4;transition:opacity .2s;}
+.btn-icon:hover{opacity:1;}
+
+.k-desc{font-size:.8125rem;color:#64748b;margin:.5rem 0 1rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+.k-meta{display:flex;justify-content:space-between;align-items:center;}
 .mavs{display:flex;}
-.mav{width:26px;height:26px;border-radius:50%;background:#dbeafe;color:#1d4ed8;font-size:.5625rem;font-weight:800;display:flex;align-items:center;justify-content:center;text-transform:uppercase;border:2px solid white;margin-left:-6px;flex-shrink:0;}
+.mav{width:24px;height:24px;border-radius:50%;background:#dbeafe;color:#1d4ed8;font-size:.5rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid white;margin-left:-6px;flex-shrink:0;}
 .mav:first-child{margin-left:0;}
 .mmore{background:#f1f5f9;color:#64748b;}
-.mu{font-size:.8125rem;color:#cbd5e1;}
-.dt{font-size:.75rem;color:#64748b;margin:0;}
-.ab{display:flex;gap:.375rem;justify-content:center;}
-.btn-edit,.btn-assign,.btn-archive{width:30px;height:30px;border-radius:7px;border:1px solid #e2e8f0;background:white;cursor:pointer;font-size:.875rem;display:flex;align-items:center;justify-content:center;transition:all .15s;}
-.btn-edit:hover{background:#f0f9ff;border-color:#bae6fd;}
-.btn-assign:hover{background:#f0fdf4;border-color:#bbf7d0;}
-.btn-archive:hover{background:#fff7ed;border-color:#fed7aa;}
-.pagination{display:flex;align-items:center;justify-content:center;gap:1rem;}
-.page-btn{padding:.5rem 1rem;background:white;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;font-weight:600;color:#475569;cursor:pointer;font-family:inherit;transition:all .15s;}
-.page-btn:hover:not(:disabled){border-color:#3b82f6;color:#3b82f6;}
-.page-btn:disabled{opacity:.4;cursor:not-allowed;}
-.page-info{font-size:.875rem;color:#64748b;}
-/* Modal */
-.overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem;}
+.mu{font-size:.75rem;color:#cbd5e1;}
+
+.k-tickets-badge{font-size:.75rem;font-weight:700;background:#f8fafc;color:#475569;padding:4px 8px;border-radius:6px;border:1px solid #e2e8f0;}
+
+.archive-summary{margin-top:1rem;padding-top:1rem;border-top:1px dashed #e2e8f0;font-size:.75rem;color:#475569;}
+.arc-row{margin-bottom:.25rem;}
+.arc-row strong{color:#1e293b;}
+
+/* Modal CSS */
+.overlay{position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:100;}
 .modal{background:white;border-radius:16px;width:100%;max-width:480px;box-shadow:0 24px 48px rgba(0,0,0,.25);overflow:hidden;}
 .modal-wide{max-width:560px;}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;}
-.modal-title{font-size:1rem;font-weight:800;color:#0f172a;margin:0;}
-.close-btn{background:none;border:none;font-size:1rem;color:#94a3b8;cursor:pointer;padding:4px;border-radius:6px;line-height:1;transition:color .15s;}
+.modal-title{font-size:1.1rem;font-weight:800;color:#0f172a;margin:0;}
+.close-btn{background:none;border:none;font-size:1.2rem;color:#94a3b8;cursor:pointer;padding:0;}
 .close-btn:hover{color:#1e293b;}
 .mform{padding:1.5rem;display:flex;flex-direction:column;gap:1rem;}
 .field{display:flex;flex-direction:column;gap:.35rem;}
 .label{font-size:.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
-.input{width:100%;padding:.625rem .875rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;color:#1e293b;font-size:.9rem;font-family:inherit;outline:none;transition:border-color .2s;}
-.input::placeholder{color:#cbd5e1;}
-.input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);background:white;}
+.input{padding:.625rem .875rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;color:#1e293b;font-size:.9rem;outline:none;transition:border-color .2s;}
+.input:focus{border-color:#3b82f6;background:white;}
 .ta{resize:vertical;min-height:80px;}
-.sel{cursor:pointer;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
-.modal-footer{display:flex;gap:.75rem;justify-content:flex-end;padding-top:.5rem;border-top:1px solid #f1f5f9;margin-top:.5rem;}
-.btn-cancel{padding:.5625rem 1rem;background:white;color:#64748b;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit;}
-.btn-primary{padding:.5625rem 1rem;background:#1e293b;color:white;border:none;border-radius:8px;font-size:.875rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:.5rem;transition:background .15s;}
-.btn-primary:hover:not(:disabled){background:#0f172a;}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
-/* Assign modal */
+.hint-text{font-size:0.75rem;color:#eab308;font-weight:600;margin-top:4px;}
+.modal-footer{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem;}
+.btn-cancel{padding:.5rem 1rem;background:white;color:#64748b;border:1px solid #e2e8f0;border-radius:8px;font-weight:600;cursor:pointer;}
+.btn-primary{padding:.5rem 1rem;background:#1e293b;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;}
+.btn-primary:disabled{opacity:0.6;cursor:not-allowed;}
+
+/* Assign body */
 .assign-body{padding:1.5rem;}
-.assign-hint{font-size:.875rem;color:#64748b;margin:0 0 1.25rem;}
-.member-grid{display:flex;flex-direction:column;gap:.5rem;max-height:320px;overflow-y:auto;padding-right:.25rem;margin-bottom:1.25rem;}
-.member-check{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-radius:10px;border:1px solid #f1f5f9;cursor:pointer;transition:all .15s;user-select:none;}
-.member-check:hover{background:#f8fafc;border-color:#e2e8f0;}
-.selected{background:#eff6ff;border-color:#bfdbfe;}
+.assign-hint{font-size:.875rem;color:#64748b;margin:0 0 1rem;}
+.member-grid{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;}
+.member-check{display:flex;align-items:center;gap:.75rem;padding:.75rem;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;}
+.member-check:hover{background:#f8fafc;}
+.member-check.selected{background:#eff6ff;border-color:#bfdbfe;}
 .hidden-cb{display:none;}
-.mc-av{width:32px;height:32px;border-radius:8px;background:#dbeafe;color:#1d4ed8;font-size:.6875rem;font-weight:800;display:flex;align-items:center;justify-content:center;text-transform:uppercase;flex-shrink:0;}
+.mc-av{width:32px;height:32px;background:#dbeafe;color:#1d4ed8;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.75rem;}
 .mc-info{flex:1;}
-.mc-name{font-size:.875rem;font-weight:600;color:#1e293b;margin:0;}
-.mc-role{font-size:.75rem;color:#94a3b8;margin:0;text-transform:capitalize;}
-.check-mark{font-size:.875rem;font-weight:700;color:#1d4ed8;width:20px;text-align:center;}
+.mc-name{margin:0;font-size:.875rem;font-weight:700;color:#1e293b;}
+.mc-role{margin:0;font-size:.75rem;color:#64748b;text-transform:capitalize;}
+.check-mark{color:#2563eb;font-weight:800;}
 </style>
