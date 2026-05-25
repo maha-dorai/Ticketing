@@ -35,7 +35,7 @@ class TicketController extends Controller
             return response()->json(['message' => 'Accès refusé à ce projet'], 403);
         }
 
-        $query = Ticket::with(['testeur', 'developpeur', 'proposedDeveloppeur'])
+        $query = Ticket::with(['testeur', 'developpeur', 'proposedDeveloppeur', 'attachments'])
             ->where('project_id', $projectId);
 
         if ($user->role === 'testeur') {
@@ -58,6 +58,7 @@ class TicketController extends Controller
             'testeur',
             'developpeur',
             'proposedDeveloppeur',
+            'attachments',
         ])->findOrFail($id);
 
         return response()->json($ticket, 200);
@@ -77,14 +78,30 @@ class TicketController extends Controller
         }
 
         $validated = $request->validate([
-            'titre'       => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'priorite'    => 'nullable|in:BASSE,MOYENNE,HAUTE,CRITIQUE',
+            'titre'        => 'required|string|max:255',
+            'etapes'       => 'nullable|string',
+            'resultat'     => 'nullable|string',
+            'notes'        => 'nullable|string',
+            'priorite'     => 'nullable|in:BASSE,MOYENNE,HAUTE,CRITIQUE',
+            'temps_estime' => 'required|numeric|min:0',
+            'attachments.*'=> 'file|mimes:jpg,jpeg,png,pdf,doc,docx,mp4,mov|max:10240', // max 10MB per file
         ]);
+
+        // Build description
+        $description = "";
+        if (!empty($validated['etapes'])) {
+            $description .= "**Étapes pour reproduire :**\n" . $validated['etapes'] . "\n\n";
+        }
+        if (!empty($validated['resultat'])) {
+            $description .= "**Résultat attendu vs obtenu :**\n" . $validated['resultat'] . "\n\n";
+        }
+        if (!empty($validated['notes'])) {
+            $description .= "**Notes supplémentaires :**\n" . $validated['notes'] . "\n\n";
+        }
 
         $ticket = Ticket::create([
             'titre'                   => $validated['titre'],
-            'description'             => $validated['description'] ?? null,
+            'description'             => trim($description) ?: null,
             'priorite'                => $validated['priorite'] ?? 'BASSE',
             'etat'                    => 'OUVERT',
             'project_id'              => $projectId,
@@ -94,7 +111,22 @@ class TicketController extends Controller
             'assignment_status'       => 'none',
             'force_assigned'          => false,
             'rejected_by'             => [],
+            'temps_estime'            => $validated['temps_estime'],
+            'temps_passe'             => 0,
         ]);
+
+        // Handle attachments
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $path = $file->store('attachments', 'public');
+                \App\Models\Attachment::create([
+                    'ticket_id' => $ticket->id,
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_type' => $file->getMimeType(),
+                ]);
+            }
+        }
 
         // 🚀 Si le projet était "ouvert", il passe automatiquement "en_cours"
         if ($project->statut === 'ouvert') {
@@ -231,9 +263,11 @@ class TicketController extends Controller
     {
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
+        
+        $isCreatorTester = ($user->role === 'testeur' && $ticket->testeur_id === $user->id);
 
-        if (!$user->isManager()) {
-            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent valider l\'assignation'], 403);
+        if (!$user->isManager() && !$isCreatorTester) {
+            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs ou le créateur du ticket peuvent valider l\'assignation'], 403);
         }
 
         if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
@@ -290,9 +324,11 @@ class TicketController extends Controller
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        if (!$user->isManager()) {
-            \Log::info("User not admin");
-            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent refuser l\'assignation'], 403);
+        $isCreatorTester = ($user->role === 'testeur' && $ticket->testeur_id === $user->id);
+
+        if (!$user->isManager() && !$isCreatorTester) {
+            \Log::info("User not admin or creator");
+            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs ou le créateur du ticket peuvent refuser l\'assignation'], 403);
         }
 
         if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
@@ -345,8 +381,10 @@ class TicketController extends Controller
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        if (!$user->isManager()) {
-            return response()->json(['message' => 'Seuls les administrateurs peuvent assigner un développeur'], 403);
+        $isCreatorTester = ($user->role === 'testeur' && $ticket->testeur_id === $user->id);
+
+        if (!$user->isManager() && !$isCreatorTester) {
+            return response()->json(['message' => 'Seuls les administrateurs, les chefs de projet ou le créateur du ticket peuvent assigner un développeur'], 403);
         }
 
         if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
@@ -388,5 +426,26 @@ class TicketController extends Controller
         );
 
         return response()->json($ticket->fresh(['developpeur']), 200);
+    }
+
+    public function logTime(Request $request, $id)
+    {
+        $user   = Auth::user();
+        $ticket = Ticket::findOrFail($id);
+
+        if ($user->role !== 'developpeur' || $ticket->developpeur_id !== $user->id) {
+            return response()->json(['message' => 'Seul le développeur assigné peut enregistrer du temps'], 403);
+        }
+
+        $validated = $request->validate([
+            'temps_ajoute' => 'required|numeric|min:0.1',
+        ]);
+
+        $ticket->temps_passe += $validated['temps_ajoute'];
+        $ticket->save();
+
+        $this->notify($ticket->testeur_id, "⏱️ Du temps a été enregistré sur le ticket « {$ticket->titre} »", $ticket->id);
+
+        return response()->json(['message' => 'Temps enregistré avec succès', 'ticket' => $ticket], 200);
     }
 }

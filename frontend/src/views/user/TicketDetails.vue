@@ -35,7 +35,31 @@
               <span :class="etatClass(ticket.etat)" class="badge">{{ ticket.etat }}</span>
               <span :class="prioriteClass(ticket.priorite)" class="badge">{{ ticket.priorite }}</span>
             </div>
-            <p class="text-gray-600 text-sm whitespace-pre-wrap leading-relaxed">{{ ticket.description || 'Aucune description fournie.' }}</p>
+            <div class="prose text-gray-700 text-sm leading-relaxed" v-html="formatDescription(ticket.description || 'Aucune description fournie.')"></div>
+            
+            <!-- Time Tracking Progress -->
+            <div v-if="ticket.temps_estime" class="mt-4 p-4 bg-gray-50 border rounded-lg">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-xs font-bold text-gray-600 uppercase">Suivi du temps</span>
+                <span class="text-xs font-bold" :class="ticket.temps_passe > ticket.temps_estime ? 'text-red-600' : 'text-blue-600'">
+                  {{ ticket.temps_passe || 0 }}h / {{ ticket.temps_estime }}h
+                </span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full transition-all" :class="{'bg-red-500': ticket.temps_passe > ticket.temps_estime}" :style="{ width: Math.min(100, ((ticket.temps_passe || 0) / ticket.temps_estime) * 100) + '%' }"></div>
+              </div>
+            </div>
+
+            <!-- Attachments -->
+            <div v-if="ticket.attachments?.length" class="mt-4 pt-4 border-t">
+              <h4 class="text-xs font-bold text-gray-700 uppercase mb-3">📎 Pièces jointes ({{ ticket.attachments.length }})</h4>
+              <div class="flex flex-wrap gap-3">
+                <a v-for="att in ticket.attachments" :key="att.id" :href="'http://localhost:8000/storage/' + att.file_path" target="_blank" class="flex items-center gap-2 p-2 bg-gray-50 border hover:border-blue-300 rounded-lg text-sm text-blue-600 hover:text-blue-800 transition">
+                  <span class="text-lg">📄</span>
+                  <span class="truncate max-w-[150px]">{{ att.file_name }}</span>
+                </a>
+              </div>
+            </div>
             <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 pt-3 border-t">
               <span>📁 <b class="text-gray-700">{{ ticket.project?.nom }}</b></span>
               <span>✍️ {{ ticket.testeur?.prenom }} {{ ticket.testeur?.nom }}</span>
@@ -44,7 +68,7 @@
               </span>
               <span v-else-if="ticket.assignment_status === 'pending' && ticket.proposed_developpeur" class="text-amber-600">
                 ⏳ Proposition : {{ ticket.proposed_developpeur.prenom }} {{ ticket.proposed_developpeur.nom }}
-                <span class="text-xs">(en attente validation chef de projet)</span>
+                <span class="text-xs">(en attente de validation)</span>
               </span>
               <span v-else class="italic">Non assigné</span>
             </div>
@@ -54,16 +78,16 @@
           <div class="actions-panel">
             <h3 class="actions-title">Actions</h3>
 
-            <!-- Chef de projet: valider/refuser assignation -->
-            <div v-if="isManager && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'" class="space-y-2">
+            <!-- Valider/refuser assignation -->
+            <div v-if="(isManager || isCreatorTester) && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'" class="space-y-2">
               <p class="text-xs text-gray-500">Développeur proposé :</p>
               <p class="text-sm font-bold text-gray-800">{{ ticket.proposed_developpeur?.prenom }} {{ ticket.proposed_developpeur?.nom }}</p>
               <button @click="ask('Valider cette assignation et notifier le développeur ?', acceptTicket)" class="btn-green w-full">✅ Valider l'assignation</button>
               <button @click="ask('Refuser cette assignation ?', rejectTicket, true)" class="btn-gray w-full">❌ Refuser</button>
             </div>
 
-            <!-- Chef de projet: assignation manuelle -->
-            <div v-if="isManager && ticket.assignment_status !== 'pending' && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-2">
+            <!-- Assignation manuelle (Chef ou Testeur créateur) -->
+            <div v-if="(isManager || isCreatorTester) && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-2">
               <h4 class="text-xs font-bold text-gray-700 uppercase">Assignation manuelle</h4>
               <div v-if="workloads.length === 0" class="text-xs text-gray-400">Aucun développeur disponible</div>
               <div v-else class="space-y-2 max-h-48 overflow-y-auto">
@@ -78,13 +102,23 @@
             </div>
 
             <!-- Développeur: changer état -->
-            <div v-if="currentUser?.role === 'developpeur' && ticket.assignment_status === 'approved' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME'" class="space-y-2">
-              <label class="text-xs font-semibold text-gray-600">Changer l'état</label>
-              <select v-model="selectedState" @change="changeState" class="w-full px-2 py-1.5 text-sm border rounded outline-none focus:ring-2 focus:ring-blue-200">
-                <option value="OUVERT" disabled>OUVERT</option>
-                <option value="EN_COURS">EN_COURS</option>
-                <option value="RESOLU">RESOLU</option>
-              </select>
+            <div v-if="currentUser?.role === 'developpeur' && ticket.assignment_status === 'approved' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME'" class="space-y-4">
+              <div class="space-y-2">
+                <label class="text-xs font-semibold text-gray-600">Changer l'état</label>
+                <select v-model="selectedState" @change="changeState" class="w-full px-2 py-1.5 text-sm border rounded outline-none focus:ring-2 focus:ring-blue-200">
+                  <option value="OUVERT" disabled>OUVERT</option>
+                  <option value="EN_COURS">EN_COURS</option>
+                  <option value="RESOLU">RESOLU</option>
+                </select>
+              </div>
+              
+              <div class="space-y-2 pt-3 border-t">
+                <label class="text-xs font-semibold text-gray-600">Enregistrer du temps (heures)</label>
+                <div class="flex gap-2">
+                  <input v-model="timeToAdd" type="number" step="0.5" min="0.5" class="w-full px-2 py-1.5 text-sm border rounded outline-none focus:ring-2 focus:ring-blue-200" placeholder="Ex: 1.5">
+                  <button @click="logTime" :disabled="!timeToAdd || stateUpdating" class="btn-green">Ajouter</button>
+                </div>
+              </div>
             </div>
 
             <!-- Testeur: fermer -->
@@ -162,6 +196,7 @@ const router      = useRouter();
 const authStore   = useAuthStore();
 const currentUser = authStore.currentUser;
 const isManager   = computed(() => ['chef_de_projet', 'admin'].includes(currentUser?.role));
+const isCreatorTester = computed(() => currentUser?.role === 'testeur' && ticket.value?.testeur_id === currentUser?.id);
 
 const ticket        = ref(null);
 const loading       = ref(true);
@@ -169,6 +204,7 @@ const selectedState = ref('');
 const stateUpdating = ref(false);
 const chatBox       = ref(null);
 const workloads     = ref([]);
+const timeToAdd     = ref(null);
 
 const newComment        = ref('');
 const submittingComment = ref(false);
@@ -187,7 +223,7 @@ const fetchTicket = async () => {
     const res = await api.get(`/tickets/${route.params.id}`);
     ticket.value = res.data;
     selectedState.value = ticket.value.etat;
-    if (isManager.value && ticket.value.assignment_status !== 'pending' && ticket.value.assignment_status !== 'approved') {
+    if ((isManager.value || isCreatorTester.value) && ticket.value.assignment_status !== 'approved') {
       fetchWorkloads();
     }
   } catch (e) {
@@ -234,6 +270,20 @@ const changeState = async () => {
   finally { stateUpdating.value = false; }
 };
 
+const logTime = async () => {
+  if (!timeToAdd.value || timeToAdd.value <= 0) return;
+  stateUpdating.value = true;
+  try {
+    await api.post(`/tickets/${ticket.value.id}/log-time`, { temps_ajoute: timeToAdd.value });
+    await fetchTicket();
+    timeToAdd.value = null;
+  } catch (e) {
+    alert(e.response?.data?.message || 'Erreur lors de l\'ajout de temps');
+  } finally {
+    stateUpdating.value = false;
+  }
+};
+
 const closeTicket = async () => {
   stateUpdating.value = true;
   try { await api.put(`/tickets/${ticket.value.id}/close`); ticket.value.etat = 'FERME'; }
@@ -276,6 +326,15 @@ onMounted(() => fetchTicket());
 const formatTime    = (d) => d ? new Date(d).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 const etatClass     = (e) => ({ OUVERT: 'badge-green', EN_COURS: 'badge-yellow', RESOLU: 'badge-blue', FERME: 'badge-gray' }[e] || 'badge-gray');
 const prioriteClass = (p) => ({ BASSE: 'badge-gray', MOYENNE: 'badge-blue', HAUTE: 'badge-orange', CRITIQUE: 'badge-red' }[p] || 'badge-gray');
+
+const formatDescription = (text) => {
+  if (!text) return '';
+  // Convert markdown bold to html
+  let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Convert newlines to br
+  html = html.replace(/\n/g, '<br>');
+  return html;
+};
 </script>
 
 <style scoped>

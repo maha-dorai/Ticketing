@@ -70,7 +70,11 @@
                   </div>
 
                   <h3 class="card-title">{{ ticket.titre }}</h3>
-                  <p class="card-desc">{{ ticket.description || 'Aucune description.' }}</p>
+                  
+                  <div class="flex flex-col gap-1 mt-1 mb-2">
+                    <span v-if="ticket.attachments?.length" class="text-[10px] text-gray-500 flex items-center gap-1">📎 {{ ticket.attachments.length }} pièce(s) jointe(s)</span>
+                    <span v-if="ticket.temps_estime" class="text-[10px] text-blue-600 font-bold flex items-center gap-1">⏱️ {{ ticket.temps_passe || 0 }}h / {{ ticket.temps_estime }}h</span>
+                  </div>
 
                   <div class="card-footer">
                     <div class="dev-info" v-if="ticket.assignment_status === 'approved' && ticket.developpeur">
@@ -136,11 +140,34 @@
               <label class="label">Titre *</label>
               <input v-model="form.titre" type="text" class="input" placeholder="Titre du ticket" />
             </div>
+            
             <div class="field">
-              <label class="label">Description</label>
-              <textarea v-model="form.description" rows="3" class="input ta" placeholder="Description du problème…"></textarea>
+              <label class="label">Estimation du temps (heures) *</label>
+              <input v-model="form.temps_estime" type="number" step="0.5" min="0.5" class="input" placeholder="Ex: 2.5 pour 2h30" />
             </div>
+
             <div class="field">
+              <label class="label">Étapes pour reproduire</label>
+              <textarea v-model="form.etapes" rows="2" class="input ta" placeholder="1. Cliquer sur X..."></textarea>
+            </div>
+
+            <div class="field">
+              <label class="label">Résultat attendu vs obtenu</label>
+              <textarea v-model="form.resultat" rows="2" class="input ta" placeholder="Résultat attendu: ... Obtenu: ..."></textarea>
+            </div>
+
+            <div class="field">
+              <label class="label">Notes supplémentaires (Espace libre)</label>
+              <textarea v-model="form.notes" rows="2" class="input ta" placeholder="Contexte, logs, remarques..."></textarea>
+            </div>
+
+            <div class="field">
+              <label class="label">Pièces jointes (Images, Docs, Vidéos)</label>
+              <input type="file" multiple @change="handleFileUpload" class="input" style="padding:0.4rem;" />
+              <div v-if="attachments.length" class="text-xs text-blue-600 mt-1">{{ attachments.length }} fichier(s) sélectionné(s)</div>
+            </div>
+
+            <div class="field mt-2">
               <label class="label">Priorité</label>
               <select v-model="form.priorite" class="input">
                 <option value="BASSE">🟢 Basse</option>
@@ -191,7 +218,12 @@ const showCreateModal = ref(false);
 const submitting      = ref(false);
 const formError       = ref('');
 const assignResult    = ref(null);
-const form            = ref({ titre: '', description: '', priorite: 'BASSE' });
+const form            = ref({ titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null });
+const attachments     = ref([]);
+
+const handleFileUpload = (event) => {
+  attachments.value = Array.from(event.target.files);
+};
 
 // ── Colonnes Kanban ─────────────────────────────────────────────────────────
 const columns = [
@@ -300,9 +332,25 @@ const fetchTickets = async () => {
 
 const submitTicket = async () => {
   if (!form.value.titre) { formError.value = 'Le titre est requis.'; return; }
+  if (!form.value.temps_estime || form.value.temps_estime <= 0) { formError.value = 'Une estimation de temps valide est requise.'; return; }
   submitting.value = true; formError.value = '';
   try {
-    const res = await api.post(`/projects/${projectId}/tickets`, { ...form.value });
+    const formData = new FormData();
+    formData.append('titre', form.value.titre);
+    formData.append('priorite', form.value.priorite);
+    formData.append('temps_estime', form.value.temps_estime);
+    if (form.value.etapes) formData.append('etapes', form.value.etapes);
+    if (form.value.resultat) formData.append('resultat', form.value.resultat);
+    if (form.value.notes) formData.append('notes', form.value.notes);
+    
+    attachments.value.forEach((file, index) => {
+      formData.append(`attachments[${index}]`, file);
+    });
+
+    const res = await api.post(`/projects/${projectId}/tickets`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    
     await fetchTickets();
     assignResult.value = res.data.auto_assign;
   } catch (e) {
@@ -314,7 +362,8 @@ const closeModal = () => {
   showCreateModal.value = false;
   formError.value = '';
   assignResult.value = null;
-  form.value = { titre: '', description: '', priorite: 'BASSE' };
+  form.value = { titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null };
+  attachments.value = [];
 };
 
 onMounted(() => { fetchProjectInfo(); fetchTickets(); });
