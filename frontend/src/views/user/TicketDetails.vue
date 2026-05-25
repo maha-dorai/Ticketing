@@ -79,15 +79,15 @@
             <h3 class="actions-title">Actions</h3>
 
             <!-- Valider/refuser assignation -->
-            <div v-if="(isManager || isCreatorTester) && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'" class="space-y-2">
+            <div v-if="isManager && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'" class="space-y-2">
               <p class="text-xs text-gray-500">Développeur proposé :</p>
               <p class="text-sm font-bold text-gray-800">{{ ticket.proposed_developpeur?.prenom }} {{ ticket.proposed_developpeur?.nom }}</p>
               <button @click="ask('Valider cette assignation et notifier le développeur ?', acceptTicket)" class="btn-green w-full">✅ Valider l'assignation</button>
               <button @click="ask('Refuser cette assignation ?', rejectTicket, true)" class="btn-gray w-full">❌ Refuser</button>
             </div>
 
-            <!-- Assignation manuelle (Chef ou Testeur créateur) -->
-            <div v-if="(isManager || isCreatorTester) && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-2">
+            <!-- Assignation manuelle (Chef de projet ou Admin uniquement) -->
+            <div v-if="isManager && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-2">
               <h4 class="text-xs font-bold text-gray-700 uppercase">Assignation manuelle</h4>
               <div v-if="workloads.length === 0" class="text-xs text-gray-400">Aucun développeur disponible</div>
               <div v-else class="space-y-2 max-h-48 overflow-y-auto">
@@ -223,7 +223,7 @@ const fetchTicket = async () => {
     const res = await api.get(`/tickets/${route.params.id}`);
     ticket.value = res.data;
     selectedState.value = ticket.value.etat;
-    if ((isManager.value || isCreatorTester.value) && ticket.value.assignment_status !== 'approved') {
+    if (isManager.value && ticket.value.assignment_status !== 'approved') {
       fetchWorkloads();
     }
   } catch (e) {

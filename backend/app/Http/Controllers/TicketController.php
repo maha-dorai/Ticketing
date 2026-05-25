@@ -264,10 +264,8 @@ class TicketController extends Controller
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
         
-        $isCreatorTester = ($user->role === 'testeur' && $ticket->testeur_id === $user->id);
-
-        if (!$user->isManager() && !$isCreatorTester) {
-            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs ou le créateur du ticket peuvent valider l\'assignation'], 403);
+        if (!$user->isManager()) {
+            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent valider l\'assignation'], 403);
         }
 
         if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
@@ -324,11 +322,9 @@ class TicketController extends Controller
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        $isCreatorTester = ($user->role === 'testeur' && $ticket->testeur_id === $user->id);
-
-        if (!$user->isManager() && !$isCreatorTester) {
-            \Log::info("User not admin or creator");
-            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs ou le créateur du ticket peuvent refuser l\'assignation'], 403);
+        if (!$user->isManager()) {
+            \Log::info("User not admin");
+            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent refuser l\'assignation'], 403);
         }
 
         if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
@@ -378,13 +374,13 @@ class TicketController extends Controller
 
     public function reassign(Request $request, $id)
     {
+        $request->validate(['developpeur_id' => 'required|exists:users,id']);
+
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        $isCreatorTester = ($user->role === 'testeur' && $ticket->testeur_id === $user->id);
-
-        if (!$user->isManager() && !$isCreatorTester) {
-            return response()->json(['message' => 'Seuls les administrateurs, les chefs de projet ou le créateur du ticket peuvent assigner un développeur'], 403);
+        if (!$user->isManager()) {
+            return response()->json(['message' => 'Seuls les administrateurs ou les chefs de projet peuvent assigner un développeur'], 403);
         }
 
         if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
