@@ -45,7 +45,7 @@
             v-for="p in projects"
             :key="p.id"
             class="project-card"
-            @click="$router.push({ name: 'ProjectDetail', params: { id: p.id } })"
+            @click="$router.push({ name: 'Tickets', params: { projectId: p.id } })"
             style="cursor:pointer;"
           >
             <!-- Top -->

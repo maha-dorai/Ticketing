@@ -97,6 +97,17 @@
         <!-- TAB TICKETS -->
         <template v-if="activeTab === 'tickets'">
 
+          <!-- Header Tickets Tab (Kanban Button) -->
+          <div class="flex justify-between items-center mb-6 bg-blue-50 border border-blue-100 p-4 rounded-xl">
+            <div>
+              <h3 class="text-sm font-bold text-blue-900">Tableau Kanban</h3>
+              <p class="text-xs text-blue-700 mt-1">Gérez vos tickets visuellement avec le glisser-déposer.</p>
+            </div>
+            <button @click="$router.push({ name: 'Tickets', params: { projectId: projectId } })" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-md transition-all flex items-center gap-2">
+              <span class="text-lg">📊</span> Ouvrir le Tableau
+            </button>
+          </div>
+
           <!-- Filters -->
           <div class="filters-bar">
             <div class="filter-group">

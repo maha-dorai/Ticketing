@@ -13,9 +13,14 @@
           <h1 class="page-title">{{ projectName || 'Chargement…' }}</h1>
           <p class="page-sub">{{ tickets.length }} ticket{{ tickets.length !== 1 ? 's' : '' }}</p>
         </div>
-        <button v-if="currentUser?.role === 'testeur'" @click="showCreateModal = true" class="btn-new">
-          + Nouveau ticket
-        </button>
+        <div class="flex items-center gap-3">
+          <button @click="$router.push({ name: 'ProjectDetail', params: { id: projectId } })" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2">
+            ℹ️ Infos du projet
+          </button>
+          <button v-if="currentUser?.role === 'testeur'" @click="showCreateModal = true" class="btn-new">
+            + Nouveau ticket
+          </button>
+        </div>
       </div>
 
       <!-- Chargement -->

@@ -36,7 +36,7 @@
               <p class="notif-time">{{ formatTime(notif.created_at) }}</p>
               
               <!-- Boutons Admin pour l'auto-assignation -->
-              <div v-if="!notif.lu && (notif.message.toLowerCase().includes('validation') || notif.message.toLowerCase().includes('assignation'))" class="notif-actions" @click.stop>
+              <div v-if="isManager && !notif.lu && (notif.message.toLowerCase().includes('validation') || notif.message.toLowerCase().includes('assignation'))" class="notif-actions" @click.stop>
                 <button @click="acceptAssignment(notif)" class="btn-sm btn-accept">✅ Valider</button>
                 <button @click="rejectAssignment(notif)" class="btn-sm btn-reject">❌ Refuser</button>
               </div>
@@ -98,6 +98,11 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../../services/api';
 import AppSidebar from '../../components/AppSidebar.vue';
+import { useAuthStore } from '../../stores/authStore';
+
+const authStore = useAuthStore();
+const currentUser = authStore.currentUser;
+const isManager = computed(() => ['chef_de_projet', 'admin'].includes(currentUser?.role));
 
 const router = useRouter();
 const notifications = ref([]);
