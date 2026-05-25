@@ -21,6 +21,8 @@ class Ticket extends Model
         'assignment_status',
         'force_assigned',
         'rejected_by',
+        'temps_estime',
+        'temps_passe',
     ];
 
     protected $casts = [
@@ -52,6 +54,11 @@ class Ticket extends Model
     {
         return $this->hasMany(Comment::class)
                     ->orderBy('created_at', 'asc');
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class);
     }
 
     public function isAssignmentApproved(): bool

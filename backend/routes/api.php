@@ -42,6 +42,7 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
     Route::put('/tickets/{id}',                  [TicketController::class, 'update']);
     Route::put('/tickets/{id}/status',           [TicketController::class, 'changeStatus']);
     Route::put('/tickets/{id}/close',            [TicketController::class, 'close']);
+    Route::post('/tickets/{id}/log-time',        [TicketController::class, 'logTime']);
 
     // ── Flux d'auto-assignation ───────────────────────────────────────────────
     Route::patch('/tickets/{id}/accept',   [TicketController::class, 'accept']);

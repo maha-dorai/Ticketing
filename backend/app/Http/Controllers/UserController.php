@@ -66,6 +66,8 @@ class UserController extends Controller
                 'force_password_change' => false, // Réinitialise le flag après le changement obligatoire
             ]);
             return response()->json(['message' => 'Mot de passe modifié avec succès.']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
         }
@@ -87,6 +89,8 @@ class UserController extends Controller
 
             $user->update(['email' => $request->new_email]);
             return response()->json(['message' => 'Adresse email modifiée avec succès.']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['message' => collect($e->errors())->flatten()->first()], 422);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
         }

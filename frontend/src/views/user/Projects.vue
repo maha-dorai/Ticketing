@@ -7,15 +7,25 @@
           <h1 class="page-title">Mes Projets</h1>
           <p class="page-sub">Projets auxquels vous êtes affecté</p>
         </div>
-        <div class="search-wrap">
-          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
-          </svg>
-          <input v-model="search" @input="onSearch" type="text" placeholder="Rechercher un projet..." class="search-input" />
-        </div>
       </div>
 
       <div class="page-content">
+        <!-- Barre d'outils avec recherche et filtres -->
+        <div class="toolbar">
+          <div class="search-wrap">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+            </svg>
+            <input v-model="search" @input="onSearch" type="text" placeholder="Rechercher un projet..." class="search-input" />
+          </div>
+          <div class="filters">
+            <button @click="setFilter('')" :class="['fb', filter === '' ? 'fb-active' : '']">Tous</button>
+            <button @click="setFilter('ouvert')" :class="['fb', filter === 'ouvert' ? 'fb-active' : '']">🟢 Ouverts</button>
+            <button @click="setFilter('en_cours')" :class="['fb', filter === 'en_cours' ? 'fb-active' : '']">🔵 En cours</button>
+            <button @click="setFilter('archive')" :class="['fb', filter === 'archive' ? 'fb-active' : '']">📦 Fermés (Archivés)</button>
+          </div>
+        </div>
+
         <div v-if="loading" class="loading">
           <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="22" height="22">
             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/>
@@ -27,7 +37,7 @@
         <div v-else-if="!projects.length" class="empty">
           <div class="empty-icon">📂</div>
           <h3 class="empty-title">Aucun projet trouvé</h3>
-          <p class="empty-sub">Vous n'avez pas encore été affecté à un projet.</p>
+          <p class="empty-sub">Vous n'avez aucun projet correspondant à vos filtres.</p>
         </div>
 
         <div v-else class="projects-grid">
@@ -35,7 +45,7 @@
             v-for="p in projects"
             :key="p.id"
             class="project-card"
-            @click="$router.push({ name: 'ProjectDetail', params: { id: p.id } })"
+            @click="$router.push({ name: 'Tickets', params: { projectId: p.id } })"
             style="cursor:pointer;"
           >
             <!-- Top -->
@@ -104,13 +114,20 @@ import AppSidebar from '../../components/AppSidebar.vue';
 const projects = ref([]);
 const loading = ref(false);
 const search = ref('');
+const filter = ref('');
 const pagination = ref({ current_page: 1, last_page: 1 });
 let searchTimer = null;
 
 const fetchProjects = async (page = 1) => {
   loading.value = true;
   try {
-    const r = await api.get('/projects', { params: { search: search.value || undefined, page } });
+    const r = await api.get('/projects', { 
+      params: { 
+        search: search.value || undefined, 
+        statut: filter.value || undefined,
+        page 
+      } 
+    });
     projects.value = r.data.data || r.data;
     if (r.data.current_page) pagination.value = r.data;
   } catch { /* silencieux */ }
@@ -118,6 +135,11 @@ const fetchProjects = async (page = 1) => {
 };
 
 onMounted(() => fetchProjects());
+
+const setFilter = (val) => {
+  filter.value = val;
+  fetchProjects(1);
+};
 
 const onSearch = () => {
   clearTimeout(searchTimer);
@@ -142,18 +164,27 @@ const statusClass = s => ({ ouvert: 'st-open', en_cours: 'st-inprogress', archiv
 .page-header { display: flex; align-items: center; justify-content: space-between; padding: 2rem 2.5rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: white; gap: 1rem; flex-wrap: wrap; }
 .page-title { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -.02em; }
 .page-sub { font-size: .875rem; color: #64748b; margin: .25rem 0 0; }
+
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .search-wrap { position: relative; }
 .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
-.search-input { padding: .625rem .875rem .625rem 2.25rem; border: 1px solid #e2e8f0; border-radius: 9px; font-size: .875rem; color: #1e293b; background: white; outline: none; width: 240px; font-family: inherit; transition: border-color .2s, box-shadow .2s; }
+.search-input { padding: .625rem .875rem .625rem 2.25rem; border: 1px solid #e2e8f0; border-radius: 9px; font-size: .875rem; color: #1e293b; background: white; outline: none; width: 280px; font-family: inherit; transition: border-color .2s, box-shadow .2s; }
 .search-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
 .search-input::placeholder { color: #cbd5e1; }
+
+.filters { display: flex; gap: .375rem; }
+.fb { padding: .4375rem .875rem; border: 1px solid #e2e8f0; border-radius: 7px; font-size: .8125rem; font-weight: 500; color: #64748b; background: white; cursor: pointer; font-family: inherit; transition: all .15s; }
+.fb:hover { border-color: #cbd5e1; color: #1e293b; }
+.fb-active { background: #1e293b; color: white; border-color: #1e293b; }
+
 .page-content { padding: 2rem 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-.loading { display: flex; align-items: center; gap: .5rem; color: #94a3b8; font-size: .875rem; padding: 3rem 0; }
+.loading { display: flex; align-items: center; justify-content: center; gap: .5rem; color: #94a3b8; font-size: .875rem; padding: 3rem 0; }
 .spin { animation: spin .8s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
 .empty { text-align: center; padding: 5rem 2rem; }
 .empty-icon { font-size: 3.5rem; margin-bottom: 1rem; }
 .empty-title { font-size: 1.125rem; font-weight: 700; color: #1e293b; margin: 0 0 .5rem; }
 .empty-sub { font-size: .875rem; color: #94a3b8; margin: 0; }
+
 .projects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
 .project-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.5rem; display: flex; flex-direction: column; gap: .875rem; transition: box-shadow .2s, border-color .2s; }
 .project-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.08); border-color: #3b82f6; }

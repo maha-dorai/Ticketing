@@ -43,7 +43,7 @@ const routes = [
 
   // ── Manager : admin + chef_de_projet ─────────────────────────────────────
   {
-    path: '/admin/dashboard',
+    path: '/manager/dashboard',
     name: 'Dashboard',
     component: () => import('../views/admin/Dashboard.vue'),
     meta: { requiresAuth: true, requiresManager: true },
@@ -52,22 +52,22 @@ const routes = [
     path: '/admin/users',
     name: 'UserManagement',
     component: () => import('../views/admin/UserManagement.vue'),
-    meta: { requiresAuth: true, requiresManager: true },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/admin/users/:id/edit',
     name: 'EditUser',
     component: () => import('../views/admin/EditUser.vue'),
-    meta: { requiresAuth: true, requiresManager: true },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
-    path: '/admin/projects',
+    path: '/manager/projects',
     name: 'ProjectManagement',
     component: () => import('../views/admin/ProjectManagement.vue'),
     meta: { requiresAuth: true, requiresManager: true },
   },
   {
-    path: '/admin/projects/:projectId/tickets',
+    path: '/manager/projects/:projectId/tickets',
     name: 'AdminTickets',
     component: () => import('../views/user/Tickets.vue'),
     meta: { requiresAuth: true, requiresManager: true },

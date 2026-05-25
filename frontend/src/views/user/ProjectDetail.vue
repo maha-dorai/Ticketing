@@ -97,6 +97,17 @@
         <!-- TAB TICKETS -->
         <template v-if="activeTab === 'tickets'">
 
+          <!-- Header Tickets Tab (Kanban Button) -->
+          <div class="flex justify-between items-center mb-6 bg-blue-50 border border-blue-100 p-4 rounded-xl">
+            <div>
+              <h3 class="text-sm font-bold text-blue-900">Tableau Kanban</h3>
+              <p class="text-xs text-blue-700 mt-1">Gérez vos tickets visuellement avec le glisser-déposer.</p>
+            </div>
+            <button @click="$router.push({ name: 'Tickets', params: { projectId: projectId } })" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-md transition-all flex items-center gap-2">
+              <span class="text-lg">📊</span> Ouvrir le Tableau
+            </button>
+          </div>
+
           <!-- Filters -->
           <div class="filters-bar">
             <div class="filter-group">
@@ -212,26 +223,48 @@
             <button @click="closeModal" class="modal-close">&times;</button>
           </div>
           <div class="modal-body">
-            <div class="form-group">
-              <label class="form-label">Titre *</label>
-              <input v-model="form.titre" type="text" class="form-input" placeholder="Titre du ticket" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">Description</label>
-              <textarea v-model="form.description" rows="3" class="form-input" style="resize:none" placeholder="Description détaillée..."></textarea>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Priorité</label>
-              <select v-model="form.priorite" class="form-input">
-                <option value="BASSE">⚪ Basse</option>
-                <option value="MOYENNE">🔵 Moyenne</option>
-                <option value="HAUTE">🟠 Haute</option>
-                <option value="CRITIQUE">🔴 Critique</option>
-              </select>
-            </div>
-            <div class="assign-auto-info">
-              🤖 Un développeur sera assigné automatiquement selon la charge de travail.
-            </div>
+            <form @submit.prevent="submitTicket" class="space-y-4">
+              <div>
+                <label class="form-label">Titre *</label>
+                <input v-model="form.titre" type="text" class="form-input" placeholder="Titre du ticket" />
+              </div>
+              
+              <div>
+                <label class="form-label">Estimation du temps (heures) *</label>
+                <input v-model="form.temps_estime" type="number" step="0.5" min="0.5" class="form-input" placeholder="Ex: 2.5" />
+              </div>
+              
+              <div>
+                <label class="form-label">Étapes pour reproduire</label>
+                <textarea v-model="form.etapes" rows="2" class="form-input" style="resize:none" placeholder="1. Cliquer sur X..."></textarea>
+              </div>
+
+              <div>
+                <label class="form-label">Résultat attendu vs obtenu</label>
+                <textarea v-model="form.resultat" rows="2" class="form-input" style="resize:none" placeholder="Résultat attendu: ... Obtenu: ..."></textarea>
+              </div>
+
+              <div>
+                <label class="form-label">Notes supplémentaires</label>
+                <textarea v-model="form.notes" rows="2" class="form-input" style="resize:none" placeholder="Contexte, logs..."></textarea>
+              </div>
+
+              <div>
+                <label class="form-label">Pièces jointes</label>
+                <input type="file" multiple @change="handleFileUpload" class="form-input py-1" />
+                <div v-if="attachments.length" class="text-xs text-blue-600 mt-1">{{ attachments.length }} fichier(s) sélectionné(s)</div>
+              </div>
+
+              <div>
+                <label class="form-label">Priorité</label>
+                <select v-model="form.priorite" class="form-input">
+                  <option value="BASSE">Basse</option>
+                  <option value="MOYENNE">🔵 Moyenne</option>
+                  <option value="HAUTE">🟠 Haute</option>
+                  <option value="CRITIQUE">🔴 Critique</option>
+                </select>
+              </div>
+            </form>
             <div v-if="formError" class="form-error">{{ formError }}</div>
           </div>
           <div class="modal-footer">
@@ -282,9 +315,14 @@ const toggleRole = (role) => {
 
 const showCreateModal = ref(false);
 const submitting = ref(false);
-const formError = ref('');
+const formError  = ref('');
 const assignResult = ref(null);
-const form = ref({ titre: '', description: '', priorite: 'BASSE' });
+const form       = ref({ titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null });
+const attachments = ref([]);
+
+const handleFileUpload = (event) => {
+  attachments.value = Array.from(event.target.files);
+};
 
 const isTesteur = computed(() => authStore.currentUser?.role === 'testeur');
 
@@ -331,25 +369,42 @@ onMounted(async () => {
 });
 
 const submitTicket = async () => {
-  if (!form.value.titre.trim()) { formError.value = 'Le titre est obligatoire'; return; }
+  if (!form.value.titre) { formError.value = 'Le titre est requis.'; return; }
+  if (!form.value.temps_estime || form.value.temps_estime <= 0) { formError.value = 'L\'estimation du temps est requise.'; return; }
   submitting.value = true;
   formError.value = '';
   try {
-    const res = await api.post(`/projects/${projectId}/tickets`, form.value);
+    const formData = new FormData();
+    formData.append('titre', form.value.titre);
+    formData.append('priorite', form.value.priorite);
+    formData.append('temps_estime', form.value.temps_estime);
+    if (form.value.etapes) formData.append('etapes', form.value.etapes);
+    if (form.value.resultat) formData.append('resultat', form.value.resultat);
+    if (form.value.notes) formData.append('notes', form.value.notes);
+    
+    attachments.value.forEach((file, index) => {
+      formData.append(`attachments[${index}]`, file);
+    });
+
+    const res = await api.post(`/projects/${route.params.id}/tickets`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     await fetchTickets();
     activeTab.value = 'tickets';
-    // Show auto-assign confirmation popup instead of closing
     assignResult.value = res.data.auto_assign;
   } catch (e) {
-    formError.value = e.response?.data?.message || 'Erreur lors de la création';
-  } finally { submitting.value = false; }
+    formError.value = e.response?.data?.message || 'Erreur lors de la création.';
+  } finally {
+    submitting.value = false;
+  }
 };
 
 const closeModal = () => {
   showCreateModal.value = false;
   formError.value = '';
+  form.value = { titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null };
+  attachments.value = [];
   assignResult.value = null;
-  form.value = { titre: '', description: '', priorite: 'BASSE' };
 };
 
 // Helpers
