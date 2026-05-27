@@ -2,6 +2,7 @@
   <div class="layout">
     <AppSidebar />
     <main class="main">
+      <AppHeader />
 
       <div v-if="loading" class="text-center text-gray-400 py-12 text-sm">Chargement du ticket...</div>
 
@@ -180,25 +181,25 @@
             </div>
 
             <!-- Time Tracking Card -->
-            <div v-if="ticket.temps_estime" class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-xl p-6 text-white relative overflow-hidden">
-              <div class="absolute -right-6 -top-6 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
-              <h3 class="text-xs font-extrabold text-slate-300 uppercase tracking-widest mb-4">Suivi du temps</h3>
+            <div v-if="ticket.temps_estime" class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 p-6 text-slate-800 relative overflow-hidden">
+              <div class="absolute -right-6 -top-6 w-24 h-24 bg-white/40 rounded-full blur-2xl"></div>
+              <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-4">Suivi du temps</h3>
               
               <div class="flex justify-between items-end mb-2">
-                <span class="text-3xl font-black">{{ ticket.temps_passe || 0 }}<span class="text-lg text-slate-400 font-bold">h</span></span>
+                <span class="text-3xl font-black text-slate-800">{{ ticket.temps_passe || 0 }}<span class="text-lg text-slate-400 font-bold">h</span></span>
                 <span class="text-sm font-bold text-slate-400 mb-1">/ {{ ticket.temps_estime }}h</span>
               </div>
               
-              <div class="w-full bg-slate-700/50 rounded-full h-3 backdrop-blur-sm border border-slate-600/50">
-                <div class="h-3 rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]" :class="ticket.temps_passe > ticket.temps_estime ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-blue-400 to-indigo-500'" :style="{ width: Math.min(100, ((ticket.temps_passe || 0) / ticket.temps_estime) * 100) + '%' }"></div>
+              <div class="w-full bg-slate-200/70 rounded-full h-3 border border-slate-300/50">
+                <div class="h-3 rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(59,130,246,0.4)]" :class="ticket.temps_passe > ticket.temps_estime ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-blue-400 to-indigo-500'" :style="{ width: Math.min(100, ((ticket.temps_passe || 0) / ticket.temps_estime) * 100) + '%' }"></div>
               </div>
 
               <!-- Log Time Input (Dev only) -->
-              <div v-if="currentUser?.role === 'developpeur' && ticket.assignment_status === 'approved' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME'" class="mt-5 pt-5 border-t border-slate-700/50">
-                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Ajouter des heures</label>
+              <div v-if="currentUser?.role === 'developpeur' && ticket.assignment_status === 'approved' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME'" class="mt-5 pt-5 border-t border-slate-200">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ajouter des heures</label>
                 <div class="flex gap-2">
-                  <input v-model="timeToAdd" type="number" step="0.5" min="0.5" class="w-full px-3 py-2 text-sm bg-slate-800/50 border border-slate-600 rounded-lg outline-none focus:border-blue-400 text-white placeholder-slate-500 transition-colors" placeholder="Ex: 1.5">
-                  <button @click="logTime" :disabled="!timeToAdd || stateUpdating" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed">OK</button>
+                  <input v-model="timeToAdd" type="number" step="0.5" min="0.5" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-slate-800 placeholder-slate-400 transition-all" placeholder="Ex: 1.5">
+                  <button @click="logTime" :disabled="!timeToAdd || stateUpdating" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed">OK</button>
                 </div>
               </div>
             </div>
@@ -285,6 +286,13 @@ const columns = [
 ];
 const dragTarget = ref(null);
 
+const globalMsg = ref('');
+const globalOk = ref(true);
+const msg = (m, ok = true) => {
+  globalMsg.value = m; globalOk.value = ok;
+  setTimeout(() => globalMsg.value = '', 4000);
+};
+
 // Confirm dialog state
 const confirmDialog = ref({ show: false, message: '', danger: false, onConfirm: () => {} });
 const ask = (message, onConfirm, danger = false) => {
@@ -315,22 +323,36 @@ const fetchWorkloads = async () => {
 
 const acceptTicket = async () => {
   stateUpdating.value = true;
-  try { await api.patch(`/tickets/${ticket.value.id}/accept`); await fetchTicket(); }
-  catch (e) { alert(e.response?.data?.message || "Erreur lors de l'acceptation"); }
+  try {
+    await api.post(`/tickets/${ticket.value.id}/accept`);
+    msg("Ticket accepté avec succès !", true);
+    await fetchTicket();
+  }
+  catch (e) { msg(e.response?.data?.message || "Erreur lors de l'acceptation", false); }
   finally { stateUpdating.value = false; }
 };
 
 const rejectTicket = async () => {
   stateUpdating.value = true;
-  try { await api.patch(`/tickets/${ticket.value.id}/reject`); await fetchTicket(); }
-  catch { alert("Erreur lors du refus"); }
+  try {
+    await api.post(`/tickets/${ticket.value.id}/reject`);
+    msg("Assignation refusée. Le ticket est réinitialisé.", true);
+    await fetchTicket();
+    if (isManager.value) fetchWorkloads();
+  }
+  catch { msg("Erreur lors du refus", false); }
   finally { stateUpdating.value = false; }
 };
 
 const reassignTicket = async (devId) => {
   stateUpdating.value = true;
-  try { await api.patch(`/tickets/${ticket.value.id}/reassign`, { developpeur_id: devId }); await fetchTicket(); }
-  catch { alert("Erreur lors de la réassignation"); }
+  try {
+    await api.post(`/tickets/${ticket.value.id}/reassign`, { developpeur_id: devId });
+    msg("Ticket réassigné avec succès !", true);
+    await fetchTicket();
+    fetchWorkloads();
+  }
+  catch { msg("Erreur lors de la réassignation", false); }
   finally { stateUpdating.value = false; }
 };
 
@@ -339,10 +361,11 @@ const logTime = async () => {
   stateUpdating.value = true;
   try {
     await api.post(`/tickets/${ticket.value.id}/log-time`, { temps_ajoute: timeToAdd.value });
-    await fetchTicket();
+    msg('Temps ajouté avec succès', true);
     timeToAdd.value = null;
+    await fetchTicket();
   } catch (e) {
-    alert(e.response?.data?.message || 'Erreur lors de l\'ajout de temps');
+    msg(e.response?.data?.message || 'Erreur lors de l\'ajout de temps', false);
   } finally {
     stateUpdating.value = false;
   }
@@ -352,7 +375,7 @@ const logTime = async () => {
 const canDragTicket = computed(() => {
   if (!ticket.value) return false;
   const role = currentUser?.role;
-  if (isManager.value) return false; // Admin/Chef = read only on states
+  if (isManager.value) return false;
   if (role === 'developpeur') {
     return ticket.value.developpeur_id === currentUser?.id && ticket.value.assignment_status === 'approved';
   }
@@ -362,14 +385,11 @@ const canDragTicket = computed(() => {
   return false;
 });
 
-const canTransition = (toEtat) => {
+const canTransition = (ticket, toEtat) => {
   const role = currentUser?.role;
-  if (isManager.value) return false;
+  if (isManager.value || role === 'testeur') return false;
   if (role === 'developpeur') {
     return ['OUVERT', 'EN_COURS', 'A_TESTER'].includes(toEtat);
-  }
-  if (role === 'testeur') {
-    return ['RECLAMATION', 'VALIDE'].includes(toEtat);
   }
   return false;
 };
@@ -384,19 +404,21 @@ const onDrop = async (etat) => {
   dragTarget.value = null;
   if (!ticket.value || ticket.value.etat === etat) return;
 
-  if (!canTransition(etat)) {
-    alert(`Vous n'êtes pas autorisé à glisser le ticket vers l'état "${etat}".`);
+  if (!canTransition(ticket.value, etat)) {
+    msg(`Vous n'êtes pas autorisé à glisser le ticket vers l'état "${etat}".`, false);
     return;
   }
 
   const oldEtat = ticket.value.etat;
-  ticket.value.etat = etat; // optimistic update
+  ticket.value.etat = etat; // Optimistic update
   stateUpdating.value = true;
   try {
     await api.put(`/tickets/${ticket.value.id}/status`, { etat });
+    msg("Statut du ticket mis à jour", true);
+    await fetchTicket();
   } catch (e) {
-    alert(e.response?.data?.message || 'Erreur lors du déplacement.');
-    ticket.value.etat = oldEtat; // rollback
+    ticket.value.etat = oldEtat; // Revert
+    msg(e.response?.data?.message || 'Erreur lors du déplacement.', false);
   } finally {
     stateUpdating.value = false;
   }
@@ -410,9 +432,11 @@ const submitComment = async () => {
     if (!ticket.value.comments) ticket.value.comments = [];
     ticket.value.comments.push(res.data);
     newComment.value = '';
+    msg("Commentaire ajouté", true);
+    await fetchTicket();
     nextTick(() => { if (chatBox.value) chatBox.value.scrollTop = chatBox.value.scrollHeight; });
   } catch {
-    alert('Erreur lors de l\'envoi');
+    msg('Erreur lors de l\'envoi', false);
   } finally {
     submittingComment.value = false;
   }
@@ -437,9 +461,11 @@ const saveEdit = async (comment) => {
   try {
     const res = await api.put(`/comments/${comment.id}`, { contenu: editContent.value });
     comment.contenu = res.data.contenu;
-    cancelEdit();
+    editingCommentId.value = null;
+    msg("Commentaire modifié", true);
+    await fetchTicket();
   } catch {
-    alert('Erreur de modification');
+    msg('Erreur de modification', false);
   } finally {
     savingEdit.value = false;
   }

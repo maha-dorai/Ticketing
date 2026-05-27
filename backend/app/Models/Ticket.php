@@ -23,6 +23,8 @@ class Ticket extends Model
         'rejected_by',
         'temps_estime',
         'temps_passe',
+        'type',
+        'parent_ticket_id'
     ];
 
     protected $casts = [

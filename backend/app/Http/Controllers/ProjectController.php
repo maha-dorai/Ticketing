@@ -142,6 +142,11 @@ class ProjectController extends Controller
                 'statut.in'       => 'Le statut doit être : ouvert, en_cours ou archive.',
             ]);
 
+            // Empêcher de revenir à 'ouvert' si le projet est déjà commencé
+            if ($request->statut === 'ouvert' && in_array($project->statut, ['en_cours', 'archive'])) {
+                return response()->json(['message' => "Un projet déjà en cours ne peut pas repasser à l'état Ouvert."], 422);
+            }
+
             // Vérification avant de fermer
             if ($request->statut === 'archive' && $project->statut !== 'archive') {
                 $nonValideTickets = $project->tickets()->where('etat', '!=', 'VALIDE')->count();

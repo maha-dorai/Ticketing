@@ -78,13 +78,15 @@ class TicketController extends Controller
         }
 
         $validated = $request->validate([
-            'titre'        => 'required|string|max:255',
-            'etapes'       => 'nullable|string',
-            'resultat'     => 'nullable|string',
-            'notes'        => 'nullable|string',
-            'priorite'     => 'nullable|in:BASSE,MOYENNE,HAUTE,CRITIQUE',
-            'temps_estime' => 'required|numeric|min:0',
-            'attachments.*'=> 'file|mimes:jpg,jpeg,png,pdf,doc,docx,mp4,mov|max:10240', // max 10MB per file
+            'titre'            => 'required|string|max:255',
+            'etapes'           => 'nullable|string',
+            'resultat'         => 'nullable|string',
+            'notes'            => 'nullable|string',
+            'priorite'         => 'nullable|in:BASSE,MOYENNE,HAUTE,CRITIQUE',
+            'temps_estime'     => 'required|numeric|min:0',
+            'type'             => 'nullable|in:NOUVEAU,RETOUR',
+            'parent_ticket_id' => 'nullable|exists:tickets,id',
+            'attachments.*'    => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,mp4,mov|max:10240', // max 10MB per file
         ]);
 
         // Build description
@@ -98,6 +100,9 @@ class TicketController extends Controller
         if (!empty($validated['notes'])) {
             $description .= "**Notes supplémentaires :**\n" . $validated['notes'] . "\n\n";
         }
+
+        $type = $validated['type'] ?? 'NOUVEAU';
+        $parent_id = $type === 'RETOUR' ? ($validated['parent_ticket_id'] ?? null) : null;
 
         $ticket = Ticket::create([
             'titre'                   => $validated['titre'],
@@ -113,6 +118,8 @@ class TicketController extends Controller
             'rejected_by'             => [],
             'temps_estime'            => $validated['temps_estime'],
             'temps_passe'             => 0,
+            'type'                    => $type,
+            'parent_ticket_id'        => $parent_id,
         ]);
 
         // Handle attachments
@@ -133,9 +140,28 @@ class TicketController extends Controller
             $project->update(['statut' => 'en_cours']);
         }
 
-        // 🤖 Lancer l'auto-assignation
-        $autoAssignService = new AutoAssignService();
-        $autoAssignService->assign($ticket);
+        // Si ticket RETOUR, assignation directe au développeur du ticket parent
+        $devAssigned = null;
+        if ($ticket->type === 'RETOUR' && $ticket->parent_ticket_id) {
+            $parentTicket = Ticket::find($ticket->parent_ticket_id);
+            if ($parentTicket && $parentTicket->developpeur_id) {
+                $ticket->update([
+                    'developpeur_id' => $parentTicket->developpeur_id,
+                    'assignment_status' => 'approved',
+                    'force_assigned' => true,
+                ]);
+                $devAssigned = clone $ticket;
+                
+                // Notifier le dev
+                $this->notify($parentTicket->developpeur_id, "🔁 Un ticket de retour a été créé et vous a été assigné d'office : {$ticket->titre}", $ticket->id);
+            }
+        }
+
+        // 🤖 Lancer l'auto-assignation seulement si pas de dev assigné
+        if (!$ticket->developpeur_id) {
+            $autoAssignService = new AutoAssignService();
+            $autoAssignService->assign($ticket);
+        }
 
         // Reload avec le développeur proposé (ou assigné)
         $ticket = $ticket->fresh(['developpeur', 'proposedDeveloppeur']);
@@ -144,9 +170,10 @@ class TicketController extends Controller
         return response()->json([
             'ticket'      => $ticket,
             'auto_assign' => $dev ? [
-                'success' => true,
+                'success'    => true,
                 'dev_nom'    => $dev->nom,
                 'dev_prenom' => $dev->prenom,
+                'is_retour'  => ($ticket->type === 'RETOUR' && $ticket->assignment_status === 'approved')
             ] : [
                 'success' => false,
                 'message' => "Aucun développeur disponible. L'Admin assignera manuellement.",

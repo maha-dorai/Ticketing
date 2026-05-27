@@ -2,6 +2,7 @@
   <div class="layout">
     <AppSidebar />
     <main class="main">
+      <AppHeader />
       <div class="page-header">
         <div class="header-left">
           <h1 class="page-title">📈 Mes Statistiques</h1>

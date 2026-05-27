@@ -24,10 +24,6 @@
         <router-link to="/manager/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
         </router-link>
-        <router-link to="/notifications" class="nav-item" active-class="nav-active">
-          <span class="nav-icon">🔔</span> Notifications
-          <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
-        </router-link>
       </template>
 
       <!-- Chef de projet -->
@@ -38,10 +34,6 @@
         </router-link>
         <router-link to="/manager/projects" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📁</span> Projets
-        </router-link>
-        <router-link to="/notifications" class="nav-item" active-class="nav-active">
-          <span class="nav-icon">🔔</span> Notifications
-          <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
         </router-link>
       </template>
 
@@ -54,10 +46,6 @@
         <router-link to="/my-stats" class="nav-item" active-class="nav-active">
           <span class="nav-icon">📈</span> Mes Statistiques
         </router-link>
-        <router-link to="/notifications" class="nav-item" active-class="nav-active">
-          <span class="nav-icon">🔔</span> Notifications
-          <span v-if="unreadCount > 0" class="notif-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
-        </router-link>
       </template>
 
       <!-- Common -->
@@ -66,96 +54,16 @@
         <span class="nav-icon">👤</span> Mon Profil
       </router-link>
     </nav>
-
-    <!-- User info + logout -->
-    <div class="sidebar-footer">
-      <div class="footer-user">
-        <div class="avatar">{{ initials }}</div>
-        <div class="footer-info">
-          <p class="footer-name">{{ user?.prenom }} {{ user?.nom }}</p>
-          <span class="footer-role">{{ roleLabel }}</span>
-        </div>
-      </div>
-      <button @click="doLogout" class="logout-btn" title="Se déconnecter">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
-        </svg>
-      </button>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed } from 'vue';
 import { useAuthStore } from '../stores/authStore';
-import api from '../services/api';
-import echo from '../plugins/echo';
 
 const authStore = useAuthStore();
-const router = useRouter();
-
-const user = computed(() => authStore.currentUser);
-const isManager = computed(() => authStore.isManager());
 const isAdmin   = computed(() => authStore.isAdmin());
-const unreadCount = ref(0);
-
-const initials = computed(() => {
-  const u = user.value;
-  if (!u) return '?';
-  return (u.prenom?.[0] || '') + (u.nom?.[0] || '');
-});
-
-const roleLabel = computed(() => ({
-  admin: 'Admin',
-  chef_de_projet: 'Chef de projet',
-  developpeur: 'Développeur',
-  testeur: 'Testeur',
-}[user.value?.role] || ''));
-
-const fetchUnreadCount = async () => {
-  try {
-    const res = await api.get('/notifications/unread-count');
-    unreadCount.value = res.data.count;
-  } catch {}
-};
-
-// Polling toutes les 30 secondes
-let pollInterval = null;
-let echoChannel = null;
-
-onMounted(() => {
-  fetchUnreadCount();
-  pollInterval = setInterval(fetchUnreadCount, 30000);
-  // Refresh immédiat quand une notification est lue
-  document.addEventListener('notifications-read', fetchUnreadCount);
-
-  // ✅ Fix : écoute en temps réel via Pusher (private channel)
-  const userId = user.value?.id;
-  if (userId) {
-    echoChannel = echo.private(`user.${userId}`)
-      .listen('.notification.new', () => {
-        unreadCount.value++;
-      });
-  }
-});
-
-onUnmounted(() => {
-  clearInterval(pollInterval);
-  document.removeEventListener('notifications-read', fetchUnreadCount);
-  // ✅ Fix : se désabonner du channel Pusher
-  if (echoChannel) {
-    echo.leave(`user.${user.value?.id}`);
-  }
-});
-
-// Exposer pour que Notifications.vue puisse reset le badge
-defineExpose({ fetchUnreadCount });
-
-const doLogout = async () => {
-  await authStore.logout();
-  router.push({ name: 'Login' });
-};
+const isManager = computed(() => authStore.isManager());
 </script>
 
 <style scoped>

@@ -2,6 +2,7 @@
   <div class="layout">
     <AppSidebar />
     <main class="main">
+      <AppHeader />
       <!-- Header -->
       <div class="page-header">
         <div>
@@ -330,6 +331,13 @@ const onDrop = async (e, newStatus) => {
   const p = dragProject.value;
   if (!p) return;
   if (p.statut === newStatus) return;
+
+  // Empêcher de repasser à Ouvert si déjà En cours ou Archivé
+  if (newStatus === 'ouvert' && (p.statut === 'en_cours' || p.statut === 'archive')) {
+    msg("Un projet commencé ne peut pas redevenir 'Ouvert'.", false);
+    dragProject.value = null;
+    return;
+  }
 
   // Save previous status for optimism (optional, doing pessimistic here to show errors properly)
   try {

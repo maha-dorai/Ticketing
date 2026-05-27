@@ -2,6 +2,7 @@
   <div class="layout">
     <AppSidebar />
     <main class="main">
+      <AppHeader />
       <div class="page-header">
         <h1 class="page-title">📊 Tableau de Bord</h1>
         <p class="page-subtitle">Aperçu global des performances de l'équipe</p>

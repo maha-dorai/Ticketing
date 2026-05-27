@@ -2,6 +2,7 @@
   <div class="layout">
     <AppSidebar />
     <main class="main">
+      <AppHeader />
 
       <!-- Header -->
       <div class="page-header">
@@ -21,6 +22,12 @@
             + Nouveau ticket
           </button>
         </div>
+      </div>
+
+      <!-- Toast Notification -->
+      <div v-if="globalMsg" class="fixed top-24 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-lg border text-sm font-bold z-50 flex items-center gap-3 transition-all animate-[slideInDown_0.3s_ease-out]" :class="globalOk ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-emerald-900/10' : 'bg-red-50 text-red-700 border-red-200 shadow-red-900/10'">
+        <span class="text-lg">{{ globalOk ? '✅' : '❌' }}</span>
+        {{ globalMsg }}
       </div>
 
       <!-- Chargement -->
@@ -120,9 +127,16 @@
           </div>
           <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
             <div v-if="assignResult.success">
-              <div style="font-size:2.5rem;margin-bottom:.75rem;">⏳</div>
-              <p style="font-weight:700;color:#1e293b;margin:0 0 .25rem;">Assignation proposée</p>
-              <p style="font-size:.875rem;color:#64748b;margin:0 0 1rem;">{{ assignResult.dev_prenom }} {{ assignResult.dev_nom }} — en attente de validation admin.</p>
+              <div v-if="assignResult.is_retour">
+                <div style="font-size:2.5rem;margin-bottom:.75rem;">🔁</div>
+                <p style="font-weight:700;color:#1e293b;margin:0 0 .25rem;">Assignation automatique (Retour)</p>
+                <p style="font-size:.875rem;color:#64748b;margin:0 0 1rem;">Assigné d'office à {{ assignResult.dev_prenom }} {{ assignResult.dev_nom }}.</p>
+              </div>
+              <div v-else>
+                <div style="font-size:2.5rem;margin-bottom:.75rem;">⏳</div>
+                <p style="font-weight:700;color:#1e293b;margin:0 0 .25rem;">Assignation proposée</p>
+                <p style="font-size:.875rem;color:#64748b;margin:0 0 1rem;">{{ assignResult.dev_prenom }} {{ assignResult.dev_nom }} — en attente de validation admin.</p>
+              </div>
             </div>
             <div v-else>
               <div style="font-size:2.5rem;margin-bottom:.75rem;">⚠️</div>
@@ -141,6 +155,28 @@
             <button @click="closeModal" class="close-btn">✕</button>
           </div>
           <div class="modal-body">
+            <div class="field">
+              <label class="label">Type de ticket</label>
+              <div style="display:flex;gap:1rem;margin-bottom:0.5rem;">
+                <label style="display:flex;align-items:center;gap:0.25rem;font-size:0.875rem;cursor:pointer;">
+                  <input type="radio" v-model="form.type" value="NOUVEAU" /> Nouveau
+                </label>
+                <label style="display:flex;align-items:center;gap:0.25rem;font-size:0.875rem;cursor:pointer;">
+                  <input type="radio" v-model="form.type" value="RETOUR" /> Retour (Bug sur ticket existant)
+                </label>
+              </div>
+            </div>
+
+            <div v-if="form.type === 'RETOUR'" class="field mb-3" style="background:#fffbeb;padding:0.75rem;border-radius:8px;border:1px solid #fef3c7;">
+              <label class="label text-amber-700">Ticket Parent (Sera assigné d'office à son développeur) *</label>
+              <select v-model="form.parent_ticket_id" class="input" style="border-color:#fcd34d;">
+                <option :value="null" disabled>-- Sélectionner le ticket concerné --</option>
+                <option v-for="t in validParentTickets" :key="t.id" :value="t.id">
+                  #{{ t.id }} - {{ t.titre }} ({{ t.etat }})
+                </option>
+              </select>
+            </div>
+
             <div class="field">
               <label class="label">Titre *</label>
               <input v-model="form.titre" type="text" class="input" placeholder="Titre du ticket" />
@@ -223,8 +259,12 @@ const showCreateModal = ref(false);
 const submitting      = ref(false);
 const formError       = ref('');
 const assignResult    = ref(null);
-const form            = ref({ titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null });
+const form            = ref({ titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null, type: 'NOUVEAU', parent_ticket_id: null });
 const attachments     = ref([]);
+
+const validParentTickets = computed(() => {
+  return tickets.value.filter(t => t.developpeur_id && ['VALIDE', 'A_TESTER', 'RECLAMATION'].includes(t.etat));
+});
 
 const handleFileUpload = (event) => {
   attachments.value = Array.from(event.target.files);
@@ -251,6 +291,13 @@ const onDragStart = (ticket) => { dragging.value = ticket; };
 const onDragEnd   = () => { dragging.value = null; dragTarget.value = null; };
 const onDragOver  = (etat) => { if (!isManager) dragTarget.value = etat; };
 
+const globalMsg = ref('');
+const globalOk = ref(true);
+const msg = (m, ok = true) => {
+  globalMsg.value = m; globalOk.value = ok;
+  setTimeout(() => globalMsg.value = '', 4000);
+};
+
 const onDrop = async (etat) => {
   if (isManager) return; // manager = lecture seule
   dragTarget.value = null;
@@ -261,7 +308,7 @@ const onDrop = async (etat) => {
 
   // Vérifier la transition côté client avant d'appeler l'API
   if (!canTransition(ticket, etat)) {
-    alert(`Transition non autorisée vers "${etat}" pour votre rôle.`);
+    msg(`Transition non autorisée vers "${etat}" pour votre rôle.`, false);
     return;
   }
 
@@ -269,8 +316,9 @@ const onDrop = async (etat) => {
   ticket.etat = etat;
   try {
     await api.put(`/tickets/${ticket.id}/status`, { etat });
+    msg("Statut du ticket mis à jour", true);
   } catch (e) {
-    alert(e.response?.data?.message || 'Erreur lors du déplacement.');
+    msg(e.response?.data?.message || 'Erreur lors du déplacement.', false);
     await fetchTickets(); // rollback
   }
 };
@@ -344,6 +392,10 @@ const submitTicket = async () => {
     formData.append('titre', form.value.titre);
     formData.append('priorite', form.value.priorite);
     formData.append('temps_estime', form.value.temps_estime);
+    formData.append('type', form.value.type);
+    if (form.value.type === 'RETOUR' && form.value.parent_ticket_id) {
+      formData.append('parent_ticket_id', form.value.parent_ticket_id);
+    }
     if (form.value.etapes) formData.append('etapes', form.value.etapes);
     if (form.value.resultat) formData.append('resultat', form.value.resultat);
     if (form.value.notes) formData.append('notes', form.value.notes);
@@ -365,10 +417,10 @@ const submitTicket = async () => {
 
 const closeModal = () => {
   showCreateModal.value = false;
+  form.value = { titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null, type: 'NOUVEAU', parent_ticket_id: null };
+  attachments.value = [];
   formError.value = '';
   assignResult.value = null;
-  form.value = { titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null };
-  attachments.value = [];
 };
 
 onMounted(() => { fetchProjectInfo(); fetchTickets(); });
