@@ -74,6 +74,51 @@
           </p>
         </div>
 
+        <!-- 🧠 Carte IA -->
+        <div v-if="ticket.categorie_ia || ticket.priorite_ia || ticket.solution_ia" class="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-2xl shadow-lg shadow-violet-900/5 p-6">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-violet-500/30 flex-shrink-0">
+              <span class="text-white text-lg">🤖</span>
+            </div>
+            <div>
+              <h3 class="text-sm font-extrabold text-violet-900 tracking-tight">Analyse par Intelligence Artificielle</h3>
+              <p class="text-[10px] text-violet-500 font-medium">Générée automatiquement à la création du ticket</p>
+            </div>
+            <button @click="reanalyzeAI" :disabled="aiLoading" class="ml-auto px-3 py-1.5 text-[10px] font-bold text-violet-600 border border-violet-300 bg-white hover:bg-violet-50 rounded-lg transition disabled:opacity-50" title="Relancer l'analyse IA">
+              {{ aiLoading ? '⏳ ...' : '🔄 Relancer' }}
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Catégorie -->
+            <div v-if="ticket.categorie_ia" class="bg-white rounded-xl p-4 border border-violet-100 shadow-sm">
+              <p class="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-2">🏷️ Catégorie détectée</p>
+              <span class="inline-block px-3 py-1 text-xs font-extrabold text-violet-700 bg-violet-100 rounded-full border border-violet-200">{{ categorieLabel(ticket.categorie_ia) }}</span>
+            </div>
+
+            <!-- Priorité IA -->
+            <div v-if="ticket.priorite_ia" class="bg-white rounded-xl p-4 border border-violet-100 shadow-sm">
+              <p class="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-2">⚡ Priorité suggérée</p>
+              <span :class="prioriteClass(ticket.priorite_ia)" class="inline-block px-3 py-1 text-xs font-extrabold rounded-full border">{{ ticket.priorite_ia }}</span>
+              <p v-if="ticket.priorite_ia !== ticket.priorite" class="text-[10px] text-slate-400 mt-1">Priorité actuelle: {{ ticket.priorite }}</p>
+            </div>
+
+            <!-- Confiance -->
+            <div class="bg-white rounded-xl p-4 border border-violet-100 shadow-sm flex items-center justify-center">
+              <div class="text-center">
+                <div class="text-2xl font-black text-violet-600">NLP</div>
+                <div class="text-[10px] text-violet-400 font-bold uppercase tracking-wider mt-1">Modèle Claude AI</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Solution suggérée -->
+          <div v-if="ticket.solution_ia" class="mt-4 bg-white rounded-xl p-5 border border-violet-100 shadow-sm">
+            <p class="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-3">💡 Solution suggérée par l'IA</p>
+            <p class="text-sm text-slate-700 leading-relaxed">{{ ticket.solution_ia }}</p>
+          </div>
+        </div>
+
         <!-- Ticket layout: Details (Left) + Sidebar (Right) -->
         <div class="flex flex-col lg:flex-row gap-6">
           
@@ -269,6 +314,7 @@ const stateUpdating = ref(false);
 const chatBox       = ref(null);
 const workloads     = ref([]);
 const timeToAdd     = ref(null);
+const aiLoading     = ref(false);
 
 const newComment        = ref('');
 const submittingComment = ref(false);
@@ -486,6 +532,28 @@ const formatDescription = (text) => {
              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
              .replace(/_(.*?)_/g, '<em>$1</em>')
              .replace(/- (.*)/g, '<li>$1</li>');
+};
+
+const categorieLabel = (cat) => {
+  const map = {
+    BUG: '🐛 Bug', PERFORMANCE: '⚡ Performance', SECURITE: '🔒 Sécurité',
+    UI_UX: '🎨 UI/UX', BASE_DE_DONNEES: '🗄️ Base de données', API: '🔌 API',
+    CONFIGURATION: '⚙️ Configuration', AUTRE: '📌 Autre', NON_CLASSE: '❓ Non classé'
+  };
+  return map[cat] || cat;
+};
+
+const reanalyzeAI = async () => {
+  aiLoading.value = true;
+  try {
+    await api.post(`/tickets/${ticket.value.id}/analyze-ai`);
+    await fetchTicket();
+    msg('Analyse IA mise à jour !', true);
+  } catch (e) {
+    msg("Erreur lors de l'analyse IA", false);
+  } finally {
+    aiLoading.value = false;
+  }
 };
 
 const prioriteClass = (prio) => {

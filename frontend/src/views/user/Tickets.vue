@@ -78,7 +78,10 @@
                 <div class="card-body">
                   <div class="card-top">
                     <span class="prio-badge" :class="'pb-' + ticket.priorite.toLowerCase()">{{ ticket.priorite }}</span>
-                    <span class="card-id">#{{ ticket.id }}</span>
+                    <div class="flex items-center gap-1">
+                      <span v-if="ticket.categorie_ia" class="ia-badge">🤖 {{ categorieLabel(ticket.categorie_ia) }}</span>
+                      <span class="card-id">#{{ ticket.id }}</span>
+                    </div>
                   </div>
 
                   <h3 class="card-title">{{ ticket.titre }}</h3>
@@ -217,6 +220,30 @@
                 <option value="CRITIQUE">🔴 Critique</option>
               </select>
             </div>
+
+            <!-- 🧠 Bouton analyse IA -->
+            <button type="button" @click="analyzeBeforeSubmit" :disabled="!form.titre || aiAnalyzing" class="ia-analyze-btn">
+              <span v-if="aiAnalyzing">⏳ Analyse en cours...</span>
+              <span v-else>🤖 Analyser avec l'IA</span>
+            </button>
+
+            <!-- Résultat IA -->
+            <div v-if="aiSuggestion" class="ia-suggestion-box">
+              <div class="ia-suggestion-header">🤖 Suggestion de l'IA</div>
+              <div class="ia-suggestion-row">
+                <span class="ia-label">🏷️ Catégorie :</span>
+                <span class="ia-value">{{ aiSuggestion.categorie_ia }}</span>
+              </div>
+              <div class="ia-suggestion-row">
+                <span class="ia-label">⚡ Priorité appliquée :</span>
+                <span class="ia-value ia-prio">{{ aiSuggestion.priorite_ia }}</span>
+              </div>
+              <div v-if="aiSuggestion.solution_ia" class="ia-solution">
+                <span class="ia-label">💡 Solution suggérée :</span>
+                <p>{{ aiSuggestion.solution_ia }}</p>
+              </div>
+            </div>
+
             <div v-if="formError" class="alert-err">✕ {{ formError }}</div>
           </div>
           <div class="modal-footer">
@@ -260,6 +287,8 @@ const submitting      = ref(false);
 const formError       = ref('');
 const assignResult    = ref(null);
 const form            = ref({ titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null, type: 'NOUVEAU', parent_ticket_id: null });
+const aiSuggestion    = ref(null);  // suggestion IA avant soumission
+const aiAnalyzing     = ref(false); // spinner IA
 const attachments     = ref([]);
 
 const validParentTickets = computed(() => {
@@ -383,13 +412,39 @@ const fetchTickets = async () => {
   finally { loading.value = false; }
 };
 
+const analyzeBeforeSubmit = async () => {
+  if (!form.value.titre) return;
+  aiAnalyzing.value = true;
+  aiSuggestion.value = null;
+  try {
+    const desc = [form.value.etapes, form.value.resultat, form.value.notes].filter(Boolean).join(' ');
+    const res = await api.post('/ai/analyze', { titre: form.value.titre, description: desc });
+    aiSuggestion.value = res.data;
+    // Appliquer la priorité suggérée automatiquement
+    if (res.data.priorite_ia) form.value.priorite = res.data.priorite_ia;
+  } catch (e) {
+    // Silencieux si IA indisponible
+  } finally {
+    aiAnalyzing.value = false;
+  }
+};
+
 const submitTicket = async () => {
   if (!form.value.titre) { formError.value = 'Le titre est requis.'; return; }
   if (!form.value.temps_estime || form.value.temps_estime <= 0) { formError.value = 'Une estimation de temps valide est requise.'; return; }
   submitting.value = true; formError.value = '';
   try {
     const formData = new FormData();
+    // Construire la description complète pour l'IA
+    const descParts = [];
+    if (form.value.etapes)  descParts.push('Étapes: ' + form.value.etapes);
+    if (form.value.resultat) descParts.push('Résultat: ' + form.value.resultat);
+    if (form.value.notes)   descParts.push('Notes: ' + form.value.notes);
+const fullDescription = descParts.join('\n');
+
+
     formData.append('titre', form.value.titre);
+    formData.append('description', fullDescription);
     formData.append('priorite', form.value.priorite);
     formData.append('temps_estime', form.value.temps_estime);
     formData.append('type', form.value.type);
@@ -427,6 +482,15 @@ onMounted(() => { fetchProjectInfo(); fetchTickets(); });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const initials = (u) => ((u?.prenom?.[0] || '') + (u?.nom?.[0] || '')).toUpperCase();
+
+const categorieLabel = (cat) => {
+  const map = {
+    BUG: 'Bug', PERFORMANCE: 'Perf', SECURITE: 'Sécurité',
+    UI_UX: 'UI/UX', BASE_DE_DONNEES: 'BDD', API: 'API',
+    CONFIGURATION: 'Config', AUTRE: 'Autre', NON_CLASSE: '?'
+  };
+  return map[cat] || cat;
+};
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '';
 </script>
 
@@ -564,6 +628,17 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .pb-haute    { background: #fff7ed; color: #ea580c; }
 .pb-critique { background: #fef2f2; color: #dc2626; }
 .card-id { font-size: .625rem; color: #cbd5e1; font-weight: 600; }
+.ia-badge { font-size: .6rem; font-weight: 700; padding: .15rem .45rem; border-radius: 999px; background: linear-gradient(135deg,#ede9fe,#ddd6fe); color: #6d28d9; border: 1px solid #c4b5fd; letter-spacing:.02em; }
+.ia-analyze-btn { width:100%; padding:.625rem; border-radius:.625rem; background:linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; font-size:.8rem; font-weight:700; border:none; cursor:pointer; transition:opacity .2s; }
+.ia-analyze-btn:disabled { opacity:.5; cursor:not-allowed; }
+.ia-suggestion-box { background:linear-gradient(135deg,#f5f3ff,#ede9fe); border:1.5px solid #c4b5fd; border-radius:.75rem; padding:1rem; display:flex; flex-direction:column; gap:.5rem; }
+.ia-suggestion-header { font-size:.75rem; font-weight:800; color:#6d28d9; margin-bottom:.25rem; }
+.ia-suggestion-row { display:flex; align-items:center; gap:.5rem; }
+.ia-label { font-size:.72rem; font-weight:700; color:#7c3aed; min-width:120px; }
+.ia-value { font-size:.75rem; font-weight:800; background:#fff; color:#4c1d95; padding:.15rem .5rem; border-radius:999px; border:1px solid #ddd6fe; }
+.ia-prio { background:#fef3c7; color:#92400e; border-color:#fcd34d; }
+.ia-solution { display:flex; flex-direction:column; gap:.25rem; }
+.ia-solution p { font-size:.75rem; color:#4b5563; line-height:1.5; margin:0; background:#fff; padding:.5rem .75rem; border-radius:.5rem; border:1px solid #ddd6fe; }
 
 .card-title {
   font-size: .8125rem; font-weight: 700; color: #1e293b; margin: 0;

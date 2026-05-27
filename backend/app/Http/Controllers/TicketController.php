@@ -6,6 +6,7 @@ use App\Models\Ticket;
 use App\Models\User;
 use App\Mail\TicketAssigned;
 use App\Services\AutoAssignService;
+use App\Services\AIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -138,6 +139,30 @@ class TicketController extends Controller
         // 🚀 Si le projet était "ouvert", il passe automatiquement "en_cours"
         if ($project->statut === 'ouvert') {
             $project->update(['statut' => 'en_cours']);
+        }
+
+        // 🧠 Analyse IA : classification + priorité suggérée + solution
+        try {
+            $aiService = new AIService();
+            $aiResult  = $aiService->analyzeTicket($ticket->titre, $ticket->description ?? '');
+            $aiUpdates = [];
+            if (!empty($aiResult['categorie_ia'])) {
+                $aiUpdates['categorie_ia'] = $aiResult['categorie_ia'];
+            }
+            if (!empty($aiResult['priorite_ia'])) {
+                $aiUpdates['priorite_ia'] = $aiResult['priorite_ia'];
+                if (!$request->has('priorite')) {
+                    $aiUpdates['priorite'] = $aiResult['priorite_ia'];
+                }
+            }
+            if (!empty($aiResult['solution_ia'])) {
+                $aiUpdates['solution_ia'] = $aiResult['solution_ia'];
+            }
+            if (!empty($aiUpdates)) {
+                $ticket->update($aiUpdates);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('AIService échoué: ' . $e->getMessage());
         }
 
         // Si ticket RETOUR, assignation directe au développeur du ticket parent
@@ -470,5 +495,47 @@ class TicketController extends Controller
         $this->notify($ticket->testeur_id, "⏱️ Du temps a été enregistré sur le ticket « {$ticket->titre} »", $ticket->id);
 
         return response()->json(['message' => 'Temps enregistré avec succès', 'ticket' => $ticket], 200);
+    }
+
+    /**
+     * Analyse préliminaire IA avant création du ticket (utilisée dans le formulaire)
+     */
+    public function analyzePreview(Request $request)
+    {
+        $validated = $request->validate([
+            'titre'       => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        $aiService = new AIService();
+        $result    = $aiService->analyzeTicket($validated['titre'], $validated['description'] ?? '');
+
+        return response()->json($result, 200);
+    }
+
+    /**
+     * (Re)lance l'analyse IA sur un ticket existant
+     */
+    public function analyzeAI(Request $request, $id)
+    {
+        $user   = Auth::user();
+        $ticket = Ticket::findOrFail($id);
+
+        $aiService = new AIService();
+        $aiResult  = $aiService->analyzeTicket($ticket->titre, $ticket->description ?? '');
+
+        $aiUpdates = array_filter([
+            'categorie_ia' => $aiResult['categorie_ia'] ?? null,
+            'priorite_ia'  => $aiResult['priorite_ia']  ?? null,
+            'solution_ia'  => $aiResult['solution_ia']  ?? null,
+        ], fn($v) => $v !== null);
+
+        $ticket->update($aiUpdates);
+
+        return response()->json([
+            'message' => 'Analyse IA terminée.',
+            'ticket'  => $ticket->fresh(),
+            'ai'      => $aiResult,
+        ], 200);
     }
 }
