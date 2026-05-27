@@ -2,6 +2,7 @@
   <div class="layout">
     <AppSidebar />
     <main class="main">
+      <AppHeader />
 
       <!-- Header Banner -->
       <div class="profile-banner">

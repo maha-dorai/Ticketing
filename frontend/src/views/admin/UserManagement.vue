@@ -2,6 +2,7 @@
   <div class="layout">
     <AppSidebar />
     <main class="main">
+      <AppHeader />
       <div class="page-header">
         <div>
           <h1 class="page-title">Gestion des membres</h1>

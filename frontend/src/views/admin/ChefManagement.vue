@@ -2,6 +2,7 @@
   <div class="layout">
     <AppSidebar />
     <main class="main">
+      <AppHeader />
       <div class="glass-header">
         <div class="header-content">
           <h1 class="page-title">Gestion des Chefs de projet</h1>

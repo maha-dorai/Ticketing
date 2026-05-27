@@ -2,8 +2,9 @@
   <div class="layout">
     <AppSidebar />
     <main class="main">
+      <AppHeader />
 
-      <!-- Header -->
+      <!-- Page Header -->
       <div class="page-header">
         <div class="header-left">
           <button @click="$router.push({ name: 'Projects' })" class="back-btn">
@@ -196,11 +197,20 @@
           </div>
           <div class="modal-body">
             <div v-if="assignResult.success" class="assign-success-box">
-              <div class="assign-icon">⏳</div>
-              <div class="assign-info">
-                <p class="assign-title">Assignation automatique en cours de validation</p>
-                <p class="assign-dev">👨‍💻 Proposé à : <strong>{{ assignResult.dev_prenom }} {{ assignResult.dev_nom }}</strong></p>
-                <p class="assign-hint">L'administrateur va valider ou refuser cette assignation. Vous serez notifié(e) une fois confirmée.</p>
+              <div v-if="assignResult.is_retour">
+                <div class="assign-icon">🔁</div>
+                <div class="assign-info">
+                  <p class="assign-title">Assignation automatique (Retour)</p>
+                  <p class="assign-hint">Assigné d'office à {{ assignResult.dev_prenom }} {{ assignResult.dev_nom }}.</p>
+                </div>
+              </div>
+              <div v-else>
+                <div class="assign-icon">⏳</div>
+                <div class="assign-info">
+                  <p class="assign-title">Assignation automatique en cours de validation</p>
+                  <p class="assign-dev">👨‍💻 Proposé à : <strong>{{ assignResult.dev_prenom }} {{ assignResult.dev_nom }}</strong></p>
+                  <p class="assign-hint">L'administrateur va valider ou refuser cette assignation. Vous serez notifié(e) une fois confirmée.</p>
+                </div>
               </div>
             </div>
             <div v-else class="assign-warn-box">
@@ -224,6 +234,28 @@
           </div>
           <div class="modal-body">
             <form @submit.prevent="submitTicket" class="space-y-4">
+              <div>
+                <label class="form-label">Type de ticket</label>
+                <div style="display:flex;gap:1rem;margin-bottom:0.5rem;">
+                  <label style="display:flex;align-items:center;gap:0.25rem;font-size:0.875rem;cursor:pointer;">
+                    <input type="radio" v-model="form.type" value="NOUVEAU" /> Nouveau
+                  </label>
+                  <label style="display:flex;align-items:center;gap:0.25rem;font-size:0.875rem;cursor:pointer;">
+                    <input type="radio" v-model="form.type" value="RETOUR" /> Retour (Bug sur ticket existant)
+                  </label>
+                </div>
+              </div>
+
+              <div v-if="form.type === 'RETOUR'" style="background:#fffbeb;padding:0.75rem;border-radius:8px;border:1px solid #fef3c7;">
+                <label class="form-label text-amber-700">Ticket Parent (Sera assigné d'office à son développeur) *</label>
+                <select v-model="form.parent_ticket_id" class="form-input" style="border-color:#fcd34d;">
+                  <option :value="null" disabled>-- Sélectionner le ticket concerné --</option>
+                  <option v-for="t in validParentTickets" :key="t.id" :value="t.id">
+                    #{{ t.id }} - {{ t.titre }} ({{ t.etat }})
+                  </option>
+                </select>
+              </div>
+
               <div>
                 <label class="form-label">Titre *</label>
                 <input v-model="form.titre" type="text" class="form-input" placeholder="Titre du ticket" />
@@ -317,8 +349,12 @@ const showCreateModal = ref(false);
 const submitting = ref(false);
 const formError  = ref('');
 const assignResult = ref(null);
-const form       = ref({ titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null });
+const form       = ref({ titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null, type: 'NOUVEAU', parent_ticket_id: null });
 const attachments = ref([]);
+
+const validParentTickets = computed(() => {
+  return tickets.value.filter(t => t.developpeur_id && ['VALIDE', 'A_TESTER', 'RECLAMATION'].includes(t.etat));
+});
 
 const handleFileUpload = (event) => {
   attachments.value = Array.from(event.target.files);
@@ -378,6 +414,10 @@ const submitTicket = async () => {
     formData.append('titre', form.value.titre);
     formData.append('priorite', form.value.priorite);
     formData.append('temps_estime', form.value.temps_estime);
+    formData.append('type', form.value.type);
+    if (form.value.type === 'RETOUR' && form.value.parent_ticket_id) {
+      formData.append('parent_ticket_id', form.value.parent_ticket_id);
+    }
     if (form.value.etapes) formData.append('etapes', form.value.etapes);
     if (form.value.resultat) formData.append('resultat', form.value.resultat);
     if (form.value.notes) formData.append('notes', form.value.notes);
@@ -402,7 +442,7 @@ const submitTicket = async () => {
 const closeModal = () => {
   showCreateModal.value = false;
   formError.value = '';
-  form.value = { titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null };
+  form.value = { titre: '', etapes: '', resultat: '', notes: '', priorite: 'BASSE', temps_estime: null, type: 'NOUVEAU', parent_ticket_id: null };
   attachments.value = [];
   assignResult.value = null;
 };
