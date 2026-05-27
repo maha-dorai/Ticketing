@@ -51,11 +51,16 @@ class AIService
                 ]);
 
             if ($response->failed()) {
-                Log::error('AIService: Erreur API', ['status' => $response->status(), 'body' => $response->body()]);
+                Log::error('AIService: Erreur API', [
+                    'status'  => $response->status(),
+                    'body'    => $response->body(),
+                    'headers' => $response->headers(),
+                ]);
                 return $default;
             }
 
             $text = $response->json('content.0.text', '');
+            Log::info('AIService: Réponse reçue', ['text' => $text]);
             return $this->parseResponse($text, $default);
 
         } catch (\Exception $e) {
