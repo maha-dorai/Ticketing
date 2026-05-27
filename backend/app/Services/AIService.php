@@ -8,12 +8,12 @@ use Illuminate\Support\Facades\Log;
 class AIService
 {
     private string $apiKey;
-    private string $apiUrl = 'https://api.anthropic.com/v1/messages';
-    private string $model  = 'claude-sonnet-4-20250514';
+    private string $apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+    private string $model  = 'llama-3.3-70b-versatile';
 
     public function __construct()
     {
-        $this->apiKey = config('services.anthropic.api_key', '');
+        $this->apiKey = config('services.groq.api_key', '');
     }
 
     /**
@@ -21,7 +21,6 @@ class AIService
      */
     public function analyzeTicket(string $titre, string $description = ''): array
     {
-        // Résultat par défaut si l'IA est indisponible
         $default = [
             'categorie_ia' => 'NON_CLASSE',
             'priorite_ia'  => null,
@@ -29,7 +28,7 @@ class AIService
         ];
 
         if (empty($this->apiKey)) {
-            Log::warning('AIService: ANTHROPIC_API_KEY manquant dans .env');
+            Log::warning('AIService: GROQ_API_KEY manquant dans .env');
             return $default;
         }
 
@@ -38,29 +37,34 @@ class AIService
         try {
             $response = Http::timeout(15)
                 ->withHeaders([
-                    'x-api-key'         => $this->apiKey,
-                    'anthropic-version' => '2023-06-01',
-                    'content-type'      => 'application/json',
+                    'Authorization' => 'Bearer ' . $this->apiKey,
+                    'Content-Type'  => 'application/json',
                 ])
                 ->post($this->apiUrl, [
-                    'model'      => $this->model,
-                    'max_tokens' => 500,
-                    'messages'   => [
-                        ['role' => 'user', 'content' => $prompt],
+                    'model'       => $this->model,
+                    'max_tokens'  => 500,
+                    'temperature' => 0.2,
+                    'messages'    => [
+                        [
+                            'role'    => 'system',
+                            'content' => 'Tu es un assistant expert en support technique. Tu réponds UNIQUEMENT en JSON valide, sans aucun texte avant ou après.',
+                        ],
+                        [
+                            'role'    => 'user',
+                            'content' => $prompt,
+                        ],
                     ],
                 ]);
 
             if ($response->failed()) {
-                Log::error('AIService: Erreur API', [
-                    'status'  => $response->status(),
-                    'body'    => $response->body(),
-                    'headers' => $response->headers(),
+                Log::error('AIService: Erreur API Groq', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
                 ]);
                 return $default;
             }
 
-            $text = $response->json('content.0.text', '');
-            Log::info('AIService: Réponse reçue', ['text' => $text]);
+            $text = $response->json('choices.0.message.content', '');
             return $this->parseResponse($text, $default);
 
         } catch (\Exception $e) {
@@ -76,8 +80,6 @@ class AIService
         $desc = trim($description) ?: 'Aucune description fournie.';
 
         return <<<PROMPT
-Tu es un assistant expert en support technique pour une équipe de développement logiciel.
-
 Analyse ce ticket de bug et réponds UNIQUEMENT en JSON valide, sans aucun texte avant ou après.
 
 Titre du ticket : {$titre}
@@ -100,7 +102,6 @@ PROMPT;
 
     private function parseResponse(string $text, array $default): array
     {
-        // Nettoyer les backticks markdown si présents
         $text = preg_replace('/```json|```/', '', $text);
         $text = trim($text);
 
