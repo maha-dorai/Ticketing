@@ -32,6 +32,31 @@
           </div>
         </div>
 
+        <!-- Modal réclamation -->
+        <div v-if="reclamationModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+          <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="text-2xl">⚠️</span>
+              <h3 class="text-lg font-extrabold text-slate-800">Raison de la réclamation</h3>
+            </div>
+            <p class="text-sm text-slate-500 mb-4">Décrivez ce qui ne va pas avec la résolution proposée. Le développeur recevra ce message.</p>
+            <textarea
+              v-model="reclamationModal.raison"
+              rows="4"
+              placeholder="Ex: Le bug est toujours présent sur la page de connexion, le formulaire ne valide pas..."
+              class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm resize-none outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 text-slate-800 placeholder-slate-400"
+              autofocus
+            ></textarea>
+            <p v-if="reclamationModal.error" class="text-xs text-red-500 mt-2 font-medium">{{ reclamationModal.error }}</p>
+            <div class="flex justify-end gap-3 mt-5">
+              <button @click="reclamationModal.show = false; reclamationModal.raison = ''; reclamationModal.error = ''" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition">Annuler</button>
+              <button @click="submitReclamation" class="px-5 py-2.5 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition shadow-md">
+                Envoyer la réclamation
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Timeline Interactive (Drag & Drop) -->
         <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100">
           <div class="flex justify-between items-center mb-4">
@@ -228,6 +253,14 @@
                   </span>
                   <span v-else class="italic text-slate-400 mt-1">Non assigné</span>
                 </div>
+
+                <!-- Raison réclamation -->
+                <div v-if="ticket.etat === 'RECLAMATION' && ticket.raison_reclamation" class="pt-3 border-t border-slate-100">
+                  <p class="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-2">⚠️ Raison de la réclamation</p>
+                  <div class="bg-orange-50 border border-orange-200 rounded-xl p-3">
+                    <p class="text-sm text-orange-900 leading-relaxed">{{ ticket.raison_reclamation }}</p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -351,6 +384,20 @@ const ask = (message, onConfirm, danger = false) => {
   confirmDialog.value = { show: true, message, onConfirm, danger };
 };
 
+// Modal réclamation
+const reclamationModal = ref({ show: false, raison: '', error: '', pendingEtat: null });
+
+const submitReclamation = async () => {
+  if (!reclamationModal.value.raison.trim()) {
+    reclamationModal.value.error = 'Veuillez décrire la raison de la réclamation.';
+    return;
+  }
+  reclamationModal.value.show = false;
+  await changeStatus('RECLAMATION', reclamationModal.value.raison.trim());
+  reclamationModal.value.raison = '';
+  reclamationModal.value.error = '';
+};
+
 const fetchTicket = async () => {
   try {
     const res = await api.get(`/tickets/${route.params.id}`);
@@ -376,7 +423,7 @@ const fetchWorkloads = async () => {
 const acceptTicket = async () => {
   stateUpdating.value = true;
   try {
-    await api.post(`/tickets/${ticket.value.id}/accept`);
+    await api.patch(`/tickets/${ticket.value.id}/accept`);
     msg("Ticket accepté avec succès !", true);
     await fetchTicket();
   }
@@ -387,7 +434,7 @@ const acceptTicket = async () => {
 const rejectTicket = async () => {
   stateUpdating.value = true;
   try {
-    await api.post(`/tickets/${ticket.value.id}/reject`);
+    await api.patch(`/tickets/${ticket.value.id}/reject`);
     msg("Assignation refusée. Le ticket est réinitialisé.", true);
     await fetchTicket();
     if (isManager.value) fetchWorkloads();
@@ -399,7 +446,7 @@ const rejectTicket = async () => {
 const reassignTicket = async (devId) => {
   stateUpdating.value = true;
   try {
-    await api.post(`/tickets/${ticket.value.id}/reassign`, { developpeur_id: devId });
+    await api.patch(`/tickets/${ticket.value.id}/reassign`, { developpeur_id: devId });
     msg("Ticket réassigné avec succès !", true);
     await fetchTicket();
     fetchWorkloads();
@@ -433,15 +480,19 @@ const canDragTicket = computed(() => {
   }
   if (role === 'testeur') {
     return ticket.value.testeur_id === currentUser?.id && ticket.value.etat === 'A_TESTER';
+    // Le testeur ne peut dragger que depuis A_TESTER (vers RECLAMATION ou VALIDE)
   }
   return false;
 });
 
 const canTransition = (ticket, toEtat) => {
   const role = currentUser?.role;
-  if (isManager.value || role === 'testeur') return false;
+  if (isManager.value) return false;
   if (role === 'developpeur') {
     return ['OUVERT', 'EN_COURS', 'A_TESTER'].includes(toEtat);
+  }
+  if (role === 'testeur') {
+    return ['RECLAMATION', 'VALIDE'].includes(toEtat);
   }
   return false;
 };
@@ -461,15 +512,28 @@ const onDrop = async (etat) => {
     return;
   }
 
+  if (etat === 'RECLAMATION') {
+    reclamationModal.value.show = true;
+    reclamationModal.value.raison = '';
+    reclamationModal.value.error = '';
+    return;
+  }
+
+  await changeStatus(etat);
+};
+
+const changeStatus = async (etat, raisonReclamation = null) => {
   const oldEtat = ticket.value.etat;
-  ticket.value.etat = etat; // Optimistic update
+  ticket.value.etat = etat;
   stateUpdating.value = true;
   try {
-    await api.put(`/tickets/${ticket.value.id}/status`, { etat });
+    const payload = { etat };
+    if (raisonReclamation) payload.raison_reclamation = raisonReclamation;
+    await api.put(`/tickets/${ticket.value.id}/status`, payload);
     msg("Statut du ticket mis à jour", true);
     await fetchTicket();
   } catch (e) {
-    ticket.value.etat = oldEtat; // Revert
+    ticket.value.etat = oldEtat;
     msg(e.response?.data?.message || 'Erreur lors du déplacement.', false);
   } finally {
     stateUpdating.value = false;

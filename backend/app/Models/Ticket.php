@@ -25,9 +25,10 @@ class Ticket extends Model
         'temps_passe',
         'type',
         'parent_ticket_id',
-        'categorie_ia',   
-        'priorite_ia',    
-        'solution_ia',    
+        'categorie_ia',
+        'priorite_ia',
+        'solution_ia',
+        'raison_reclamation',
     ];
 
     protected $casts = [
