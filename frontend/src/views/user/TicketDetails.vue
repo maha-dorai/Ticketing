@@ -112,8 +112,8 @@
             </div>
           </div>
 
-          <!-- Solution suggérée -->
-          <div v-if="ticket.solution_ia" class="mt-4 bg-white rounded-xl p-5 border border-violet-100 shadow-sm">
+          <!-- Solution suggérée — visible uniquement par le développeur assigné -->
+          <div v-if="ticket.solution_ia && currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser?.id" class="mt-4 bg-white rounded-xl p-5 border border-violet-100 shadow-sm">
             <p class="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-3">💡 Solution suggérée par l'IA</p>
             <p class="text-sm text-slate-700 leading-relaxed">{{ ticket.solution_ia }}</p>
           </div>
@@ -127,7 +127,13 @@
             
             <!-- Description Card -->
             <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-8 border border-slate-100">
-              <div class="prose prose-slate max-w-none text-sm leading-relaxed" v-html="formatDescription(ticket.description || 'Aucune description fournie.')"></div>
+              <!-- FIX: affichage description avec fallback propre -->
+              <div class="prose prose-slate max-w-none text-sm leading-relaxed">
+                <div v-if="ticket.description && ticket.description.trim()" v-html="formatDescription(ticket.description)"></div>
+                <p v-else class="text-slate-400 italic text-sm flex items-center gap-2">
+                  <span>📝</span> Aucune description fournie.
+                </p>
+              </div>
               
               <!-- Attachments -->
               <div v-if="ticket.attachments?.length" class="mt-8 pt-6 border-t border-slate-100">
