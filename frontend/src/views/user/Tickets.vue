@@ -4,7 +4,6 @@
     <main class="main">
       <AppHeader />
 
-      <!-- Header -->
       <div class="page-header">
         <div>
           <button @click="goBack" class="back-btn">
@@ -24,12 +23,10 @@
         </div>
       </div>
 
-      <!-- Toast -->
       <div v-if="globalMsg" class="toast" :class="globalOk ? 'toast-ok' : 'toast-err'">
         {{ globalMsg }}
       </div>
 
-      <!-- Chargement -->
       <div v-if="loading" class="loading-state">
         <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="20" height="20">
           <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/>
@@ -38,7 +35,6 @@
         Chargement…
       </div>
 
-      <!-- Kanban Board -->
       <div v-else class="kanban-scroll">
         <div class="kanban-board">
           <div
@@ -74,7 +70,7 @@
                   <div class="card-top">
                     <span class="prio-badge" :class="'pb-' + ticket.priorite.toLowerCase()">{{ ticket.priorite }}</span>
                     <div class="flex items-center gap-1">
-                      <span v-if="ticket.categorie_ia" class="ia-badge">🤖 {{ categorieLabel(ticket.categorie_ia) }}</span>
+                      <span v-if="ticket.categorie_ia" class="ia-badge-flat">IA: {{ categorieLabel(ticket.categorie_ia) }}</span>
                       <span class="card-id">#{{ ticket.id }}</span>
                     </div>
                   </div>
@@ -101,11 +97,9 @@
       </div>
     </main>
 
-    <!-- Modal Création -->
     <div v-if="showCreateModal" class="overlay" @click.self="closeModal">
       <div class="modal">
 
-        <!-- Étape 1 : résultat création -->
         <template v-if="assignResult">
           <div class="modal-header">
             <h3 class="modal-title">Ticket créé ✅</h3>
@@ -113,7 +107,6 @@
           </div>
           <div class="modal-body">
 
-            <!-- Résultats IA -->
             <div class="confirm-ai-block">
               <div class="confirm-ai-title">🤖 Analyse automatique</div>
               <div class="confirm-ai-row">
@@ -132,7 +125,6 @@
               </div>
             </div>
 
-            <!-- Assignation -->
             <div class="confirm-assign-block">
               <div v-if="assignResult.success" class="confirm-assign-row">
                 <span class="confirm-assign-icon">{{ assignResult.is_retour ? '🔁' : '⏳' }}</span>
@@ -161,7 +153,6 @@
           </div>
         </template>
 
-        <!-- Formulaire création -->
         <template v-else>
           <div class="modal-header">
             <h3 class="modal-title">Nouveau ticket</h3>
@@ -170,7 +161,6 @@
 
           <div class="modal-body">
 
-            <!-- Type -->
             <div class="field">
               <label class="label">Type</label>
               <div class="radio-group">
@@ -185,7 +175,6 @@
               </div>
             </div>
 
-            <!-- Parent ticket (si Retour) -->
             <div v-if="form.type === 'RETOUR'" class="field">
               <label class="label">Ticket concerné *</label>
               <select v-model="form.parent_ticket_id" class="input">
@@ -196,25 +185,21 @@
               </select>
             </div>
 
-            <!-- Titre -->
             <div class="field">
               <label class="label">Titre *</label>
               <input v-model="form.titre" type="text" class="input" placeholder="Décrivez le problème en une phrase" />
             </div>
 
-            <!-- Description -->
             <div class="field">
               <label class="label">Description</label>
               <textarea v-model="form.description" rows="3" class="input ta" placeholder="Étapes pour reproduire, résultat attendu vs obtenu, contexte…"></textarea>
             </div>
 
-            <!-- Estimation -->
             <div class="field">
               <label class="label">Estimation (h) *</label>
               <input v-model="form.temps_estime" type="number" step="0.5" min="0.5" class="input" placeholder="Ex: 2.5" />
             </div>
 
-            <!-- Pièces jointes -->
             <div class="field">
               <label class="label">Pièces jointes</label>
               <label class="file-upload">
@@ -387,7 +372,6 @@ const submitTicket = async () => {
     const formData = new FormData();
     formData.append('titre', form.value.titre);
 
-    // FIX : n'envoyer la description que si elle est non vide
     const desc = form.value.description?.trim();
     if (desc) {
       formData.append('description', desc);
@@ -523,7 +507,21 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .pb-haute    { background: #fff7ed; color: #ea580c; }
 .pb-critique { background: #fef2f2; color: #dc2626; }
 .card-id     { font-size: .625rem; color: #cbd5e1; font-weight: 600; }
-.ia-badge    { font-size: .6rem; font-weight: 700; padding: .15rem .45rem; border-radius: 999px; background: linear-gradient(135deg,#ede9fe,#ddd6fe); color: #6d28d9; border: 1px solid #c4b5fd; }
+
+.ia-badge-flat {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  padding: 0.15rem 0.4rem;
+  background-color: #e0e7ff;
+  color: #4338ca;
+  border-radius: 4px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
 .card-title  { font-size: .8125rem; font-weight: 700; color: #1e293b; margin: 0; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: .375rem; border-top: 1px solid #f8fafc; }
 .dev-info    { display: flex; align-items: center; gap: .35rem; }
