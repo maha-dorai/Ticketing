@@ -25,7 +25,7 @@
               v-for="n in notifications" 
               :key="n.id" 
               class="notif-item"
-              :class="{ 'unread': !n.read }"
+              :class="{ 'unread': !n.lu }"
               @click="markAsReadAndGo(n)"
             >
               <div class="notif-icon">🔔</div>
@@ -135,17 +135,22 @@ const fetchRecentNotifs = async () => {
 };
 
 const markAsReadAndGo = async (notif) => {
-  if (!notif.read) {
+  if (!notif.lu) {
     try {
-      await api.patch(`/notifications/${notif.id}/read`);
-      notif.read = true;
+      await api.put('/notifications/read', { notification_ids: [notif.id] });
+      notif.lu = true;
       unreadCount.value = Math.max(0, unreadCount.value - 1);
       document.dispatchEvent(new Event('notifications-read'));
     } catch {}
   }
   showNotifs.value = false;
   if (notif.ticket_id) {
-    router.push(`/tickets/${notif.ticket_id}`);
+    const projectId = notif.ticket?.project_id;
+    if (projectId) {
+      router.push(`/projects/${projectId}/tickets/${notif.ticket_id}`);
+    } else {
+      router.push('/notifications');
+    }
   }
 };
 

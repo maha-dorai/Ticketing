@@ -295,8 +295,9 @@ class TicketController extends Controller
                 "🧪 Le ticket « {$ticket->titre} » est prêt à tester.",
                 $ticket->id);
         } elseif ($validated['etat'] === 'RECLAMATION') {
+            $raison = $validated['raison_reclamation'];
             $this->notify($ticket->developpeur_id,
-                "⚠️ Réclamation sur « {$ticket->titre} » — le testeur a rejeté la résolution.",
+                "⚠️ Réclamation sur « {$ticket->titre} » — Raison : {$raison}",
                 $ticket->id);
         } elseif ($validated['etat'] === 'VALIDE') {
             $this->notify($ticket->developpeur_id,
