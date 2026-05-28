@@ -8,7 +8,6 @@
 
       <div v-else-if="ticket" class="space-y-6 max-w-5xl mx-auto pb-12">
 
-        <!-- Header -->
         <div class="flex items-center justify-between mb-2">
           <button @click="$router.push({ name: 'Tickets', params: { projectId: route.params.projectId } })" class="text-blue-500 hover:text-blue-700 font-bold text-sm flex items-center gap-2 transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
@@ -21,7 +20,6 @@
 
         <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight leading-tight">🎫 {{ ticket.titre }}</h1>
 
-        <!-- Confirm dialog -->
         <div v-if="confirmDialog.show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
           <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform scale-100 transition-all">
             <p class="text-slate-800 font-bold mb-6 text-center text-lg">{{ confirmDialog.message }}</p>
@@ -32,7 +30,6 @@
           </div>
         </div>
 
-        <!-- Modal réclamation -->
         <div v-if="reclamationModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
           <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full">
             <div class="flex items-center gap-3 mb-4">
@@ -57,7 +54,6 @@
           </div>
         </div>
 
-        <!-- Timeline Interactive (Drag & Drop) -->
         <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100">
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-sm font-extrabold text-slate-700 uppercase tracking-widest flex items-center gap-2">
@@ -99,60 +95,47 @@
           </p>
         </div>
 
-        <!-- 🧠 Carte IA -->
-        <div v-if="ticket.categorie_ia || ticket.priorite_ia || ticket.solution_ia" class="bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-2xl shadow-lg shadow-violet-900/5 p-6">
-          <div class="flex items-center gap-3 mb-5">
-            <div class="w-9 h-9 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-violet-500/30 flex-shrink-0">
-              <span class="text-white text-lg">🤖</span>
+        <div v-if="ticket.categorie_ia || ticket.priorite_ia || ticket.solution_ia" class="bg-white border border-slate-200 border-l-4 border-l-indigo-500 rounded-2xl shadow-sm p-6">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="text-indigo-600 flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21m0 0l-.813-5.096M9 21h3.75m-6.53 0h3.28m4.937-5.096l.812 5.096m0 0l.813-5.096M15 21h3.75m-6.53 0h3.28M9 3h6m-6 3h6m-7.5 3h9M3 12h18" />
+              </svg>
             </div>
             <div>
-              <h3 class="text-sm font-extrabold text-violet-900 tracking-tight">Analyse par Intelligence Artificielle</h3>
-              <p class="text-[10px] text-violet-500 font-medium">Générée automatiquement à la création du ticket</p>
+              <h3 class="text-sm font-extrabold text-slate-800 tracking-tight">Analyse par Intelligence Artificielle</h3>
+              <p class="text-[10px] text-slate-400 font-medium">Générée automatiquement à la création du ticket</p>
             </div>
-            <button @click="reanalyzeAI" :disabled="aiLoading" class="ml-auto px-3 py-1.5 text-[10px] font-bold text-violet-600 border border-violet-300 bg-white hover:bg-violet-50 rounded-lg transition disabled:opacity-50" title="Relancer l'analyse IA">
-              {{ aiLoading ? '⏳ ...' : '🔄 Relancer' }}
+            <button @click="reanalyzeAI" :disabled="aiLoading" class="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition disabled:opacity-50" title="Relancer l'analyse IA">
+              <svg v-if="!aiLoading" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+              <span>{{ aiLoading ? 'Mise à jour...' : 'Relancer' }}</span>
             </button>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Catégorie -->
-            <div v-if="ticket.categorie_ia" class="bg-white rounded-xl p-4 border border-violet-100 shadow-sm">
-              <p class="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-2">🏷️ Catégorie détectée</p>
-              <span class="inline-block px-3 py-1 text-xs font-extrabold text-violet-700 bg-violet-100 rounded-full border border-violet-200">{{ categorieLabel(ticket.categorie_ia) }}</span>
+          <div class="flex flex-wrap items-center gap-3">
+            <div v-if="ticket.categorie_ia" class="flex items-center gap-2 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-lg">
+              <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Catégorie :</span>
+              <span class="text-xs font-bold text-indigo-700">{{ categorieLabel(ticket.categorie_ia) }}</span>
             </div>
 
-            <!-- Priorité IA -->
-            <div v-if="ticket.priorite_ia" class="bg-white rounded-xl p-4 border border-violet-100 shadow-sm">
-              <p class="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-2">⚡ Priorité suggérée</p>
-              <span :class="prioriteClass(ticket.priorite_ia)" class="inline-block px-3 py-1 text-xs font-extrabold rounded-full border">{{ ticket.priorite_ia }}</span>
-              <p v-if="ticket.priorite_ia !== ticket.priorite" class="text-[10px] text-slate-400 mt-1">Priorité actuelle: {{ ticket.priorite }}</p>
-            </div>
-
-            <!-- Confiance -->
-            <div class="bg-white rounded-xl p-4 border border-violet-100 shadow-sm flex items-center justify-center">
-              <div class="text-center">
-                <div class="text-2xl font-black text-violet-600">NLP</div>
-                <div class="text-[10px] text-violet-400 font-bold uppercase tracking-wider mt-1">Modèle Claude AI</div>
-              </div>
+            <div v-if="ticket.priorite_ia" class="flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priorité suggérée :</span>
+              <span :class="prioriteClass(ticket.priorite_ia)" class="px-2 py-0.5 text-xs font-extrabold rounded border shadow-sm">{{ ticket.priorite_ia }}</span>
+              <span v-if="ticket.priorite_ia !== ticket.priorite" class="text-[10px] text-slate-400 italic font-normal">(actuelle : {{ ticket.priorite }})</span>
             </div>
           </div>
 
-          <!-- Solution suggérée — visible uniquement par le développeur assigné -->
-          <div v-if="ticket.solution_ia && currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser?.id" class="mt-4 bg-white rounded-xl p-5 border border-violet-100 shadow-sm">
-            <p class="text-[10px] font-bold text-violet-400 uppercase tracking-widest mb-3">💡 Solution suggérée par l'IA</p>
+          <div v-if="ticket.solution_ia && currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser?.id" class="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-100">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Solution suggérée</p>
             <p class="text-sm text-slate-700 leading-relaxed">{{ ticket.solution_ia }}</p>
           </div>
         </div>
 
-        <!-- Ticket layout: Details (Left) + Sidebar (Right) -->
         <div class="flex flex-col lg:flex-row gap-6">
           
-          <!-- Left Content -->
           <div class="flex-1 space-y-6">
             
-            <!-- Description Card -->
             <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-8 border border-slate-100">
-              <!-- FIX: affichage description avec fallback propre -->
               <div class="prose prose-slate max-w-none text-sm leading-relaxed">
                 <div v-if="ticket.description && ticket.description.trim()" v-html="formatDescription(ticket.description)"></div>
                 <p v-else class="text-slate-400 italic text-sm flex items-center gap-2">
@@ -160,7 +143,6 @@
                 </p>
               </div>
               
-              <!-- Attachments -->
               <div v-if="ticket.attachments?.length" class="mt-8 pt-6 border-t border-slate-100">
                 <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-widest mb-4 flex items-center gap-2">
                   📎 Pièces jointes ({{ ticket.attachments.length }})
@@ -174,7 +156,6 @@
               </div>
             </div>
 
-            <!-- Comments Section -->
             <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 overflow-hidden border border-slate-100 flex flex-col">
               <div class="px-8 py-5 border-b border-slate-100 bg-slate-50/50">
                 <h2 class="text-sm font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-2">💬 Commentaires ({{ ticket.comments?.length || 0 }})</h2>
@@ -226,10 +207,8 @@
 
           </div>
 
-          <!-- Right Sidebar (Actions & Info) -->
           <div class="w-full lg:w-80 space-y-6 flex-shrink-0">
             
-            <!-- Info Card -->
             <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100 space-y-4">
               <h3 class="text-xs font-extrabold text-slate-700 uppercase tracking-widest border-b border-slate-100 pb-3">Informations</h3>
               
@@ -254,7 +233,6 @@
                   <span v-else class="italic text-slate-400 mt-1">Non assigné</span>
                 </div>
 
-                <!-- Raison réclamation -->
                 <div v-if="ticket.etat === 'RECLAMATION' && ticket.raison_reclamation" class="pt-3 border-t border-slate-100">
                   <p class="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-2">⚠️ Raison de la réclamation</p>
                   <div class="bg-orange-50 border border-orange-200 rounded-xl p-3">
@@ -264,7 +242,6 @@
               </div>
             </div>
 
-            <!-- Time Tracking Card -->
             <div v-if="ticket.temps_estime" class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 p-6 text-slate-800 relative overflow-hidden">
               <div class="absolute -right-6 -top-6 w-24 h-24 bg-white/40 rounded-full blur-2xl"></div>
               <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-4">Suivi du temps</h3>
@@ -278,7 +255,6 @@
                 <div class="h-3 rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(59,130,246,0.4)]" :class="ticket.temps_passe > ticket.temps_estime ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-blue-400 to-indigo-500'" :style="{ width: Math.min(100, ((ticket.temps_passe || 0) / ticket.temps_estime) * 100) + '%' }"></div>
               </div>
 
-              <!-- Log Time Input (Dev only) -->
               <div v-if="currentUser?.role === 'developpeur' && ticket.assignment_status === 'approved' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME'" class="mt-5 pt-5 border-t border-slate-200">
                 <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ajouter des heures</label>
                 <div class="flex gap-2">
@@ -288,11 +264,9 @@
               </div>
             </div>
 
-            <!-- Actions Panel -->
             <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100 space-y-4">
               <h3 class="text-xs font-extrabold text-slate-700 uppercase tracking-widest border-b border-slate-100 pb-3">Actions requises</h3>
 
-              <!-- Valider/refuser assignation -->
               <div v-if="isManager && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'" class="space-y-3">
                 <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl">
                   <p class="text-[10px] font-bold text-amber-700 uppercase mb-1">Développeur proposé</p>
@@ -302,7 +276,6 @@
                 <button @click="ask('Refuser cette assignation ?', rejectTicket, true)" class="w-full py-2.5 bg-white border-2 border-slate-200 hover:border-red-500 hover:text-red-600 text-slate-600 text-sm font-bold rounded-xl transition">❌ Refuser</button>
               </div>
 
-              <!-- Assignation manuelle -->
               <div v-if="isManager && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-3 mt-2">
                 <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Assigner manuellement</h4>
                 <div v-if="workloads.length === 0" class="text-xs text-slate-400 italic text-center py-2">Aucun développeur disponible</div>
@@ -317,10 +290,9 @@
                 </div>
               </div>
 
-              <!-- Nothing to do -->
               <div v-if="!isManager && !canDragTicket && !(currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME') && !(currentUser?.role === 'testeur' && ticket.testeur_id === currentUser.id)" class="text-center py-6">
                 <span class="text-4xl block mb-2">☕</span>
-                <p class="text-xs font-medium text-slate-400">Aucune action requise de votre part sur ce ticket.</p>
+                <p class="text-xs font-medium text-slate-400">Aucune action requise de votre part on ce ticket.</p>
               </div>
 
               <div v-if="stateUpdating" class="text-xs text-blue-500 font-bold text-center py-2 animate-pulse">Synchronisation...</div>
@@ -480,7 +452,6 @@ const canDragTicket = computed(() => {
   }
   if (role === 'testeur') {
     return ticket.value.testeur_id === currentUser?.id && ticket.value.etat === 'A_TESTER';
-    // Le testeur ne peut dragger que depuis A_TESTER (vers RECLAMATION ou VALIDE)
   }
   return false;
 });
@@ -599,16 +570,16 @@ const deleteComment = async (comment) => {
 const formatDescription = (text) => {
   if (!text) return '';
   return text.replace(/\n/g, '<br>')
-             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+             .replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>')
              .replace(/_(.*?)_/g, '<em>$1</em>')
              .replace(/- (.*)/g, '<li>$1</li>');
 };
 
 const categorieLabel = (cat) => {
   const map = {
-    BUG: '🐛 Bug', PERFORMANCE: '⚡ Performance', SECURITE: '🔒 Sécurité',
-    UI_UX: '🎨 UI/UX', BASE_DE_DONNEES: '🗄️ Base de données', API: '🔌 API',
-    CONFIGURATION: '⚙️ Configuration', AUTRE: '📌 Autre', NON_CLASSE: '❓ Non classé'
+    BUG: 'Bug', PERFORMANCE: 'Performance', SECURITE: 'Sécurité',
+    UI_UX: 'UI/UX', BASE_DE_DONNEES: 'Base de données', API: 'API',
+    CONFIGURATION: 'Configuration', AUTRE: 'Autre', NON_CLASSE: 'Non classé'
   };
   return map[cat] || cat;
 };

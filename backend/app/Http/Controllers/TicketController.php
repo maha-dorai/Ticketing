@@ -272,14 +272,24 @@ class TicketController extends Controller
         }
 
         $validated = $request->validate([
-            'etat' => 'required|in:OUVERT,EN_COURS,A_TESTER,RECLAMATION,VALIDE',
+            'etat'               => 'required|in:OUVERT,EN_COURS,A_TESTER,RECLAMATION,VALIDE',
+            'raison_reclamation' => 'nullable|string|max:1000',
         ]);
 
         if (!in_array($validated['etat'], $allowed)) {
             return response()->json(['message' => 'Transition non autorisée pour votre rôle.'], 403);
         }
 
-        $ticket->update(['etat' => $validated['etat']]);
+        if ($validated['etat'] === 'RECLAMATION' && empty($validated['raison_reclamation'])) {
+            return response()->json(['message' => 'Une raison est obligatoire pour soumettre une réclamation.'], 422);
+        }
+
+        $updateData = ['etat' => $validated['etat']];
+        if ($validated['etat'] === 'RECLAMATION') {
+            $updateData['raison_reclamation'] = $validated['raison_reclamation'];
+        }
+
+        $ticket->update($updateData);
 
         $etatLabels = [
             'OUVERT'      => '🟢 À traiter',
