@@ -80,6 +80,7 @@ class TicketController extends Controller
 
         $validated = $request->validate([
             'titre'            => 'required|string|max:255',
+            'description'      => 'nullable|string',
             'etapes'           => 'nullable|string',
             'resultat'         => 'nullable|string',
             'notes'            => 'nullable|string',
@@ -87,27 +88,32 @@ class TicketController extends Controller
             'temps_estime'     => 'required|numeric|min:0',
             'type'             => 'nullable|in:NOUVEAU,RETOUR',
             'parent_ticket_id' => 'nullable|exists:tickets,id',
-            'attachments.*'    => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,mp4,mov|max:10240', // max 10MB per file
+            'attachments.*'    => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,mp4,mov|max:10240',
         ]);
 
-        // Build description
-        $description = "";
+        // Build description depuis les champs structurés
+        $descriptionStructuree = '';
         if (!empty($validated['etapes'])) {
-            $description .= "**Étapes pour reproduire :**\n" . $validated['etapes'] . "\n\n";
+            $descriptionStructuree .= "**Étapes pour reproduire :**\n" . $validated['etapes'] . "\n\n";
         }
         if (!empty($validated['resultat'])) {
-            $description .= "**Résultat attendu vs obtenu :**\n" . $validated['resultat'] . "\n\n";
+            $descriptionStructuree .= "**Résultat attendu vs obtenu :**\n" . $validated['resultat'] . "\n\n";
         }
         if (!empty($validated['notes'])) {
-            $description .= "**Notes supplémentaires :**\n" . $validated['notes'] . "\n\n";
+            $descriptionStructuree .= "**Notes supplémentaires :**\n" . $validated['notes'] . "\n\n";
         }
+
+        // FIX : priorité aux champs structurés, sinon description libre, jamais de chaîne vide
+        $descriptionLibre = trim($validated['description'] ?? '');
+        $descriptionStructuree = trim($descriptionStructuree);
+        $finalDescription = $descriptionStructuree ?: ($descriptionLibre ?: null);
 
         $type = $validated['type'] ?? 'NOUVEAU';
         $parent_id = $type === 'RETOUR' ? ($validated['parent_ticket_id'] ?? null) : null;
 
         $ticket = Ticket::create([
             'titre'                   => $validated['titre'],
-            'description'             => trim($description) ?: null,
+            'description'             => $finalDescription,
             'priorite'                => $validated['priorite'] ?? 'BASSE',
             'etat'                    => 'OUVERT',
             'project_id'              => $projectId,
@@ -176,7 +182,7 @@ class TicketController extends Controller
                     'force_assigned' => true,
                 ]);
                 $devAssigned = clone $ticket;
-                
+
                 // Notifier le dev
                 $this->notify($parentTicket->developpeur_id, "🔁 Un ticket de retour a été créé et vous a été assigné d'office : {$ticket->titre}", $ticket->id);
             }
@@ -231,6 +237,11 @@ class TicketController extends Controller
             'priorite'    => 'sometimes|in:BASSE,MOYENNE,HAUTE,CRITIQUE',
         ]);
 
+        // FIX : ne jamais sauvegarder une chaîne vide
+        if (array_key_exists('description', $validated)) {
+            $validated['description'] = trim($validated['description']) ?: null;
+        }
+
         $ticket->update($validated);
 
         return response()->json($ticket->refresh(), 200);
@@ -241,10 +252,6 @@ class TicketController extends Controller
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        // ── Transitions autorisées par rôle ───────────────────────────────────
-        // Développeur assigné : OUVERT → EN_COURS → A_TESTER
-        // Testeur créateur    : A_TESTER → RECLAMATION | A_TESTER → VALIDE
-        // Admin/chef          : toute transition
         if ($user->isManager()) {
             return response()->json(['message' => 'Les administrateurs ne peuvent pas modifier l\'état des tickets via le Kanban.'], 403);
         } elseif ($user->role === 'developpeur') {
@@ -306,7 +313,6 @@ class TicketController extends Controller
 
     public function close(Request $request, $id)
     {
-        // Remplacé par changeStatus avec etat=VALIDE — conservé pour compatibilité
         $request->merge(['etat' => 'VALIDE']);
         return $this->changeStatus($request, $id);
     }
@@ -315,7 +321,7 @@ class TicketController extends Controller
     {
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
-        
+
         if (!$user->isManager()) {
             return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent valider l\'assignation'], 403);
         }
@@ -375,7 +381,6 @@ class TicketController extends Controller
         $ticket = Ticket::findOrFail($id);
 
         if (!$user->isManager()) {
-            \Log::info("User not admin");
             return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent refuser l\'assignation'], 403);
         }
 
@@ -384,12 +389,10 @@ class TicketController extends Controller
         }
 
         if ($ticket->assignment_status === 'approved') {
-            \Log::info("Ticket already approved");
             return response()->json(['message' => 'Impossible de refuser une assignation déjà validée.'], 409);
         }
 
         if ($ticket->assignment_status !== 'pending' || !$ticket->proposed_developpeur_id) {
-            \Log::info("Not pending or no proposed dev. Status: {$ticket->assignment_status}, ProposedDev: {$ticket->proposed_developpeur_id}");
             return response()->json(['message' => 'Aucune assignation en attente de validation.'], 400);
         }
 
@@ -411,8 +414,6 @@ class TicketController extends Controller
             \App\Models\Notification::where('ticket_id', $ticket->id)
                 ->where('message', 'LIKE', '%validation%')
                 ->delete();
-
-            \Log::info("Ticket updated successfully");
         } catch (\Exception $e) {
             \Log::error("Error updating ticket: " . $e->getMessage());
             throw $e;
@@ -497,9 +498,6 @@ class TicketController extends Controller
         return response()->json(['message' => 'Temps enregistré avec succès', 'ticket' => $ticket], 200);
     }
 
-    /**
-     * Analyse préliminaire IA avant création du ticket (utilisée dans le formulaire)
-     */
     public function analyzePreview(Request $request)
     {
         $validated = $request->validate([
@@ -513,9 +511,6 @@ class TicketController extends Controller
         return response()->json($result, 200);
     }
 
-    /**
-     * (Re)lance l'analyse IA sur un ticket existant
-     */
     public function analyzeAI(Request $request, $id)
     {
         $user   = Auth::user();

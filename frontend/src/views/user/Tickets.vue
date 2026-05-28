@@ -105,35 +105,63 @@
     <div v-if="showCreateModal" class="overlay" @click.self="closeModal">
       <div class="modal">
 
-        <!-- Étape 1 : résultat assignation -->
+        <!-- Étape 1 : résultat création -->
         <template v-if="assignResult">
           <div class="modal-header">
             <h3 class="modal-title">Ticket créé ✅</h3>
             <button @click="closeModal" class="close-btn">✕</button>
           </div>
-          <div class="modal-body" style="text-align:center;padding:2rem 1.5rem;">
-            <div v-if="assignResult.success">
-              <div style="font-size:2.5rem;margin-bottom:.75rem;">{{ assignResult.is_retour ? '🔁' : '⏳' }}</div>
-              <p style="font-weight:700;color:#1e293b;margin:0 0 .25rem;">
-                {{ assignResult.is_retour ? 'Assignation automatique (Retour)' : 'Assignation proposée' }}
-              </p>
-              <p style="font-size:.875rem;color:#64748b;margin:0 0 1rem;">
-                {{ assignResult.dev_prenom }} {{ assignResult.dev_nom }} —
-                {{ assignResult.is_retour ? 'assigné d\'office.' : 'en attente de validation admin.' }}
-              </p>
+          <div class="modal-body">
+
+            <!-- Résultats IA -->
+            <div class="confirm-ai-block">
+              <div class="confirm-ai-title">🤖 Analyse automatique</div>
+              <div class="confirm-ai-row">
+                <div class="confirm-ai-item">
+                  <span class="confirm-ai-label">Priorité</span>
+                  <span class="confirm-prio-badge" :class="'cpb-' + (ticketResult?.priorite || 'basse').toLowerCase()">
+                    {{ ticketResult?.priorite || '—' }}
+                  </span>
+                </div>
+                <div class="confirm-ai-item">
+                  <span class="confirm-ai-label">Catégorie</span>
+                  <span class="confirm-cat-badge">
+                    {{ ticketResult?.categorie_ia ? categorieLabel(ticketResult.categorie_ia) : '—' }}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div v-else>
-              <div style="font-size:2.5rem;margin-bottom:.75rem;">⚠️</div>
-              <p style="font-weight:700;color:#dc2626;margin:0 0 .5rem;">Aucun développeur disponible</p>
-              <p style="font-size:.875rem;color:#64748b;margin:0;">{{ assignResult.message }}</p>
+
+            <!-- Assignation -->
+            <div class="confirm-assign-block">
+              <div v-if="assignResult.success" class="confirm-assign-row">
+                <span class="confirm-assign-icon">{{ assignResult.is_retour ? '🔁' : '⏳' }}</span>
+                <div>
+                  <p class="confirm-assign-title">
+                    {{ assignResult.is_retour ? 'Assigné d\'office (Retour)' : 'Assignation proposée' }}
+                  </p>
+                  <p class="confirm-assign-sub">
+                    {{ assignResult.dev_prenom }} {{ assignResult.dev_nom }} —
+                    {{ assignResult.is_retour ? 'développeur du ticket parent.' : 'en attente de validation admin.' }}
+                  </p>
+                </div>
+              </div>
+              <div v-else class="confirm-assign-row">
+                <span class="confirm-assign-icon">⚠️</span>
+                <div>
+                  <p class="confirm-assign-title" style="color:#dc2626;">Aucun développeur disponible</p>
+                  <p class="confirm-assign-sub">{{ assignResult.message }}</p>
+                </div>
+              </div>
             </div>
+
           </div>
           <div class="modal-footer">
             <button @click="closeModal" class="btn-cancel">Fermer</button>
           </div>
         </template>
 
-        <!-- Étape 2 : formulaire -->
+        <!-- Formulaire création -->
         <template v-else>
           <div class="modal-header">
             <h3 class="modal-title">Nouveau ticket</h3>
@@ -180,21 +208,10 @@
               <textarea v-model="form.description" rows="3" class="input ta" placeholder="Étapes pour reproduire, résultat attendu vs obtenu, contexte…"></textarea>
             </div>
 
-            <!-- Ligne : Temps + Priorité -->
-            <div class="field-row">
-              <div class="field">
-                <label class="label">Estimation (h) *</label>
-                <input v-model="form.temps_estime" type="number" step="0.5" min="0.5" class="input" placeholder="Ex: 2.5" />
-              </div>
-              <div class="field">
-                <label class="label">Priorité</label>
-                <select v-model="form.priorite" class="input">
-                  <option value="BASSE">🟢 Basse</option>
-                  <option value="MOYENNE">🔵 Moyenne</option>
-                  <option value="HAUTE">🟠 Haute</option>
-                  <option value="CRITIQUE">🔴 Critique</option>
-                </select>
-              </div>
+            <!-- Estimation -->
+            <div class="field">
+              <label class="label">Estimation (h) *</label>
+              <input v-model="form.temps_estime" type="number" step="0.5" min="0.5" class="input" placeholder="Ex: 2.5" />
             </div>
 
             <!-- Pièces jointes -->
@@ -207,27 +224,6 @@
               </label>
             </div>
 
-            <!-- Bouton IA -->
-            <button type="button" @click="analyzeBeforeSubmit" :disabled="!form.titre || aiAnalyzing" class="ia-analyze-btn">
-              <span v-if="aiAnalyzing">⏳ Analyse en cours…</span>
-              <span v-else>🤖 Analyser avec l'IA</span>
-            </button>
-
-            <!-- Résultat IA — catégorie + priorité uniquement (pas la solution) -->
-            <div v-if="aiSuggestion" class="ia-result">
-              <div class="ia-result-header">🤖 Analyse IA</div>
-              <div class="ia-chips">
-                <div class="ia-chip">
-                  <span class="ia-chip-label">Catégorie</span>
-                  <span class="ia-chip-value">{{ aiSuggestion.categorie_ia }}</span>
-                </div>
-                <div class="ia-chip">
-                  <span class="ia-chip-label">Priorité détectée</span>
-                  <span class="ia-chip-value prio">{{ aiSuggestion.priorite_ia }}</span>
-                </div>
-              </div>
-            </div>
-
             <div v-if="formError" class="alert-err">{{ formError }}</div>
           </div>
 
@@ -238,7 +234,7 @@
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/>
                 <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/>
               </svg>
-              <span v-else>Créer</span>
+              <span>{{ submitting ? 'Création en cours…' : 'Créer' }}</span>
             </button>
           </div>
         </template>
@@ -274,19 +270,16 @@ const showCreateModal = ref(false);
 const submitting      = ref(false);
 const formError       = ref('');
 const assignResult    = ref(null);
+const ticketResult    = ref(null);
 const attachments     = ref([]);
 
 const form = ref({
   titre: '',
   description: '',
-  priorite: 'BASSE',
   temps_estime: null,
   type: 'NOUVEAU',
   parent_ticket_id: null,
 });
-
-const aiSuggestion = ref(null);
-const aiAnalyzing  = ref(false);
 
 const globalMsg = ref('');
 const globalOk  = ref(true);
@@ -386,21 +379,6 @@ const fetchTickets = async () => {
   finally { loading.value = false; }
 };
 
-const analyzeBeforeSubmit = async () => {
-  if (!form.value.titre) return;
-  aiAnalyzing.value = true;
-  aiSuggestion.value = null;
-  try {
-    const res = await api.post('/ai/analyze', {
-      titre: form.value.titre,
-      description: form.value.description,
-    });
-    aiSuggestion.value = res.data;
-    if (res.data.priorite_ia) form.value.priorite = res.data.priorite_ia;
-  } catch {}
-  finally { aiAnalyzing.value = false; }
-};
-
 const submitTicket = async () => {
   if (!form.value.titre) { formError.value = 'Le titre est requis.'; return; }
   if (!form.value.temps_estime || form.value.temps_estime <= 0) { formError.value = 'Une estimation de temps valide est requise.'; return; }
@@ -408,8 +386,13 @@ const submitTicket = async () => {
   try {
     const formData = new FormData();
     formData.append('titre', form.value.titre);
-    formData.append('description', form.value.description || '');
-    formData.append('priorite', form.value.priorite);
+
+    // FIX : n'envoyer la description que si elle est non vide
+    const desc = form.value.description?.trim();
+    if (desc) {
+      formData.append('description', desc);
+    }
+
     formData.append('temps_estime', form.value.temps_estime);
     formData.append('type', form.value.type);
     if (form.value.type === 'RETOUR' && form.value.parent_ticket_id) {
@@ -421,7 +404,8 @@ const submitTicket = async () => {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     await fetchTickets();
-    assignResult.value = res.data.auto_assign;
+    ticketResult.value  = res.data.ticket;
+    assignResult.value  = res.data.auto_assign;
   } catch (e) {
     formError.value = e.response?.data?.message || 'Erreur lors de la création.';
   } finally { submitting.value = false; }
@@ -429,11 +413,11 @@ const submitTicket = async () => {
 
 const closeModal = () => {
   showCreateModal.value = false;
-  form.value = { titre: '', description: '', priorite: 'BASSE', temps_estime: null, type: 'NOUVEAU', parent_ticket_id: null };
+  form.value = { titre: '', description: '', temps_estime: null, type: 'NOUVEAU', parent_ticket_id: null };
   attachments.value = [];
   formError.value = '';
   assignResult.value = null;
-  aiSuggestion.value = null;
+  ticketResult.value = null;
 };
 
 onMounted(() => { fetchProjectInfo(); fetchTickets(); });
@@ -453,7 +437,6 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .layout { display: flex; min-height: 100vh; background: #f0f4f8; }
 .main   { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
-/* Header */
 .page-header {
   display: flex; align-items: flex-start; justify-content: space-between;
   padding: 1.75rem 2rem 1.25rem; background: white;
@@ -480,7 +463,6 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 }
 .btn-new:hover { background: #0f172a; }
 
-/* Toast */
 .toast {
   position: fixed; top: 5.5rem; left: 50%; transform: translateX(-50%);
   padding: .6rem 1.5rem; border-radius: 999px; font-size: .8125rem;
@@ -489,12 +471,10 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .toast-ok  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
 .toast-err { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 
-/* Loading */
 .loading-state { display: flex; align-items: center; gap: .5rem; color: #94a3b8; font-size: .875rem; padding: 4rem 2rem; }
 .spin { animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Kanban */
 .kanban-scroll { flex: 1; overflow-x: auto; overflow-y: hidden; padding: 1.5rem 1.75rem 1.75rem; }
 .kanban-board  { display: flex; gap: 1rem; align-items: flex-start; min-height: calc(100vh - 130px); min-width: max-content; }
 .kanban-col {
@@ -523,7 +503,6 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .col-cards::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
 .col-empty { text-align: center; font-size: .75rem; color: #cbd5e1; padding: 1.5rem .5rem; font-style: italic; }
 
-/* Card */
 .ticket-card {
   background: white; border: 1px solid #e2e8f0; border-radius: 10px;
   cursor: pointer; display: flex; overflow: hidden;
@@ -554,7 +533,6 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .card-date   { font-size: .625rem; color: #cbd5e1; }
 .drop-ghost  { border: 2px dashed #3b82f6; border-radius: 10px; padding: 1rem; text-align: center; font-size: .75rem; font-weight: 600; color: #3b82f6; background: rgba(59,130,246,.04); min-height: 60px; display: flex; align-items: center; justify-content: center; }
 
-/* Modal */
 .overlay { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
 .modal   { background: white; border-radius: 16px; width: 100%; max-width: 460px; box-shadow: 0 24px 48px rgba(0,0,0,.2); overflow: hidden; max-height: 90vh; overflow-y: auto; }
 .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; position: sticky; top: 0; background: white; z-index: 1; }
@@ -571,7 +549,6 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); background: white; }
 .ta { resize: vertical; min-height: 80px; }
 
-/* Radio group */
 .radio-group  { display: flex; gap: .5rem; }
 .radio-option {
   flex: 1; text-align: center; padding: .5rem; border-radius: 8px;
@@ -580,7 +557,6 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 }
 .radio-option.active { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
 
-/* File upload */
 .file-upload {
   display: flex; align-items: center; gap: .5rem;
   padding: .6rem .875rem; background: #f8fafc; border: 1.5px dashed #cbd5e1;
@@ -589,23 +565,35 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 }
 .file-upload:hover { border-color: #3b82f6; color: #3b82f6; }
 
-/* IA button */
-.ia-analyze-btn {
-  width: 100%; padding: .65rem; border-radius: 8px;
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
-  color: white; font-size: .8rem; font-weight: 700;
-  border: none; cursor: pointer; transition: opacity .2s;
+.confirm-ai-block {
+  background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 1rem 1.125rem;
 }
-.ia-analyze-btn:disabled { opacity: .5; cursor: not-allowed; }
+.confirm-ai-title { font-size: .75rem; font-weight: 800; color: #6d28d9; margin-bottom: .75rem; }
+.confirm-ai-row   { display: flex; gap: .75rem; margin-bottom: .625rem; }
+.confirm-ai-item  { flex: 1; display: flex; flex-direction: column; gap: .3rem; }
+.confirm-ai-label { font-size: .65rem; font-weight: 700; color: #7c3aed; text-transform: uppercase; letter-spacing: .05em; }
+.confirm-prio-badge {
+  display: inline-block; font-size: .75rem; font-weight: 800; padding: .3rem .75rem;
+  border-radius: 6px; text-align: center;
+}
+.cpb-basse    { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.cpb-moyenne  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.cpb-haute    { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+.cpb-critique { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.confirm-cat-badge {
+  display: inline-block; font-size: .75rem; font-weight: 700; padding: .3rem .75rem;
+  border-radius: 6px; background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; text-align: center;
+}
+.confirm-solution      { margin-top: .5rem; padding-top: .625rem; border-top: 1px solid #ddd6fe; }
+.confirm-solution-text { margin: .3rem 0 0; font-size: .8125rem; color: #4c1d95; line-height: 1.5; }
 
-/* IA result (catégorie + priorité seulement) */
-.ia-result { background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 10px; padding: .875rem; }
-.ia-result-header { font-size: .75rem; font-weight: 800; color: #6d28d9; margin-bottom: .625rem; }
-.ia-chips { display: flex; gap: .625rem; }
-.ia-chip  { flex: 1; background: white; border: 1px solid #ede9fe; border-radius: 8px; padding: .5rem .75rem; }
-.ia-chip-label { display: block; font-size: .65rem; font-weight: 700; color: #7c3aed; text-transform: uppercase; letter-spacing: .04em; margin-bottom: .25rem; }
-.ia-chip-value { font-size: .8rem; font-weight: 800; color: #4c1d95; }
-.ia-chip-value.prio { color: #92400e; }
+.confirm-assign-block {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.125rem;
+}
+.confirm-assign-row   { display: flex; align-items: flex-start; gap: .875rem; }
+.confirm-assign-icon  { font-size: 1.5rem; flex-shrink: 0; margin-top: .1rem; }
+.confirm-assign-title { font-size: .875rem; font-weight: 700; color: #1e293b; margin: 0 0 .2rem; }
+.confirm-assign-sub   { font-size: .8125rem; color: #64748b; margin: 0; }
 
 .alert-err { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; padding: .625rem .875rem; font-size: .8125rem; }
 
