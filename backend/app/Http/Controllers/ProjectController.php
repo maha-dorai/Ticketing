@@ -103,10 +103,26 @@ class ProjectController extends Controller
                 'description' => 'nullable|string',
                 'date_debut'  => 'nullable|date',
                 'date_fin'    => 'nullable|date|after_or_equal:date_debut',
+                'user_ids'    => 'required|array|min:1',
+                'user_ids.*'  => 'exists:users,id',
             ], [
-                'nom.required' => 'Le nom du projet est obligatoire.',
-                'nom.unique'   => 'Un projet avec ce nom existe déjà.',
+                'nom.required'    => 'Le nom du projet est obligatoire.',
+                'nom.unique'      => 'Un projet avec ce nom existe déjà.',
+                'user_ids.required' => 'Vous devez assigner au moins un membre au projet.',
+                'user_ids.min'    => 'Vous devez assigner au moins un membre au projet.',
             ]);
+
+            // Vérifier que tous les membres sont actifs
+            $inactiveUsers = User::whereIn('id', $request->user_ids)
+                                 ->where('statut', '!=', 'actif')
+                                 ->pluck('email');
+
+            if ($inactiveUsers->isNotEmpty()) {
+                return response()->json([
+                    'message'         => 'Certains membres ne sont pas actifs et ne peuvent pas être affectés.',
+                    'comptes_bloqués' => $inactiveUsers,
+                ], 422);
+            }
 
             $project = Project::create([
                 'nom'         => $request->nom,
@@ -116,6 +132,21 @@ class ProjectController extends Controller
                 'statut'      => 'ouvert',
                 'created_by'  => $creator->id,
             ]);
+
+            // Assigner les membres et envoyer les emails
+            $project->users()->sync($request->user_ids);
+
+            $newUsers = User::whereIn('id', $request->user_ids)->get();
+            foreach ($newUsers as $u) {
+                \App\Http\Controllers\NotificationController::createAndBroadcast(
+                    $u->id,
+                    "📁 Vous avez été ajouté(e) au projet « {$project->nom} ».",
+                    null
+                );
+                try {
+                    Mail::to($u->email)->send(new ProjectAssigned($project, $u));
+                } catch (\Exception $e) {}
+            }
 
             return response()->json(['message' => 'Projet créé avec succès.', 'project' => $project], 201);
         } catch (\Exception $e) {
@@ -145,6 +176,11 @@ class ProjectController extends Controller
             // Empêcher de revenir à 'ouvert' si le projet est déjà commencé
             if ($request->statut === 'ouvert' && in_array($project->statut, ['en_cours', 'archive'])) {
                 return response()->json(['message' => "Un projet déjà en cours ne peut pas repasser à l'état Ouvert."], 422);
+            }
+
+            // Bloquer le passage manuel ouvert → en_cours (automatique via premier ticket)
+            if ($request->statut === 'en_cours' && $project->statut === 'ouvert') {
+                return response()->json(['message' => "Le projet passe en cours automatiquement lors de la création du premier ticket."], 422);
             }
 
             // Vérification avant de fermer

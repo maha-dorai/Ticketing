@@ -141,6 +141,31 @@
             </select>
             <span v-if="form.statut === 'archive'" class="hint-text">Un projet ne peut être fermé que si tous ses tickets sont VALIDÉS.</span>
           </div>
+          <!-- Sélection membres (création uniquement) -->
+          <div v-if="!editing" class="field">
+            <label class="label">Membres du projet * <span class="label-count">({{ form.user_ids.length }} sélectionné(s))</span></label>
+            <div class="members-search-wrap">
+              <svg class="si" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+              <input v-model="memberSearch" placeholder="Rechercher un membre..." class="members-search-input" />
+            </div>
+            <div class="member-grid-inline">
+              <div v-if="filteredMembersForCreate.length === 0" class="no-members">Aucun membre actif disponible</div>
+              <label
+                v-for="u in filteredMembersForCreate" :key="u.id"
+                class="member-check" :class="{ selected: form.user_ids.includes(u.id) }"
+              >
+                <input type="checkbox" :value="u.id" v-model="form.user_ids" class="hidden-cb" />
+                <div class="mc-av">{{ (u.prenom[0]||'')+(u.nom[0]||'') }}</div>
+                <div class="mc-info">
+                  <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
+                  <p class="mc-role">{{ u.role }}</p>
+                </div>
+                <span class="check-mark">{{ form.user_ids.includes(u.id) ? '✓' : '' }}</span>
+              </label>
+            </div>
+            <span v-if="formMembersError" class="hint-text">⚠ {{ formMembersError }}</span>
+          </div>
+
           <div v-if="formError" class="alert alert-err">✕ {{ formError }}</div>
           <div class="modal-footer">
             <button type="button" @click="showModal=false" class="btn-cancel">Annuler</button>
@@ -206,12 +231,14 @@ const showAssign = ref(false);
 const editing = ref(false);
 const currentProject = ref(null);
 const formError = ref('');
+const formMembersError = ref('');
 const assignError = ref('');
 const selectedIds = ref([]);
+const memberSearch = ref('');
 
 const dragProject = ref(null);
 
-const form = ref({ nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert' });
+const form = ref({ nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert', user_ids: [] });
 
 const columns = [
   { id: 'ouvert', title: '🟢 Ouverts' },
@@ -234,6 +261,15 @@ const activeMembers = computed(() => {
     !['chef_de_projet', 'admin'].includes(u.role) &&
     !assignedIds.includes(u.id)
   );
+});
+
+const filteredMembersForCreate = computed(() => {
+  const q = memberSearch.value.toLowerCase().trim();
+  return allUsers.value.filter(u => {
+    if (u.statut !== 'actif' || ['chef_de_projet', 'admin'].includes(u.role)) return false;
+    if (!q) return true;
+    return (u.prenom + ' ' + u.nom + ' ' + u.role).toLowerCase().includes(q);
+  });
 });
 
 const fetchProjects = async (page = 1) => {
@@ -264,8 +300,10 @@ const fmt = d => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', m
 
 const openCreate = () => {
   editing.value = false;
-  form.value = { nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert' };
+  form.value = { nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert', user_ids: [] };
   formError.value = '';
+  formMembersError.value = '';
+  memberSearch.value = '';
   showModal.value = true;
 };
 
@@ -278,6 +316,11 @@ const openEdit = (p) => {
 };
 
 const saveProject = async () => {
+  formMembersError.value = '';
+  if (!editing.value && form.value.user_ids.length === 0) {
+    formMembersError.value = 'Vous devez sélectionner au moins un membre.';
+    return;
+  }
   saving.value = true; formError.value = '';
   try {
     if (editing.value) {
@@ -339,7 +382,13 @@ const onDrop = async (e, newStatus) => {
     return;
   }
 
-  // Save previous status for optimism (optional, doing pessimistic here to show errors properly)
+  // Bloquer Ouvert → En cours : ce passage se fait automatiquement lors du premier ticket
+  if (p.statut === 'ouvert' && newStatus === 'en_cours') {
+    msg("🔒 Ce passage se fait automatiquement quand le premier ticket est créé.", false);
+    dragProject.value = null;
+    return;
+  }
+
   try {
     await api.put(`/projects/${p.id}`, {
       nom: p.nom,
@@ -349,7 +398,7 @@ const onDrop = async (e, newStatus) => {
       statut: newStatus
     });
     msg('Projet déplacé avec succès ✓');
-    await fetchProjects(); // Refresh everything to get updated tickets counts/history
+    await fetchProjects();
   } catch (err) {
     msg(err.response?.data?.message || 'Erreur lors du déplacement.', false);
   }
@@ -445,7 +494,15 @@ const onDrop = async (e, newStatus) => {
 .btn-primary{padding:.5rem 1rem;background:#1e293b;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;}
 .btn-primary:disabled{opacity:0.6;cursor:not-allowed;}
 
-/* Assign body */
+/* Member selection in create form */
+.label-count{font-size:.7rem;color:#3b82f6;font-weight:600;text-transform:none;letter-spacing:0;margin-left:.25rem;}
+.members-search-wrap{position:relative;margin-bottom:.5rem;}
+.members-search-input{width:100%;padding:.5rem .875rem .5rem 2rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.85rem;color:#1e293b;background:#f8fafc;outline:none;transition:border-color .2s;}
+.members-search-input:focus{border-color:#3b82f6;background:white;}
+.member-grid-inline{max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:.4rem;border:1px solid #e2e8f0;border-radius:8px;padding:.5rem;background:#fafafa;}
+.no-members{text-align:center;padding:1rem;color:#94a3b8;font-size:.85rem;}
+.modal{background:white;border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 48px rgba(0,0,0,.25);}
+
 .assign-body{padding:1.5rem;}
 .assign-hint{font-size:.875rem;color:#64748b;margin:0 0 1rem;}
 .member-grid{max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;}
