@@ -47,12 +47,6 @@
           <span class="nav-icon">📈</span> Mes Statistiques
         </router-link>
       </template>
-
-      <!-- Common -->
-      <div class="nav-divider"></div>
-      <router-link to="/profile" class="nav-item" active-class="nav-active">
-        <span class="nav-icon">👤</span> Mon Profil
-      </router-link>
     </nav>
   </div>
 </template>

@@ -19,12 +19,6 @@
             </svg>
             <input v-model="search" @input="onSearch" type="text" placeholder="Rechercher un projet..." class="search-input" />
           </div>
-          <div class="filters">
-            <button @click="setFilter('')" :class="['fb', filter === '' ? 'fb-active' : '']">Tous</button>
-            <button @click="setFilter('ouvert')" :class="['fb', filter === 'ouvert' ? 'fb-active' : '']">🟢 Ouverts</button>
-            <button @click="setFilter('en_cours')" :class="['fb', filter === 'en_cours' ? 'fb-active' : '']">🔵 En cours</button>
-            <button @click="setFilter('archive')" :class="['fb', filter === 'archive' ? 'fb-active' : '']">📦 Fermés (Archivés)</button>
-          </div>
         </div>
 
         <div v-if="loading" class="loading">
@@ -200,7 +194,7 @@ const statusClass = s => ({ ouvert: 'st-open', en_cours: 'st-inprogress', archiv
 
 /* KANBAN CSS */
 .kanban-board{display:grid;grid-template-columns:repeat(3, 1fr);gap:1.5rem;flex:1;}
-.kanban-column{display:flex;flex-direction:column;background:#ebecf0;border-radius:12px;overflow:hidden;border:1px solid #dfe1e6;}
+.kanban-column{display:flex;flex-direction:column;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #dfe1e6;}
 .column-header{padding:1rem 1.25rem;display:flex;align-items:center;justify-content:space-between;background:white;border-bottom:1px solid #dfe1e6;}
 .column-header h3{margin:0;font-size:1rem;font-weight:800;color:#172b4d;}
 .col-count{background:#f1f5f9;color:#64748b;font-size:.75rem;font-weight:800;padding:2px 8px;border-radius:12px;}

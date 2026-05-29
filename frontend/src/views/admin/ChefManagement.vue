@@ -27,7 +27,7 @@
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
                 </div>
                 <div>
-                  <h2 class="card-title">Nouveau Chef</h2>
+                  <h2 class="card-title">Nouveau Chef de projet</h2>
                   <p class="card-desc">Génère automatiquement des accès temporaires sécurisés.</p>
                 </div>
               </div>
@@ -36,16 +36,16 @@
                 <div class="input-group-row">
                   <div class="input-field">
                     <label>Prénom</label>
-                    <input v-model="f.prenom" type="text" placeholder="Ex: Jean" required />
+                    <input v-model="f.prenom" type="text" required />
                   </div>
                   <div class="input-field">
                     <label>Nom</label>
-                    <input v-model="f.nom" type="text" placeholder="Ex: Dupont" required />
+                    <input v-model="f.nom" type="text"required />
                   </div>
                 </div>
                 <div class="input-field">
                   <label>Email Professionnel</label>
-                  <input v-model="f.email" type="email" placeholder="jean.dupont@entreprise.com" required />
+                  <input v-model="f.email" type="email"  required />
                   <span class="field-hint">Le mot de passe y sera envoyé.</span>
                 </div>
                 
