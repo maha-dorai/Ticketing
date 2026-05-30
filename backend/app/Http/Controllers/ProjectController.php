@@ -149,6 +149,8 @@ class ProjectController extends Controller
             }
 
             return response()->json(['message' => 'Projet créé avec succès.', 'project' => $project], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur lors de la création.', 'error' => $e->getMessage()], 500);
         }

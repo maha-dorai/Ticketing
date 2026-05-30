@@ -4,48 +4,61 @@
     <main class="main">
       <AppHeader />
       <div class="page-header">
-        <div class="header-left">
-          <h1 class="page-title">📈 Mes Statistiques</h1>
-          <p class="page-subtitle">Aperçu de votre activité sur la plateforme</p>
-        </div>
+        <h1 class="page-title">👤 Mes Statistiques Personnelles</h1>
+        <p class="page-subtitle">Aperçu de votre activité et de vos performances</p>
       </div>
 
-      <div v-if="loading" class="p-8 text-center text-gray-500">Chargement de vos statistiques...</div>
+      <!-- Time Filter -->
+      <div class="time-filters">
+        <button @click="setPeriod('today')" :class="['time-btn', period === 'today' ? 'active' : '']">Aujourd'hui</button>
+        <button @click="setPeriod('week')" :class="['time-btn', period === 'week' ? 'active' : '']">Cette Semaine</button>
+        <button @click="setPeriod('month')" :class="['time-btn', period === 'month' ? 'active' : '']">Ce Mois</button>
+        <button @click="setPeriod('all')" :class="['time-btn', period === 'all' ? 'active' : '']">Global</button>
+      </div>
+
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Chargement de vos statistiques...</p>
+      </div>
       
-      <div v-else-if="stats" class="page-content">
-        <!-- Overview Grid -->
-        <div class="stat-grid">
-          <div class="stat-card projects">
-            <div class="stat-icon">📁</div>
-            <div class="stat-info">
-              <div class="stat-val">{{ stats.projects_count }}</div>
-              <div class="stat-lbl">Projets Actifs</div>
-            </div>
+      <div v-else class="page-content fade-in">
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-title">Total de mes tickets</div>
+            <div class="kpi-value">{{ stats.my_kpi?.total || 0 }}</div>
           </div>
-          
-          <div class="stat-card active-tickets">
-            <div class="stat-icon">{{ isTesteur ? '🎫' : '👨‍💻' }}</div>
-            <div class="stat-info">
-              <div class="stat-val">{{ stats.active_tickets_count }}</div>
-              <div class="stat-lbl">{{ isTesteur ? 'Tickets Signalés (Ouverts)' : 'Tickets en charge' }}</div>
-            </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Tickets Actifs (Ouverts/En cours)</div>
+            <div class="kpi-value">{{ activeTicketsCount }}</div>
           </div>
-          
-          <div class="stat-card resolved-tickets">
-            <div class="stat-icon">✅</div>
-            <div class="stat-info">
-              <div class="stat-val">{{ stats.closed_tickets_count }}</div>
-              <div class="stat-lbl">{{ isTesteur ? 'Tickets Résolus' : 'Tickets Clôturés' }}</div>
-            </div>
+          <div class="kpi-card">
+            <div class="kpi-title">Tickets Résolus</div>
+            <div class="kpi-value" style="color: #10b981;">{{ resolvedTicketsCount }}</div>
           </div>
         </div>
 
-        <div class="info-banner">
-          <div class="banner-icon">💡</div>
-          <div class="banner-text">
-            Ces statistiques sont mises à jour en temps réel. Des graphiques avancés seront disponibles lors d'une prochaine mise à jour.
+        <div class="charts-grid">
+          <!-- Mon activité (Courbe) -->
+          <div class="chart-card full-width">
+            <h3>Mon Activité d'Assignation</h3>
+            <apexchart type="area" height="350" :options="activityOptions" :series="activitySeries"></apexchart>
+          </div>
+
+          <!-- Répartition de ma charge (Donut) -->
+          <div class="chart-card">
+            <h3>Répartition de ma charge par Projet</h3>
+            <apexchart type="donut" height="300" :options="projectOptions" :series="projectSeries"></apexchart>
+          </div>
+
+          <!-- Mes tickets par statut (Barres) -->
+          <div class="chart-card">
+            <h3>Mes tickets par statut</h3>
+            <apexchart type="bar" height="300" :options="statusOptions" :series="statusSeries"></apexchart>
           </div>
         </div>
+
       </div>
     </main>
   </div>
@@ -53,22 +66,25 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
 import AppSidebar from '../../components/AppSidebar.vue';
 
-const authStore = useAuthStore();
-const stats = ref(null);
 const loading = ref(true);
+const stats = ref({});
+const period = ref('month');
 
-const isTesteur = computed(() => authStore.currentUser?.role === 'testeur');
+const setPeriod = (p) => {
+  period.value = p;
+  fetchStats();
+};
 
 const fetchStats = async () => {
+  loading.value = true;
   try {
-    const res = await api.get('/user/stats');
+    const res = await api.get(`/stats/me?period=${period.value}`);
     stats.value = res.data;
   } catch (e) {
-    console.error(e);
+    console.error("Erreur chargement stats", e);
   } finally {
     loading.value = false;
   }
@@ -77,6 +93,65 @@ const fetchStats = async () => {
 onMounted(() => {
   fetchStats();
 });
+
+// === ANIMATION & COLORS ===
+const defaultAnim = { enabled: true, easing: 'easeinout', speed: 800 };
+const colors = {
+  blue: '#3b82f6', green: '#10b981', red: '#ef4444', amber: '#f59e0b', slate: '#64748b', purple: '#8b5cf6'
+};
+
+// === COMPUTED KPI ===
+const activeTicketsCount = computed(() => {
+  if (!stats.value.my_kpi?.by_status) return 0;
+  return stats.value.my_kpi.by_status
+    .filter(i => ['OUVERT', 'EN_COURS', 'A_TESTER', 'RECLAMATION'].includes(i.etat))
+    .reduce((sum, item) => sum + item.count, 0);
+});
+
+const resolvedTicketsCount = computed(() => {
+  if (!stats.value.my_kpi?.by_status) return 0;
+  return stats.value.my_kpi.by_status
+    .filter(i => ['VALIDE', 'RESOLU', 'FERME'].includes(i.etat))
+    .reduce((sum, item) => sum + item.count, 0);
+});
+
+// === COMPUTED CHARTS ===
+
+// Mon activité (Courbe Area)
+const activitySeries = computed(() => [
+  { name: 'Nouveaux tickets assignés/créés', data: stats.value.my_activity?.map(i => i.count) || [] }
+]);
+const activityOptions = computed(() => {
+  const categories = stats.value.my_activity?.map(i => i.date) || [];
+  return {
+    chart: { type: 'area', animations: defaultAnim, toolbar: { show: false } },
+    colors: [colors.blue],
+    dataLabels: { enabled: false },
+    stroke: { curve: 'smooth' },
+    xaxis: { categories, type: 'datetime' },
+  };
+});
+
+// Répartition par Projet (Donut)
+const projectSeries = computed(() => stats.value.my_tickets_by_project?.map(i => i.count) || []);
+const projectOptions = computed(() => ({
+  chart: { animations: defaultAnim },
+  labels: stats.value.my_tickets_by_project?.map(i => i.project.nom) || [],
+  plotOptions: { pie: { donut: { size: '65%' } } }
+}));
+
+// Mes tickets par statut (Barres)
+const statusSeries = computed(() => [{
+  name: 'Tickets',
+  data: stats.value.my_kpi?.by_status?.map(i => i.count) || []
+}]);
+const statusOptions = computed(() => ({
+  chart: { type: 'bar', animations: defaultAnim, toolbar: { show: false } },
+  xaxis: { categories: stats.value.my_kpi?.by_status?.map(i => i.etat) || [] },
+  plotOptions: { bar: { borderRadius: 4, distributed: true } },
+  legend: { show: false }
+}));
+
 </script>
 
 <style scoped>
@@ -86,26 +161,52 @@ onMounted(() => {
 .layout{display:flex;min-height:100vh;background:#f8fafc;}
 .main{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
 
-.page-header{padding:2rem 2.5rem;background:white;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;}
+.page-header{padding:2rem 2.5rem 1rem;background:white;border-bottom:1px solid #e2e8f0;}
 .page-title{font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;}
 .page-subtitle{font-size:.875rem;color:#64748b;margin-top:4px;}
 
-.page-content{padding:2rem 2.5rem;display:flex;flex-direction:column;gap:2rem;}
+.time-filters {
+  padding: 1rem 2.5rem;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  gap: 0.5rem;
+}
+.time-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 99px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.time-btn:hover { background: #e2e8f0; }
+.time-btn.active { background: #0f172a; color: white; border-color: #0f172a; }
 
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;}
-.stat-card{background:white;border:1px solid #e2e8f0;border-radius:16px;padding:1.5rem;display:flex;align-items:center;gap:1.25rem;transition:transform .2s,box-shadow .2s;}
-.stat-card:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(0,0,0,.05);}
+.page-content{padding:2rem 2.5rem;display:flex;flex-direction:column;gap:1.5rem;}
 
-.stat-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.75rem;}
-.projects .stat-icon{background:#eff6ff;color:#3b82f6;}
-.active-tickets .stat-icon{background:#fef2f2;color:#ef4444;}
-.resolved-tickets .stat-icon{background:#ecfdf5;color:#10b981;}
+.loading-state { padding: 4rem; text-align: center; color: #64748b; font-weight: 600; }
+.spinner {
+  width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #3b82f6;
+  border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.stat-info{display:flex;flex-direction:column;gap:4px;}
-.stat-val{font-size:2rem;font-weight:800;color:#0f172a;line-height:1;}
-.stat-lbl{font-size:.8125rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;}
+.fade-in { animation: fadeIn 0.5s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-.info-banner{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:1.25rem 1.5rem;display:flex;align-items:flex-start;gap:1rem;}
-.banner-icon{font-size:1.25rem;}
-.banner-text{font-size:.875rem;color:#1e3a8a;line-height:1.5;}
+/* KPIs */
+.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.kpi-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.kpi-title { font-size: 0.875rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+.kpi-value { font-size: 2.5rem; font-weight: 800; color: #0f172a; margin-top: 0.5rem; }
+
+/* Charts */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.chart-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+.chart-card.full-width { grid-column: span 2; }
+.chart-card h3 { font-size: 1rem; font-weight: 800; color: #1e293b; margin-top: 0; margin-bottom: 1.5rem; }
 </style>

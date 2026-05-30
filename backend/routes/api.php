@@ -54,6 +54,11 @@ Route::middleware(['auth:api', 'check_status', 'force_password_change'])->group(
     // ── Stats & Tableau de bord ───────────────────────────────────────────────
     Route::get('/dashboard/stats', [App\Http\Controllers\StatsController::class, 'getAdminDashboardStats']);
     Route::get('/user/stats',      [App\Http\Controllers\StatsController::class, 'getUserStats']);
+    
+    // Nouvelles routes de statistiques (15 KPIs)
+    Route::get('/stats/admin',                [App\Http\Controllers\StatsController::class, 'admin']);
+    Route::get('/stats/manager/{projectId?}', [App\Http\Controllers\StatsController::class, 'manager']);
+    Route::get('/stats/me',                   [App\Http\Controllers\StatsController::class, 'me']);
 
     // ── Commentaires ─────────────────────────────────────────────────────────
     Route::post('/comments',        [CommentController::class, 'store']);

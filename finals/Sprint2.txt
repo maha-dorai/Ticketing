@@ -1,0 +1,219 @@
+Chapitre 4 : Sprint 2 – Gestion des Projets
+Introduction
+Dans ce chapitre, nous présentons les démarches réalisées pour l’atteinte des objectifs du deuxième sprint, qui couvre la création et la gestion des projets, ainsi que l’affectation des membres à ces projets. Nous exposons les différents diagrammes UML élaborés pour ce sprint, notamment le diagramme de cas d’utilisation, les diagrammes de séquence sélectionnés et le diagramme de classe. Ces éléments de modélisation permettent de formaliser les interactions entre les acteurs du système et les fonctionnalités développées.
+1. Backlog du Sprint 2
+Le tableau ci-dessous présente le backlog du deuxième sprint, détaillant l’ensemble des user stories retenues avec leur identifiant, leur description et leur ordre de priorité d’implémentation.
+ID
+Thème
+User Story
+Priorité
+US07
+Créer un projet
+En tant que chef de projet ou admin, je veux créer un nouveau projet avec un nom et une description, afin d’organiser le travail autour d’un périmètre fonctionnel défini. Le projet est créé avec le statut « ouvert » automatiquement.
+Must Have
+US08
+Modifier / Fermer
+En tant que chef de projet ou admin (créateur), je veux modifier les informations de mon projet ou le fermer — uniquement si tous ses tickets sont en statut VALIDE — sans pouvoir le supprimer, afin de préserver la traçabilité. À la fermeture, le projet est archivé avec son historique complet.
+Must Have
+US09
+Affecter des membres
+En tant que chef de projet ou admin (créateur), je veux affecter un testeur et plusieurs développeurs à mon projet, et pouvoir les retirer, afin que chaque membre n’accède qu’aux projets qui le concernent. La modification du projet envoie une notification aux membres affectés.
+Must Have
+US10
+Consulter les projets
+En tant que membre (testeur ou développeur), je veux consulter la liste des projets auxquels je suis affecté, filtrer et rechercher par nom, afin d’accéder rapidement aux informations qui me concernent.
+Must Have
+US11
+Supervision admin
+En tant qu’admin, je veux voir la liste de tous les projets (tous chefs confondus) mais ne modifier ou fermer que les projets que j’ai moi-même créés, afin d’assurer une supervision globale sans interférer avec le travail des chefs de projet.
+Must Have
+Tableau 1 — Backlog du Sprint 2
+2. Analyse et Conception
+2.0. Règles métier et cycle de vie du projet
+Le cycle de vie d’un projet suit une progression stricte en trois statuts, décrits dans le tableau ci-dessous.
+Statut
+Déclencheur
+Description
+ouvert
+Création du projet
+Statut initial défini automatiquement à la création par le chef de projet ou l’admin.
+en_cours
+Premier ticket créé par un testeur
+Le système passe automatiquement le projet en « en_cours » dès qu’un testeur soumet un premier ticket.
+fermé
+Fermeture volontaire par le créateur
+Possible uniquement si tous les tickets du projet ont le statut VALIDE. Le projet est archivé avec son historique complet.
+Tableau 2 — Cycle de vie d’un projet
+Les règles métier fondamentales régissant ce module sont les suivantes :
+Un chef de projet peut créer, modifier et fermer uniquement les projets qu’il a créés.
+Un admin hérite de toutes les capacités d’un chef de projet et peut consulter l’ensemble des projets de la plateforme ; il ne peut modifier ou fermer que ses propres projets.
+La fermeture d’un projet est conditionnelle : tous les tickets du projet doivent avoir le statut VALIDE.
+Un projet fermé est archivé avec son historique complet : date_debut, date_fin, membres participants, créateur, nombre de tickets.
+La suppression d’un projet est interdite (HTTP 403) pour garantir la traçabilité.
+Un seul testeur peut être affecté à un projet. Plusieurs développeurs peuvent être affectés simultanément.
+Toute modification du projet (membres ou informations) déclenche une notification à tous les membres affectés.
+Le passage automatique au statut « en_cours » s’effectue lorsqu’un testeur crée le premier ticket.
+2.1. Diagramme de cas d’utilisation
+La figure ci-après illustre le diagramme de cas d’utilisation élaboré pour le deuxième sprint. Ce diagramme met en évidence les interactions entre les acteurs du système — Administrateur, Chef de projet, Testeur et Développeur — dans le cadre du module de gestion des projets.
+Figure 1 — Diagramme de cas d’utilisation du Sprint 2
+2.2. Description textuelle des cas d’utilisation
+2.2.1. Cas d’utilisation « Créer un projet »
+Cas d’utilisation : Créer un projet
+Sommaire d’identification
+Titre
+Créer un projet
+Description
+Ce cas décrit le processus de création d’un nouveau projet par un chef de projet ou un administrateur sur la plateforme.
+Acteurs
+Chef de projet, Admin
+Description des enchaînements
+Pré-condition
+L’acteur est authentifié avec le rôle chef_de_projet ou admin.
+Post-condition
+Le projet est créé avec le statut « ouvert » et le champ created_by est renseigné. Il apparaît dans la liste des projets du créateur.
+Scénario nominal
+1. L’acteur accède à la page de gestion des projets. 2. Il clique sur « Nouveau projet ». 3. Le système affiche le formulaire de création (nom, description). 4. L’acteur remplit les informations et soumet. 5. Le système vérifie la validité des données. 6. Le système crée le projet avec statut « ouvert » et created_by = acteur courant. 7. Un message de confirmation est affiché.
+Enchaînements alternatifs / Erreurs
+E1 : Nom vide → « Le nom du projet est obligatoire. » E2 : Nom déjà utilisé → « Un projet avec ce nom existe déjà. »
+Tableau 3 — Description textuelle « Créer un projet »
+2.2.2. Cas d’utilisation « Modifier un projet »
+Cas d’utilisation : Modifier un projet
+Sommaire d’identification
+Titre
+Modifier un projet
+Description
+Ce cas décrit la modification des informations d’un projet existant par son créateur.
+Acteurs
+Chef de projet (créateur), Admin (créateur)
+Description des enchaînements
+Pré-condition
+Le projet existe avec le statut « ouvert » ou « en_cours ». L’acteur est le créateur du projet (created_by = acteur courant).
+Post-condition
+Les informations du projet sont mises à jour. Une notification est envoyée à tous les membres affectés.
+Scénario nominal
+1. L’acteur accède à la liste de ses projets. 2. Il sélectionne un projet et clique sur « Modifier ». 3. Le système affiche le formulaire pré-rempli. 4. L’acteur modifie les champs souhaités et soumet. 5. Le système valide et enregistre les modifications. 6. Le système envoie une notification à tous les membres du projet. 7. Un message de confirmation est affiché.
+Enchaînements alternatifs / Erreurs
+E1 : Tentative de modification par un non-créateur → HTTP 403 « Accès refusé. » E2 : Nom vide → « Le nom du projet est obligatoire. » E3 : Tentative de suppression → HTTP 403 « La suppression d’un projet est interdite. »
+Tableau 4 — Description textuelle « Modifier un projet »
+2.2.3. Cas d’utilisation « Fermer un projet »
+Cas d’utilisation : Fermer un projet
+Sommaire d’identification
+Titre
+Fermer un projet
+Description
+Ce cas décrit la fermeture et l’archivage d’un projet lorsque tous ses tickets sont validés.
+Acteurs
+Chef de projet (créateur), Admin (créateur)
+Description des enchaînements
+Pré-condition
+Le projet est en statut « ouvert » ou « en_cours ». L’acteur est le créateur. Tous les tickets du projet ont le statut VALIDE.
+Post-condition
+Le statut du projet passe à « fermé ». Le projet est archivé avec : date_debut, date_fin (date de fermeture), liste des membres ayant participé, identité du créateur, nombre total de tickets. Aucun nouveau ticket ne peut être ajouté.
+Scénario nominal
+1. L’acteur clique sur « Fermer le projet ». 2. Le système vérifie que tous les tickets sont en statut VALIDE. 3. Le système passe le statut à « fermé » et enregistre la date_fin. 4. Le projet apparaît en lecture seule dans la liste archivée avec son historique complet. 5. Un message de confirmation est affiché.
+Enchaînements alternatifs / Erreurs
+E1 : Des tickets ne sont pas encore VALIDE → « Impossible de fermer : X ticket(s) ne sont pas encore validés. » E2 : Acteur non créateur → HTTP 403 « Accès refusé. »
+Tableau 5 — Description textuelle « Fermer un projet »
+2.2.4. Cas d’utilisation « Affecter des membres à un projet »
+Cas d’utilisation : Affecter des membres à un projet
+Sommaire d’identification
+Titre
+Affecter des membres à un projet
+Description
+Ce cas décrit le processus d’affectation et de retrait de membres (testeur et développeurs) sur un projet, avec notification automatique.
+Acteurs
+Chef de projet (créateur), Admin (créateur)
+Description des enchaînements
+Pré-condition
+Le projet existe avec le statut « ouvert » ou « en_cours ». Le créateur est authentifié. Les membres à affecter ont le statut « actif ».
+Post-condition
+Les membres sélectionnés sont associés au projet (table pivot project_user). Une notification est envoyée à tous les membres affectés. Les membres voient désormais le projet dans leur liste.
+Scénario nominal
+1. L’acteur accède à la page de son projet. 2. Il clique sur « Affecter des membres ». 3. Le système affiche les utilisateurs actifs disponibles (testeurs et développeurs). 4. L’acteur sélectionne les membres et confirme. 5. Le système enregistre les associations dans project_user. 6. Le système envoie une notification à chaque membre affecté. 7. Un message de confirmation est affiché.
+Enchaînements alternatifs / Erreurs
+E1 : Compte désactivé → « Ce compte n’est pas actif. » E2 : Membre déjà affecté → « Ce membre est déjà affecté à ce projet. » E3 : Second testeur → « Un projet ne peut avoir qu’un seul testeur assigné. » Enchaînement alternatif — Retirer un membre : L’acteur clique sur « Retirer » à côté d’un membre. Le système supprime l’association et envoie une notification au membre retiré.
+Tableau 6 — Description textuelle « Affecter des membres »
+2.2.5. Cas d’utilisation « Consulter les projets assignés »
+Cas d’utilisation : Consulter les projets assignés
+Sommaire d’identification
+Titre
+Consulter les projets assignés
+Description
+Ce cas décrit la consultation par un membre de la liste des projets auxquels il est affecté, avec filtre et recherche par nom.
+Acteurs
+Testeur, Développeur
+Description des enchaînements
+Pré-condition
+Le membre est authentifié et affecté à au moins un projet.
+Post-condition
+Le membre visualise la liste filtrée de ses projets.
+Scénario nominal
+1. Le membre accède à la page « Mes projets ». 2. Le système affiche uniquement les projets auxquels il est affecté. 3. Le membre peut saisir un nom dans le champ de recherche. 4. Le système filtre la liste en temps réel. 5. Le membre clique sur un projet pour consulter son détail.
+Enchaînements alternatifs / Erreurs
+E1 : Aucun projet assigné → « Aucun projet ne vous est assigné pour le moment. »
+Tableau 7 — Description textuelle « Consulter les projets assignés »
+2.2.6. Cas d’utilisation « Supervision admin »
+Cas d’utilisation : Supervision admin
+Sommaire d’identification
+Titre
+Supervision admin
+Description
+Ce cas décrit la capacité de l’admin à consulter tous les projets de la plateforme, tout en limitant ses droits de modification à ses propres projets.
+Acteurs
+Admin
+Description des enchaînements
+Pré-condition
+L’utilisateur est authentifié avec le rôle admin.
+Post-condition
+L’admin visualise l’ensemble des projets. Il ne peut modifier ou fermer que ceux qu’il a créés.
+Scénario nominal
+1. L’admin accède à la page « Tous les projets ». 2. Le système retourne la liste complète, tous chefs de projet confondus. 3. Pour chaque projet, les boutons Modifier/Fermer sont activés uniquement si created_by = admin courant. 4. L’admin peut filtrer et rechercher dans la liste.
+Enchaînements alternatifs / Erreurs
+E1 : Tentative de modification d’un projet non créé → HTTP 403 « Vous ne pouvez modifier que vos propres projets. »
+Tableau 8 — Description textuelle « Supervision admin »
+3. Diagrammes de séquence
+Les diagrammes de séquence permettent la modélisation dynamique d’un système en langage UML. Ils décrivent les interactions temporelles entre les différents composants (acteur, vue, contrôleur, modèle, système de mailing) pour réaliser un cas d’utilisation donné. Chaque flèche pleine représente un appel, et chaque flèche en pointillé représente un retour.
+Pour ce sprint, trois diagrammes de séquence ont été réalisés, correspondant aux scénarios dont la logique métier est la plus complexe et la plus représentative du module.
+3.1. Diagramme de séquence « Créer un projet »
+Ce diagramme décrit les interactions lors de la création d’un projet. Le système valide les données saisies, enregistre le projet avec le statut « ouvert » et renseigne le champ created_by avec l’identifiant de l’acteur courant.
+Figure 2 — Diagramme de séquence « Créer un projet »
+3.2. Diagramme de séquence « Fermer un projet »
+Ce diagramme illustre la fermeture conditionnelle d’un projet : vérification que tous les tickets associés ont le statut VALIDE, passage au statut « fermé », enregistrement de la date_fin et archivage complet avec l’historique du projet.
+Figure 3 — Diagramme de séquence « Fermer un projet »
+3.3. Diagramme de séquence « Affecter des membres »
+Ce diagramme illustre l’affectation d’un membre à un projet, avec vérification du statut du compte, application de la règle du testeur unique, enregistrement dans la table pivot project_user et envoi automatique d’une notification à chaque membre affecté.
+Figure 4 — Diagramme de séquence « Affecter des membres »
+4. Diagramme de classe
+Un diagramme de classe est un type de diagramme UML qui décrit la structure statique d’un système en représentant les classes, leurs attributs, leurs méthodes et les relations qui existent entre elles. Il constitue la base de la conception orientée objet et guide la création des modèles de la base de données.
+La figure ci-dessous illustre le diagramme de classes élaboré pour le Sprint 2, centré sur le module de gestion des projets, des affectations et des notifications.
+Figure 5 — Diagramme de classe du Sprint 2
+Structure du modèle de données — Sprint 2
+Structure de la classe Project :  id · nom · description · statut (ouvert | en_cours | fermé) · created_by (FK → User) · date_debut · date_fin · timestamps
+Table pivot project_user :  project_id (FK → Project) · user_id (FK → User) · created_at
+Relations :  Project belongsTo User (created_by)  ·  Project belongsToMany User (members)  ·  User belongsToMany Project  ·  Project hasMany Ticket  ·  Ticket belongsTo Project
+Contraintes métier :  Un seul membre de rôle testeur par projet.  ·  La fermeture est possible uniquement si tous les tickets ont etat = VALIDE.  ·  La suppression est interdite (HTTP 403).  ·  Toute modification déclenche une notification à tous les membres du projet.
+Tableau 9 — Structure du modèle de données du Sprint 2
+5. Revue du Sprint 2
+Cette section présente les résultats obtenus à l’issue du deuxième sprint, illustrés par les interfaces développées de l’application.
+5.1. Interface de Création d’un Projet
+L’interface de création permet au chef de projet ou à l’admin de saisir le nom et la description du projet. Le statut « ouvert » est attribué automatiquement à la création.
+Figure 6 — Interface de création d’un projet
+5.2. Interface de Modification d’un Projet
+L’interface de modification affiche le formulaire pré-rempli avec les données du projet sélectionné. Seul le créateur du projet peut accéder à cette interface.
+Figure 7 — Interface de modification d’un projet
+5.3. Interface de Fermeture d’un Projet
+L’interface de fermeture déclenche la vérification conditionnelle de tous les tickets. Si la condition est remplie, le projet est archivé et passe en lecture seule.
+Figure 8 — Interface de fermeture d’un projet
+5.4. Interface d’Affectation des Membres
+L’interface d’affectation affiche la liste des membres actifs disponibles. Le créateur peut affecter un testeur et plusieurs développeurs, ou retirer un membre existant. Chaque action déclenche l’envoi d’une notification email.
+Figure 9 — Interface d’affectation des membres
+5.5. Interface de Consultation des Projets Assignés
+L’interface de consultation permet au testeur ou au développeur de visualiser uniquement les projets auxquels il est affecté, avec une recherche dynamique par nom.
+Figure 10 — Interface de consultation des projets assignés
+5.6. Interface de Supervision Admin
+L’interface de supervision affiche la liste complète de tous les projets de la plateforme. Les boutons « Modifier » et « Fermer » sont activés uniquement pour les projets dont l’admin est le créateur
+Figure 11 — Interface de supervision admin
+6. Rétrospective du Sprint 2
+Ce deuxième sprint a permis de réaliser l’ensemble des fonctionnalités planifiées avec succès : la création de projets avec statut automatique, la modification et la fermeture conditionnelle avec archivage complet, l’affectation et le retrait de membres avec notification automatique, la consultation des projets assignés avec filtre et recherche, ainsi que la supervision globale réservée à l’administrateur.
+Conclusion
+Ce deuxième sprint a permis de mettre en place le module central de la plateforme : la gestion des projets avec un cycle de vie précis, un contrôle strict des accès basé sur le rôle de créateur du projet, et des règles métier garantissant la qualité et la traçabilité (fermeture conditionnelle, archivage, interdiction de suppression, notification automatique). Ces briques constituent le socle sur lequel s’appuiera le Sprint 3, dédié à la gestion des tickets.

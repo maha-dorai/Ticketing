@@ -57,6 +57,9 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $exceptions->render(function (\Throwable $e, Request $request) {
+            if ($e instanceof \Illuminate\Validation\ValidationException) {
+                return; // Let Laravel handle validation errors natively (422)
+            }
             if ($request->is('api/*')) {
                 return response()->json([
                     'success' => false,

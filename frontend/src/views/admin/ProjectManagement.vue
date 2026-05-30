@@ -141,6 +141,32 @@
             </select>
             <span v-if="form.statut === 'archive'" class="hint-text">Un projet ne peut être fermé que si tous ses tickets sont VALIDÉS.</span>
           </div>
+
+          <!-- Sélection membres (création uniquement) -->
+          <div v-if="!editing" class="field">
+            <label class="label">Membres du projet * <span class="label-count">({{ form.user_ids?.length || 0 }} sélectionné(s))</span></label>
+            <div class="members-search-wrap">
+              <svg class="si" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
+              <input v-model="memberSearch" placeholder="Rechercher un membre..." class="search-input" style="width: 100%; margin-top: 5px; margin-bottom: 10px;" />
+            </div>
+            <div class="member-grid" style="max-height: 200px; overflow-y: auto;">
+              <div v-if="filteredMembersForCreate.length === 0" class="empty-col">Aucun membre actif disponible</div>
+              <label
+                v-for="u in filteredMembersForCreate" :key="u.id"
+                class="member-check" :class="{ selected: form.user_ids?.includes(u.id) }"
+              >
+                <input type="checkbox" :value="u.id" v-model="form.user_ids" class="hidden-cb" />
+                <div class="mc-av">{{ (u.prenom[0]||'')+(u.nom[0]||'') }}</div>
+                <div class="mc-info">
+                  <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
+                  <p class="mc-role">{{ u.role }}</p>
+                </div>
+                <span class="check-mark">{{ form.user_ids?.includes(u.id) ? '✓' : '' }}</span>
+              </label>
+            </div>
+            <span v-if="formMembersError" class="hint-text">⚠ {{ formMembersError }}</span>
+          </div>
+          
           <div v-if="formError" class="alert alert-err">✕ {{ formError }}</div>
           <div class="modal-footer">
             <button type="button" @click="showModal=false" class="btn-cancel">Annuler</button>
@@ -206,12 +232,14 @@ const showAssign = ref(false);
 const editing = ref(false);
 const currentProject = ref(null);
 const formError = ref('');
+const formMembersError = ref('');
 const assignError = ref('');
 const selectedIds = ref([]);
+const memberSearch = ref('');
 
 const dragProject = ref(null);
 
-const form = ref({ nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert' });
+const form = ref({ nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert', user_ids: [] });
 
 const columns = [
   { id: 'ouvert', title: '🟢 Ouverts' },
@@ -234,6 +262,15 @@ const activeMembers = computed(() => {
     !['chef_de_projet', 'admin'].includes(u.role) &&
     !assignedIds.includes(u.id)
   );
+});
+
+const filteredMembersForCreate = computed(() => {
+  const q = memberSearch.value.toLowerCase().trim();
+  return allUsers.value.filter(u => {
+    if (u.statut !== 'actif' || ['chef_de_projet', 'admin'].includes(u.role)) return false;
+    if (!q) return true;
+    return (u.prenom + ' ' + u.nom + ' ' + u.role).toLowerCase().includes(q);
+  });
 });
 
 const fetchProjects = async (page = 1) => {
@@ -264,8 +301,10 @@ const fmt = d => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', m
 
 const openCreate = () => {
   editing.value = false;
-  form.value = { nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert' };
+  form.value = { nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert', user_ids: [] };
   formError.value = '';
+  formMembersError.value = '';
+  memberSearch.value = '';
   showModal.value = true;
 };
 
@@ -278,6 +317,11 @@ const openEdit = (p) => {
 };
 
 const saveProject = async () => {
+  formMembersError.value = '';
+  if (!editing.value && (!form.value.user_ids || form.value.user_ids.length === 0)) {
+    formMembersError.value = 'Vous devez sélectionner au moins un membre.';
+    return;
+  }
   saving.value = true; formError.value = '';
   try {
     if (editing.value) {
