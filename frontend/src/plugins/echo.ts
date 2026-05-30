@@ -1,6 +1,5 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
-
 (window as any).Pusher = Pusher;
 
 const echo = new Echo({

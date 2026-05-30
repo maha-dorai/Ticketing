@@ -1,0 +1,266 @@
+Chapitre 3 : Sprint 1 – Authentification et Gestion des Utilisateurs
+Introduction
+Dans ce chapitre, nous présentons les démarches réalisées pour l’atteinte des objectifs de ce premier sprint, à savoir : la création de compte, l’authentification JWT, la réinitialisation du mot de passe, la gestion du profil utilisateur, la validation et le rejet des comptes, la désactivation/réactivation des comptes ainsi que la création de comptes chefs de projet. Nous commençons par les diagrammes UML, puis nous présentons les interfaces réalisées.
+1. Backlog du Sprint 1
+Le tableau ci-dessous présente le backlog du premier sprint, détaillant l’ensemble des user stories avec leurs identifiants, thèmes et niveaux de priorité.
+ID
+Thème
+User Story
+Priorité
+US01
+Inscription
+En tant que Membre/Testeur/Développeur, je souhaite créer un compte sur la plateforme en saisissant mes informations personnelles afin d'accéder aux fonctionnalités.
+Must
+US02
+Authentification
+En tant qu'utilisateur enregistré, je dois pouvoir m'authentifier via JWT afin d'accéder à mon espace personnel sécurisé selon mon rôle.
+Must
+US03
+Réinitialisation mot de passe
+En tant qu'utilisateur, je souhaite réinitialiser mon mot de passe en cas d'oubli via un lien sécurisé envoyé par email.
+Must
+US04
+Gérer son compte
+En tant que Membre authentifié, je veux modifier mon email ou mon mot de passe depuis ma page de profil.
+Must
+US05
+Valider / Rejeter un compte
+En tant qu'Admin, je souhaite valider ou rejeter les demandes d'inscription en attente et notifier le membre par email.
+Must
+US06
+Désactiver / Réactiver un compte
+En tant qu'Admin, je souhaite désactiver ou réactiver un compte utilisateur et envoyer une notification email au membre concerné.
+Must
+US07
+Créer un compte Chef de projet
+En tant qu'Admin, je souhaite créer un compte chef de projet avec un mot de passe temporaire envoyé par email.
+Must
+Tableau 1 : Backlog du Sprint 1
+2. Analyse et Conception
+2.1. Diagramme de cas d’utilisation
+La figure ci-après illustre le diagramme des cas d’utilisation élaboré pour le premier sprint. Il met en évidence les quatre acteurs impliqués (Membre, Testeur, Développeur, Admin et Chef de projet) ainsi que les différentes interactions qui leur sont proposées : création de compte, authentification, gestion du profil, gestion des utilisateurs et gestion des administrateurs.
+Figure 1 — Diagramme de cas d’utilisation du Sprint 1
+2.2. Description textuelle des cas d’utilisation
+2.2.1. Créer un compte (Membre / Testeur / Développeur)
+Cas d’utilisation : Créer un compte
+Sommaire d’identification
+Titre
+Créer un compte
+Description
+Ce cas décrit le processus d’inscription d’un nouveau membre sur la plateforme de ticketing.
+Acteurs
+Membre, Testeur, Développeur
+Description des enchaînements
+Pré-condition
+Disposer d’une adresse email valide et non encore utilisée sur la plateforme.
+Post-condition
+Le compte est créé avec le statut « en_attente » en attente de validation par un Admin.
+Scénario nominal
+1. L’utilisateur accède à la page d’inscription.
+2. Le système affiche le formulaire d’inscription.
+3. L’utilisateur saisit ses informations (nom, prénom, email, mot de passe, rôle).
+4. La vue vérifie la validité des champs.
+5. Le contrôleur transmet les données au modèle.
+6. Le modèle vérifie l’unicité de l’email.
+7. Le modèle crée le compte avec le statut « en_attente ».
+8. Un email de confirmation est envoyé à l’utilisateur.
+9. Un message de succès est affiché.
+Enchânements alternatifs
+E1 : Champs invalides → message d’erreur affiché, formulaire conservé.
+E2 : Email déjà utilisé → message d’erreur indiquant que l’adresse est déjà associée à un compte.
+Tableau 2 : Description textuelle « Créer un compte »
+2.2.2. S’authentifier
+Cas d’utilisation : S’authentifier
+Sommaire d’identification
+Titre
+S’authentifier
+Description
+Ce cas détaille la procédure d’authentification JWT des utilisateurs sur la plateforme.
+Description des enchaînements
+Acteurs
+Membre, Admin, Chef de projet
+Pré-condition
+Disposer d’un compte actif sur la plateforme.
+Post-condition
+Un token JWT est généré et l’utilisateur est redirigé vers son tableau de bord selon son rôle.
+Scénario nominal
+1. L’utilisateur accède à la page d’authentification.
+2. Le système affiche le formulaire de connexion.
+3. L’utilisateur saisit son email et son mot de passe.
+4. Le modèle vérifie les identifiants et le statut du compte.
+5. Un token JWT est généré.
+6. L’utilisateur est redirigé vers son tableau de bord selon son rôle.
+Enchânements alternatifs
+E1 : Identifiants incorrects → message d’erreur affiché.
+E2 : Compte en attente ou rejeté → accès refusé avec message explicatif.
+E3 : Compte désactivé → message d’erreur affiché.
+Tableau 3 : Description textuelle « S’authentifier »
+2.2.3. Réinitialiser le mot de passe
+Cas d’utilisation : Réinitialiser le mot de passe 
+Sommaire d’identification
+Titre
+Réinitialiser le mot de passe
+Description
+Ce cas présente les étapes du processus permettant à un utilisateur de réinitialiser son mot de passe en cas d’oubli.
+Acteurs
+Membre, Testeur, Développeur, Admin, Chef de projet
+Description des enchaînements
+Pré-condition
+L’utilisateur possède un compte actif avec une adresse email valide.
+Post-condition
+Le mot de passe est mis à jour avec succès et l’utilisateur est redirigé vers la page de connexion.
+Scénario nominal
+1. L’utilisateur clique sur « Mot de passe oublié ».
+2. Le système affiche le formulaire de récupération.
+3. L’utilisateur saisit son adresse email.
+4. Le modèle vérifie l’email et génère un token SHA-256 valable 1h.
+5. Un lien de réinitialisation est envoyé par email.
+6. L’utilisateur saisit son nouveau mot de passe.
+7. Le système met à jour le mot de passe et confirme le succès.
+Enchânements alternatifs
+E1 : Email inconnu → message d’erreur.
+E2 : Token expiré → invitation à refaire la demande.
+E3 : Mot de passe non conforme → message d’erreur explicatif.
+Tableau 4 : Description textuelle « Réinitialiser le mot de passe »
+2.2.4. Gérer son compte (Membre)
+Cas d’utilisation : Gérer son compte
+Sommaire d’identification
+Titre
+Gérer son compte
+Description
+Ce cas illustre la manière dont un membre gère son profil en modifiant son email ou son mot de passe.
+Acteurs
+Membre
+Description des enchaînements
+Pré-condition
+L’utilisateur doit être authentifié.
+Post-condition
+Le profil utilisateur est mis à jour avec succès.
+Scénario nominal
+1. L’utilisateur accède à sa page de profil.
+2. Le système affiche les informations du compte.
+3a. [Changer email] : L’utilisateur saisit le nouvel email et son mot de passe actuel. Le modèle vérifie l’unicité et met à jour l’email.
+3b. [Changer mot de passe] : L’utilisateur saisit l’ancien et le nouveau mot de passe. Le modèle vérifie et met à jour le mot de passe.
+4. Un message de succès est affiché.
+Enchânements alternatifs
+E1 : Email déjà utilisé → message d’erreur.
+E2 : Ancien mot de passe incorrect → message d’erreur.
+Tableau 5 : Description textuelle « Gérer son compte »
+2.2.5. Valider / Rejeter un compte (Admin)
+Cas d’utilisation : Valider / rejeter un compte
+Sommaire d’identification
+Titre
+Valider / Rejeter un compte
+Description
+Ce cas décrit le processus par lequel un Admin valide ou rejette une demande d’inscription en attente.
+Acteurs
+Admin
+Description des enchaînements
+Pré-condition
+L’Admin est authentifié et il existe des comptes avec le statut « en_attente ».
+Post-condition
+Le compte passe au statut « actif » ou « rejeté » et le membre reçoit une notification par email.
+Scénario nominal
+1. L’Admin accède à la liste des demandes en attente.
+2. Le système affiche la liste des comptes avec le statut « en_attente ».
+3. L’Admin sélectionne un compte et choisit l’action (valider ou rejeter).
+4. Le modèle met à jour le statut du compte.
+5. Le système de mailing envoie une notification email au membre.
+6. Un message de succès est affiché.
+Tableau 6 : Description textuelle « Valider / Rejeter un compte »
+2.2.6. Désactiver / Réactiver un compte (Admin)
+Cas d’utilisation : Désactiver / Réactiver un compte
+Sommaire d’identification
+Titre
+Désactiver / Réactiver un compte
+Description
+Ce cas décrit les actions de l’Admin pour désactiver un compte utilisateur actif sans le supprimer, ou le réactiver si nécessaire, avec notification email au membre concerné.
+Acteurs
+Admin
+Description des enchaînements
+Pré-condition
+L’Admin est authentifié.
+Post-condition
+Le statut du compte est mis à jour (« désactivé » ou « actif ») et le membre reçoit une notification par email.
+Scénario nominal
+1. L’Admin accède à la liste des utilisateurs.
+2. Le système affiche la liste avec les statuts.
+3. L’Admin sélectionne un utilisateur et choisit l’action.
+4. Le modèle met à jour le statut du compte.
+5. Le système de mailing envoie une notification email au membre.
+6. Un message de succès est affiché.
+Tableau 7 : Description textuelle « Désactiver / Réactiver un compte »
+2.2.7. Créer un compte Chef de projet (Admin)
+Cas d’utilisation : Créer un compte chef de projet
+Sommaire d’identification
+Titre
+Créer un compte Chef de projet
+Description
+Ce cas décrit le processus par lequel l'Admin crée un compte chef de projet avec génération automatique d’un mot de passe temporaire.
+Acteurs
+Admin
+Description des enchaînements
+Pré-condition
+L’Admin est authentifié.
+Post-condition
+Le compte chef de projet est créé avec le statut « actif » et force_password_change=true. Un email avec les identifiants est envoyé.
+Scénario nominal
+1. L’Admin accède à la page de création de compte chef de projet.
+2. Le système affiche le formulaire.
+3. L’Admin saisit nom, prénom et email.
+4. La vue vérifie les champs.
+5. Le modèle vérifie l’unicité de l’email.
+6. Le contrôleur génère un mot de passe temporaire.
+7. Le modèle enregistre le compte et active force_password_change.
+8. Un email avec les identifiants est envoyé au chef de projet.
+9. Un message de succès est affiché.
+Enchânements alternatifs
+E1 : Champs invalides → message d’erreur.
+E2 : Email déjà utilisé → message d’erreur.
+Tableau 8 : Description textuelle « Créer un compte Administrateur »
+3. Diagrammes de séquence
+3.1. Présentation
+Les diagrammes de séquence permettent la modélisation dynamique d’un système en langage UML. Ils décrivent les interactions temporelles entre les différents composants (acteur, vue, contrôleur, modèle, système de mailing) pour réaliser un cas d’utilisation donné. Chaque flèche pleine représente un appel, et chaque flèche en pointillé représente un retour.
+3.2. Diagramme de séquence « Créer un compte »
+Le diagramme ci-dessous décrit les interactions lors du processus d’inscription d’un nouveau membre. Le membre soumet ses informations, le système vérifie l’unicité de l’email et crée le compte avec le statut « en_attente » avant d’envoyer un email de confirmation.
+Figure 2 — Diagramme de séquence « Créer un compte »
+3.3. Diagramme de séquence « Gérer son compte »
+Le diagramme suivant illustre le processus de gestion du profil utilisateur. Un fragment combiné alt représente les deux sous-cas : la modification de l’adresse email (avec vérification de l’unicité et du mot de passe actuel) et la modification du mot de passe (avec vérification de l’ancien mot de passe).
+Figure 3 — Diagramme de séquence « Gérer son compte »
+3.4. Diagramme de séquence « Désactiver / Réactiver un compte »
+Le diagramme ci-dessous décrit les actions de l’Admin pour désactiver un compte utilisateur actif ou le réactiver. Chaque action déclenche automatiquement l’envoi d’un email de notification au membre concerné.
+Figure 4 — Diagramme de séquence « Désactiver / Réactiver un compte »
+3.5. Diagramme de séquence « Créer un compte Chef de projet »
+Le diagramme suivant décrit le processus par lequel l’Admin crée un compte chef de projet. Le système vérifie l’unicité de l’email, génère un mot de passe temporaire, enregistre le compte avec force_password_change=true et envoie les identifiants par email.
+Figure 5 — Diagramme de séquence « Créer un compte Chef de projet »
+4. Diagramme de classe
+Un diagramme de classe est un type de diagramme UML qui décrit un système en visualisant les différents types d’objets ainsi que les relations statiques qui existent entre eux. Il illustre également les opérations et les attributs des classes.
+La figure ci-dessous illustre le diagramme de classes développé lors du premier sprint. Il présente la structure de gestion des utilisateurs avec leurs rôles et statuts, les mécanismes d’authentification JWT, ainsi que les champs spécifiques tels que « statut » (« en_attente », « actif », « rejeté », « désactivé ») et « force_password_change » pour les administrateurs.
+Figure 6 — Diagramme de classe du Sprint 1
+5. Revue du Sprint 1
+Cette section présente les résultats obtenus lors du premier sprint, illustrés par les interfaces développées de l’application.
+5.1. Interface d’Inscription
+L’interface d’inscription permet au membre de saisir ses informations personnelles (nom, prénom, email, mot de passe et rôle). Une validation des champs est implémentée côté client et côté serveur pour garantir la qualité des données.
+Figure 7 — Interface d’inscription
+5.2. Interface d’Authentification
+L’interface d’authentification permet à tous les utilisateurs de se connecter via leur email et mot de passe. En cas d’échec, un message d’erreur explicite est affiché.
+Figure 8 — Interface d’authentification
+5.3. Interface de Réinitialisation du Mot de Passe
+L’interface de réinitialisation guide l’utilisateur à travers les étapes : saisie de l’email, réception du lien sécurisé et définition d’un nouveau mot de passe.
+Figure 9 — Interface de réinitialisation du mot de passe
+5.4. Interface de Gestion du Profil
+L’interface de gestion du profil permet au membre de modifier son adresse email ou son mot de passe. La modification de l’email requiert la vérification du mot de passe actuel pour des raisons de sécurité.
+Figure 10 — Interface de gestion du profil
+5.5. Interface de Validation des Comptes
+L’interface de validation permet à l’Admin de consulter la liste des comptes en attente et de valider ou rejeter chaque demande. Le membre reçoit une notification email selon la décision prise.
+Figure 11 — Interface de validation des comptes
+5.6. Interface de Gestion des Utilisateurs
+L’interface de gestion des utilisateurs permet à l’Admin de consulter la liste complète des utilisateurs, de désactiver ou réactiver leurs comptes. Chaque action déclenche l’envoi d’un email de notification au membre concerné.
+Figure 12 — Interface de gestion des utilisateurs
+5.7. Interface de Création d’un Compte Chef de projet
+L’interface de création de compte chef de projet est réservée à l’Admin. Elle permet de saisir les informations du chef de projet, générer automatiquement un mot de passe temporaire et l’envoyer par email.
+Figure 13 — Interface de création d’un compte chef de projet
+6. Rétrospective du Sprint 1
+Cette section présente les réalisations du premier sprint. L’ensemble des objectifs ont été atteints avec la mise en œuvre complète de toutes les fonctionnalités planifiées : inscription avec validation par Admin, authentification JWT sécurisée, réinitialisation du mot de passe par email, gestion du profil (email et mot de passe), validation/rejet des comptes avec notification email, désactivation/réactivation avec notification email, et création de comptes chefs de projet avec mot de passe temporaire.
+Conclusion
+Ce premier sprint a permis de mettre en place les fondations sécurisées de la plateforme de ticketing : la gestion complète des utilisateurs et l’authentification JWT. Le prochain chapitre présentera le déroulement du deuxième sprint.
