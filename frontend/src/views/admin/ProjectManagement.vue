@@ -112,15 +112,23 @@
                   <!-- Description -->
                   <p class="card-desc">{{ p.description || 'Aucune description fournie.' }}</p>
 
-                  <!-- Archive dates -->
+                  <!-- Deadline badge (ouvert / en_cours only) -->
+                  <div v-if="p.statut !== 'archive' && p.date_fin" class="deadline-row">
+                    <span class="deadline-badge" :class="deadlineBadge(p)?.color">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"/></svg>
+                      {{ deadlineBadge(p)?.label }}
+                    </span>
+                  </div>
+
+                  <!-- Clôture date (archive only) -->
                   <div v-if="p.statut === 'archive'" class="card-dates">
                     <div class="date-row">
                       <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5"/></svg>
-                      <span>{{ fmt(p.date_debut) }} → {{ fmt(p.date_fin) }}</span>
+                      <span>Ouvert le {{ fmt(p.date_debut) }}</span>
                     </div>
-                    <div v-if="p.creator" class="date-row" style="margin-top:4px">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
-                      <span>{{ p.creator?.prenom }} {{ p.creator?.nom }}</span>
+                    <div class="date-row" style="margin-top:4px">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <span>Clôturé le {{ fmt(p.date_cloture || p.date_fin) }}</span>
                     </div>
                   </div>
 
@@ -188,7 +196,7 @@
         </div>
         <form @submit.prevent="saveProject" class="mform">
           <div class="field">
-            <label class="label">Nom du projet *</label>
+            <label class="label">Nom du projet <span class="required-tag">*</span></label>
             <input v-model="form.nom" required placeholder="Ex : Refonte du site web" class="input" />
           </div>
           <div class="field">
@@ -199,10 +207,12 @@
             <div class="field">
               <label class="label">Date de début</label>
               <input v-model="form.date_debut" type="date" class="input" />
+              <span class="field-hint">Aujourd'hui par défaut</span>
             </div>
             <div class="field">
-              <label class="label">Date de fin</label>
-              <input v-model="form.date_fin" type="date" class="input" />
+              <label class="label">Deadline <span class="optional-tag">optionnel</span></label>
+              <input v-model="form.date_fin" type="date" :min="form.date_debut" class="input" />
+              <span class="field-hint">Affichée comme badge sur la carte</span>
             </div>
           </div>
           <div v-if="editing" class="field">
@@ -215,6 +225,28 @@
             <span v-if="form.statut === 'archive'" class="hint-text">Un projet ne peut être fermé que si tous ses tickets sont VALIDÉS.</span>
           </div>
           <div v-if="formError" class="alert alert-err">✕ {{ formError }}</div>
+
+          <!-- Member selection (create only) -->
+          <div v-if="!editing" class="field">
+            <label class="label">Membres <span class="required-tag">*</span></label>
+            <div class="member-grid-inline">
+              <label
+                v-for="u in allUsers.filter(u => u.statut === 'actif' && ['developpeur', 'testeur'].includes(u.role))"
+                :key="u.id"
+                class="member-check"
+                :class="{ selected: form.user_ids.includes(u.id) }"
+              >
+                <input type="checkbox" :value="u.id" v-model="form.user_ids" class="hidden-cb"/>
+                <div class="mc-av">{{ (u.prenom[0]||'')+(u.nom[0]||'') }}</div>
+                <div class="mc-info">
+                  <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
+                  <p class="mc-role">{{ u.role }}</p>
+                </div>
+                <span class="check-mark">{{ form.user_ids.includes(u.id) ? '✓' : '' }}</span>
+              </label>
+            </div>
+            <span v-if="form.user_ids.length" class="field-hint">{{ form.user_ids.length }} membre(s) sélectionné(s)</span>
+          </div>
           <div class="modal-footer">
             <button type="button" @click="showModal=false" class="btn-cancel">Annuler</button>
             <button type="submit" :disabled="saving" class="btn-primary">
@@ -285,7 +317,21 @@ const selectedIds = ref([]);
 
 const dragProject = ref(null);
 
-const form = ref({ nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert' });
+const form = ref({ nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert', user_ids: [] });
+
+// Returns today's date as YYYY-MM-DD
+const todayStr = () => new Date().toISOString().split('T')[0];
+
+// Deadline badge logic for a project
+const deadlineBadge = (p) => {
+  if (!p.date_fin || p.statut === 'archive') return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const fin   = new Date(p.date_fin);
+  const diff  = Math.ceil((fin - today) / 86400000);
+  if (diff < 0)  return { label: `En retard de ${Math.abs(diff)}j`, color: 'badge-red' };
+  if (diff <= 14) return { label: `${diff}j restants`, color: 'badge-yellow' };
+  return { label: `${diff}j restants`, color: 'badge-green' };
+};
 
 const columns = [
   { id: 'ouvert',   title: 'Ouverts'  },
@@ -338,7 +384,7 @@ const fmt = d => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', m
 
 const openCreate = () => {
   editing.value = false;
-  form.value = { nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert' };
+  form.value = { nom: '', description: '', date_debut: todayStr(), date_fin: '', statut: 'ouvert', user_ids: [] };
   formError.value = '';
   showModal.value = true;
 };
@@ -352,7 +398,19 @@ const openEdit = (p) => {
 };
 
 const saveProject = async () => {
-  saving.value = true; formError.value = '';
+  formError.value = '';
+
+  // Validation frontend
+  if (!form.value.nom.trim()) {
+    formError.value = 'Le nom du projet est obligatoire.';
+    return;
+  }
+  if (!editing.value && (!form.value.user_ids || form.value.user_ids.length === 0)) {
+    formError.value = 'Veuillez sélectionner au moins un membre.';
+    return;
+  }
+
+  saving.value = true;
   try {
     if (editing.value) {
       await api.put(`/projects/${currentProject.value.id}`, form.value);
@@ -364,8 +422,20 @@ const saveProject = async () => {
     showModal.value = false;
     await fetchProjects();
   } catch (e) {
-    const errs = e.response?.data?.errors;
-    formError.value = errs ? String(Object.values(errs).flat()[0]) : e.response?.data?.message || 'Erreur.';
+    const data = e.response?.data;
+    const errs = data?.errors;
+    const msg_raw = data?.message || 'Erreur.';
+
+    // Messages personnalisés
+    if (msg_raw.includes('user_ids') || msg_raw.includes('membre')) {
+      formError.value = 'Veuillez sélectionner au moins un membre.';
+    } else if (msg_raw.includes('nom') || msg_raw.includes('unique')) {
+      formError.value = 'Un projet avec ce nom existe déjà.';
+    } else if (errs) {
+      formError.value = String(Object.values(errs).flat()[0]);
+    } else {
+      formError.value = msg_raw;
+    }
   } finally { saving.value = false; }
 };
 
@@ -569,6 +639,19 @@ const onDrop = async (e, newStatus) => {
   animation: spin .7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.member-grid-inline {
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  border: 1px solid #e4eaf3;
+  border-radius: 8px;
+  padding: .5rem;
+  background: #f8fafc;
+}
+.required-tag { color: #ef4444; font-size: .75rem; margin-left: 2px; }
 
 .empty-state {
   display: flex; flex-direction: column;
@@ -852,6 +935,22 @@ const onDrop = async (e, newStatus) => {
 .mc-role { margin: 0; font-size: .75rem; color: #64748b; text-transform: capitalize; }
 .check-mark { color: #2563eb; font-weight: 800; }
 
-/* Spinner for save button */
-.spin { animation: spin .8s linear infinite; }
+/* Deadline badge */
+.deadline-row { margin-bottom: .75rem; }
+.deadline-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: .7rem; font-weight: 700;
+  padding: 3px 8px; border-radius: 20px;
+}
+.badge-green  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.badge-yellow { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.badge-red    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+/* Field hints */
+.field-hint   { font-size: .7rem; color: #94a3b8; margin-top: 3px; }
+.optional-tag {
+  font-size: .6rem; font-weight: 600; color: #94a3b8;
+  background: #f1f5f9; border-radius: 4px;
+  padding: 1px 5px; margin-left: 4px; text-transform: uppercase;
+}
 </style>

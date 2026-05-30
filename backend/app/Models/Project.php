@@ -14,8 +14,9 @@ class Project extends Model
         'description',
         'date_debut',
         'date_fin',
-        'statut',      // 'ouvert' | 'en_cours' | 'archive'
-        'created_by',  // FK vers users.id
+        'date_cloture',
+        'statut',
+        'created_by',
     ];
  
     // Membres affectés au projet (Many-to-Many)
