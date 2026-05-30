@@ -106,10 +106,10 @@ class ProjectController extends Controller
                 'user_ids'    => 'required|array|min:1',
                 'user_ids.*'  => 'exists:users,id',
             ], [
-                'nom.required'    => 'Le nom du projet est obligatoire.',
-                'nom.unique'      => 'Un projet avec ce nom existe déjà.',
+                'nom.required'      => 'Le nom du projet est obligatoire.',
+                'nom.unique'        => 'Un projet avec ce nom existe déjà.',
                 'user_ids.required' => 'Vous devez assigner au moins un membre au projet.',
-                'user_ids.min'    => 'Vous devez assigner au moins un membre au projet.',
+                'user_ids.min'      => 'Vous devez assigner au moins un membre au projet.',
             ]);
 
             // Vérifier que tous les membres sont actifs
@@ -127,7 +127,7 @@ class ProjectController extends Controller
             $project = Project::create([
                 'nom'         => $request->nom,
                 'description' => $request->description,
-                'date_debut'  => $request->date_debut,
+                'date_debut'  => $request->date_debut ?? now()->toDateString(),
                 'date_fin'    => $request->date_fin,
                 'statut'      => 'ouvert',
                 'created_by'  => $creator->id,
@@ -149,8 +149,6 @@ class ProjectController extends Controller
             }
 
             return response()->json(['message' => 'Projet créé avec succès.', 'project' => $project], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            throw $e;
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur lors de la création.', 'error' => $e->getMessage()], 500);
         }
@@ -193,7 +191,14 @@ class ProjectController extends Controller
                 }
             }
 
-            $project->update($request->only('nom', 'statut', 'description', 'date_debut', 'date_fin'));
+            $updateData = $request->only('nom', 'statut', 'description', 'date_debut', 'date_fin');
+
+            // date_cloture automatique quand le projet passe à "archive"
+            if ($request->statut === 'archive' && $project->statut !== 'archive') {
+                $updateData['date_cloture'] = now()->toDateString();
+            }
+
+            $project->update($updateData);
 
             // Notifier les membres du projet du changement
             $members = $project->users()->pluck('users.id')->toArray();
