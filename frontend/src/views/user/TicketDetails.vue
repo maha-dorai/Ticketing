@@ -312,6 +312,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
 import AppSidebar from '../../components/AppSidebar.vue';
+import AppHeader from '../../components/AppHeader.vue';
+;
 
 const route       = useRoute();
 const router      = useRouter();

@@ -1,1 +1,4 @@
-@import "tailwindcss";
+
+/* 2. Tailwind v4 — utilitaires uniquement, sans le Preflight */
+@layer theme, base, components, utilities;
+@import "tailwindcss/utilities" layer(utilities);
