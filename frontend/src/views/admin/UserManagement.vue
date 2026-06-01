@@ -1,8 +1,5 @@
 <template>
-  <div class="layout">
-    <AppSidebar />
-    <main class="main">
-      <AppHeader />
+  <AppLayout>
       <div class="page-header">
         <div>
           <h1 class="page-title">Gestion des membres</h1>
@@ -16,7 +13,7 @@
       </div>
 
       <div class="page-content">
-        <div v-if="globalMessage" class="alert" :class="globalSuccess ? 'alert-ok' : 'alert-err'">{{ globalSuccess ? '✓' : '✕' }} {{ globalMessage }}</div>
+        <AlertBanner v-if="globalMessage" :variant="globalSuccess ? 'success' : 'error'" class="alert" :class="globalSuccess ? 'alert-ok' : 'alert-err'">{{ globalMessage }}</AlertBanner>
         <div v-if="loading" class="loading-state">
           <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/></svg>
           Chargement...
@@ -36,8 +33,14 @@
           <div class="toolbar">
             <div class="role-filters">
               <button @click="roleFilter = ''" :class="['rfb', roleFilter === '' ? 'rfb-active' : '']">Tous</button>
-              <button @click="roleFilter = 'testeur'" :class="['rfb', roleFilter === 'testeur' ? 'rfb-active rfb-test' : '']">🧪 Testeurs</button>
-              <button @click="roleFilter = 'developpeur'" :class="['rfb', roleFilter === 'developpeur' ? 'rfb-active rfb-dev' : '']">💻 Développeurs</button>
+              <button @click="roleFilter = 'testeur'" :class="['rfb', 'btn-with-icon', roleFilter === 'testeur' ? 'rfb-active rfb-test' : '']">
+                <FlaskConical :size="14" aria-hidden="true" />
+                Testeurs
+              </button>
+              <button @click="roleFilter = 'developpeur'" :class="['rfb', 'btn-with-icon', roleFilter === 'developpeur' ? 'rfb-active rfb-dev' : '']">
+                <Monitor :size="14" aria-hidden="true" />
+                Développeurs
+              </button>
             </div>
             <div class="search-wrap">
               <svg class="si" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
@@ -47,7 +50,7 @@
 
           <!-- TABLE UNIQUE -->
           <div v-if="!filteredUsers.length" class="empty">
-            <div class="ei">👥</div>
+            <Users class="ei" :size="40" aria-hidden="true" />
             <p class="et">Aucun membre dans cette catégorie.</p>
           </div>
           <div v-else class="card">
@@ -81,11 +84,25 @@
                     <td class="tc">
                       <div class="ab">
                         <template v-if="u.statut === 'en_attente'">
-                          <button @click="valider(u.id)" :disabled="pid === u.id" class="ba">{{ pid === u.id ? '...' : '✓ Valider' }}</button>
-                          <button @click="rejeter(u.id)" :disabled="pid === u.id" class="br">{{ pid === u.id ? '...' : '✕ Rejeter' }}</button>
+                          <button @click="valider(u.id)" :disabled="pid === u.id" class="ba btn-with-icon">
+                            {{ pid === u.id ? '...' : '' }}
+                            <Check v-if="pid !== u.id" :size="14" aria-hidden="true" />
+                            Valider
+                          </button>
+                          <button @click="rejeter(u.id)" :disabled="pid === u.id" class="br btn-with-icon">
+                            {{ pid === u.id ? '...' : '' }}
+                            <X v-if="pid !== u.id" :size="14" aria-hidden="true" />
+                            Rejeter
+                          </button>
                         </template>
-                        <button v-else-if="u.statut === 'actif'" @click="cid = u.id" class="bw">⊘ Désactiver</button>
-                        <button v-else-if="u.statut === 'desactive'" @click="reactiver(u.id)" class="bs">↺ Réactiver</button>
+                        <button v-else-if="u.statut === 'actif'" @click="cid = u.id" class="bw btn-with-icon">
+                          <Ban :size="14" aria-hidden="true" />
+                          Désactiver
+                        </button>
+                        <button v-else-if="u.statut === 'desactive'" @click="reactiver(u.id)" class="bs btn-with-icon">
+                          <RotateCcw :size="14" aria-hidden="true" />
+                          Réactiver
+                        </button>
                         <span v-else class="mu">—</span>
                       </div>
                     </td>
@@ -93,7 +110,10 @@
                   <tr v-if="cid === u.id" class="crow">
                     <td colspan="6">
                       <div class="cbar">
-                        <p class="ct">⚠ Désactiver <strong>{{ u.prenom }} {{ u.nom }}</strong> ?</p>
+                        <p class="ct ct--warn">
+                          <AlertTriangle :size="16" aria-hidden="true" />
+                          Désactiver <strong>{{ u.prenom }} {{ u.nom }}</strong> ?
+                        </p>
                         <div class="ca">
                           <button @click="cid = null" class="bcc">Annuler</button>
                           <button @click="desactiver(u.id)" class="bcw">Oui, désactiver</button>
@@ -107,14 +127,15 @@
           </div>
         </template>
       </div>
-    </main>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
-import AppSidebar from '../../components/AppSidebar.vue';
+import { AlertTriangle, Ban, Check, FlaskConical, Monitor, RotateCcw, Users, X } from 'lucide-vue-next';
+import AppLayout from '../../components/layout/AppLayout.vue';
+import AlertBanner from '../../components/ui/AlertBanner.vue';
 
 const allUsers = ref([]), loading = ref(false), globalMessage = ref(''), globalSuccess = ref(true), cid = ref(null), pid = ref(null);
 const activeStatus = ref('en_attente');
@@ -154,17 +175,13 @@ const roleLabel = r => ({ developpeur: 'Développeur', testeur: 'Testeur' }[r] |
 const stLabel = s => ({ en_attente: 'En attente', actif: 'Actif', desactive: 'Désactivé', rejete: 'Rejeté' }[s] || s);
 const stClass = s => ({ en_attente: 'st-wait', actif: 'st-ok', desactive: 'st-off', rejete: 'st-rej' }[s] || '');
 
-const valider  = async (id) => { if (pid.value) return; pid.value = id; try { await api.put(`/users/${id}/validate`, { action: 'accepter' }); msg('✓ Compte validé'); await fetchUsers(); } catch { msg('Erreur.', false); } finally { pid.value = null; } };
+const valider  = async (id) => { if (pid.value) return; pid.value = id; try { await api.put(`/users/${id}/validate`, { action: 'accepter' }); msg('Compte validé'); await fetchUsers(); } catch { msg('Erreur.', false); } finally { pid.value = null; } };
 const rejeter  = async (id) => { if (pid.value) return; pid.value = id; try { await api.put(`/users/${id}/validate`, { action: 'rejeter'  }); msg('Compte rejeté.');  await fetchUsers(); } catch { msg('Erreur.', false); } finally { pid.value = null; } };
 const desactiver = async (id) => { cid.value = null; try { await api.put(`/users/${id}/deactivate`); msg('Compte désactivé.'); await fetchUsers(); } catch (e) { msg(e.response?.data?.message || 'Erreur.', false); } };
-const reactiver  = async (id) => { try { await api.put(`/users/${id}/reactivate`); msg('✓ Compte réactivé'); await fetchUsers(); } catch { msg('Erreur.', false); } };
+const reactiver  = async (id) => { try { await api.put(`/users/${id}/reactivate`); msg('Compte réactivé'); await fetchUsers(); } catch { msg('Erreur.', false); } };
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-*{font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;}
-.layout{display:flex;min-height:100vh;background:#f8fafc;}
-.main{flex:1;overflow-y:auto;background:#f8fafc;}
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;padding:2rem 2.5rem 1.5rem;border-bottom:1px solid #e2e8f0;background:white;gap:1rem;flex-wrap:wrap;}
 .page-title{font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;letter-spacing:-.02em;}
 .page-sub{font-size:.875rem;color:#64748b;margin:.25rem 0 0;}
@@ -200,7 +217,8 @@ const reactiver  = async (id) => { try { await api.put(`/users/${id}/reactivate`
 .search-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);}
 .search-input::placeholder{color:#cbd5e1;}
 .empty{text-align:center;padding:4rem 2rem;}
-.ei{font-size:3rem;margin-bottom:.75rem;}
+.ei{margin-bottom:.75rem;color:#94a3b8;}
+.ct--warn{display:flex;align-items:center;gap:.5rem;}
 .et{font-size:.9375rem;font-weight:600;color:#64748b;margin:0;}
 .card{background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;}
 .tbl{width:100%;border-collapse:collapse;font-size:.875rem;}

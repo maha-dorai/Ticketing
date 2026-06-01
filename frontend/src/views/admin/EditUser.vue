@@ -1,48 +1,47 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-
-    <!-- Header -->
-    <div class="bg-white border-b px-8 py-4 flex items-center gap-4 shadow-sm">
-      <button @click="$router.push({ name: 'UserManagement' })"
-        class="text-gray-500 hover:text-gray-800 font-semibold flex items-center gap-1">
-        ← Retour
-      </button>
-      <div>
-        <h1 class="text-xl font-extrabold text-gray-900">Modifier l'utilisateur</h1>
-        <p class="text-gray-500 text-sm">{{ form.prenom }} {{ form.nom }}</p>
+  <AppLayout>
+    <div class="page-header">
+      <div class="header-left">
+        <button type="button" class="back-btn" @click="$router.push({ name: 'UserManagement' })">
+          <ArrowLeft :size="18" aria-hidden="true" />
+          Retour
+        </button>
+        <div>
+          <h1 class="page-title">
+            <UserPen class="page-title-icon" aria-hidden="true" />
+            Modifier l'utilisateur
+          </h1>
+          <p v-if="!loading" class="page-sub">{{ form.prenom }} {{ form.nom }}</p>
+        </div>
       </div>
     </div>
 
-    <!-- Formulaire -->
-    <div class="max-w-lg mx-auto mt-10 bg-white rounded-xl shadow p-8">
+    <div class="page-content">
+      <div v-if="loading" class="loading-state">
+        <Loader2 :size="22" class="spin" aria-hidden="true" />
+        Chargement…
+      </div>
 
-      <div v-if="loading" class="text-gray-400 text-center py-10">Chargement...</div>
+      <div v-else class="form-card">
+        <AlertBanner v-if="errorMsg" variant="error" class="alert alert-err">{{ errorMsg }}</AlertBanner>
+        <AlertBanner v-if="successMsg" variant="success" class="alert alert-ok">{{ successMsg }}</AlertBanner>
 
-      <div v-else>
-        <div class="space-y-5">
-
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Nom</label>
-            <input v-model="form.nom" type="text"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200" />
+        <form class="form" @submit.prevent="sauvegarder">
+          <div class="field">
+            <label class="label">Nom</label>
+            <input v-model="form.nom" type="text" class="input" required />
           </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Prénom</label>
-            <input v-model="form.prenom" type="text"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200" />
+          <div class="field">
+            <label class="label">Prénom</label>
+            <input v-model="form.prenom" type="text" class="input" required />
           </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-            <input v-model="form.email" type="email"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200" />
+          <div class="field">
+            <label class="label">Email</label>
+            <input v-model="form.email" type="email" class="input" required />
           </div>
-
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Rôle</label>
-            <select v-model="form.role"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200 bg-white">
+          <div class="field">
+            <label class="label">Rôle</label>
+            <select v-model="form.role" class="input select" required>
               <option value="testeur">Testeur</option>
               <option value="developpeur">Développeur</option>
               <option value="chef_de_projet">Chef de projet</option>
@@ -50,48 +49,34 @@
             </select>
           </div>
 
-        </div>
-
-        <!-- Message erreur / succès -->
-        <p v-if="errorMsg" class="mt-4 text-sm text-red-600 bg-red-50 p-3 rounded text-center">
-          {{ errorMsg }}
-        </p>
-        <p v-if="successMsg" class="mt-4 text-sm text-green-700 bg-green-50 p-3 rounded text-center">
-          {{ successMsg }}
-        </p>
-
-        <!-- Boutons -->
-        <div class="mt-6 flex gap-3">
-          <button @click="$router.push({ name: 'UserManagement' })"
-            class="flex-1 px-4 py-2 text-sm text-gray-600 border rounded hover:bg-gray-50 font-semibold">
-            Annuler
-          </button>
-          <button @click="sauvegarder"
-            class="flex-1 px-4 py-2 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 font-semibold">
-            Enregistrer
-          </button>
-        </div>
+          <div class="actions">
+            <button type="button" class="btn-secondary" @click="$router.push({ name: 'UserManagement' })">
+              Annuler
+            </button>
+            <button type="submit" class="btn-primary">Enregistrer</button>
+          </div>
+        </form>
       </div>
-
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { ArrowLeft, Loader2, UserPen } from 'lucide-vue-next';
 import api from '../../services/api';
+import AppLayout from '../../components/layout/AppLayout.vue';
+import AlertBanner from '../../components/ui/AlertBanner.vue';
 
-const route  = useRoute();
+const route = useRoute();
 const router = useRouter();
 
-const loading    = ref(true);
-const errorMsg   = ref('');
+const loading = ref(true);
+const errorMsg = ref('');
 const successMsg = ref('');
-
 const form = ref({ nom: '', prenom: '', email: '', role: '' });
 
-// Charger les données de l'utilisateur
 onMounted(async () => {
   try {
     const res = await api.get(`/users/${route.params.id}`);
@@ -105,11 +90,11 @@ onMounted(async () => {
 });
 
 const sauvegarder = async () => {
-  errorMsg.value   = '';
+  errorMsg.value = '';
   successMsg.value = '';
   try {
     await api.put(`/users/${route.params.id}`, form.value);
-    successMsg.value = 'Modifications enregistrées avec succès.';
+    successMsg.value = 'Modifications enregistrées.';
     setTimeout(() => router.push({ name: 'UserManagement' }), 1200);
   } catch (err) {
     const errors = err.response?.data?.errors;
@@ -119,3 +104,167 @@ const sauvegarder = async () => {
   }
 };
 </script>
+
+<style scoped>
+.page-header {
+  padding: 1.5rem 2.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+.header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #64748b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.back-btn:hover {
+  color: #1e293b;
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+.page-title-icon {
+  width: 1.375rem;
+  height: 1.375rem;
+  color: var(--color-brand, #2563eb);
+  flex-shrink: 0;
+}
+.page-sub {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0.25rem 0 0;
+}
+.page-content {
+  padding: 2rem 2.5rem;
+}
+.form-card {
+  max-width: 32rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.75rem;
+}
+.loading-state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.alert {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+.alert-ok {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+.alert-err {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+}
+.input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  color: #1e293b;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.select {
+  background: white;
+  cursor: pointer;
+}
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.btn-secondary,
+.btn-primary {
+  flex: 1;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-secondary {
+  background: white;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+.btn-secondary:hover {
+  background: #f8fafc;
+  color: #1e293b;
+}
+.btn-primary {
+  background: #2563eb;
+  color: white;
+  border: none;
+}
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+</style>

@@ -1,21 +1,25 @@
 <template>
-  <div class="layout">
-    <AppSidebar />
-    <main class="main">
-      <AppHeader />
+  <AppLayout>
       <div class="glass-header">
         <div class="header-content">
-          <h1 class="page-title">Gestion des Chefs de projet</h1>
+          <h1 class="page-title">
+            <Crown class="page-title-icon" aria-hidden="true" />
+            <span>Gestion des Chefs de projet</span>
+          </h1>
           <p class="page-sub">Créez et gérez les accès privilégiés de la plateforme avec simplicité.</p>
         </div>
       </div>
 
       <div class="page-content">
         <transition name="fade-slide">
-          <div v-if="globalMessage" class="alert-banner" :class="globalSuccess ? 'alert-ok' : 'alert-err'">
-            <div class="alert-icon">{{ globalSuccess ? '✨' : '⚠️' }}</div>
-            <div class="alert-text">{{ globalMessage }}</div>
-          </div>
+          <AlertBanner
+            v-if="globalMessage"
+            :variant="globalSuccess ? 'sparkle' : 'error'"
+            class="alert"
+            :class="globalSuccess ? 'alert-ok' : 'alert-err'"
+          >
+            {{ globalMessage }}
+          </AlertBanner>
         </transition>
 
         <div class="dashboard-grid">
@@ -24,7 +28,7 @@
             <div class="premium-card sticky-card">
               <div class="card-header">
                 <div class="icon-circle">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="20" height="20"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                  <Plus :size="20" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 class="card-title">Nouveau Chef de projet</h2>
@@ -40,7 +44,7 @@
                   </div>
                   <div class="input-field">
                     <label>Nom</label>
-                    <input v-model="f.nom" type="text"required />
+                    <input v-model="f.nom" type="text" required />
                   </div>
                 </div>
                 <div class="input-field">
@@ -50,7 +54,7 @@
                 </div>
                 
                 <button type="submit" :disabled="creating" class="btn-gradient">
-                  <svg v-if="creating" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/></svg>
+                  <Loader2 v-if="creating" :size="18" class="spin" aria-hidden="true" />
                   <span v-else>Créer le compte</span>
                 </button>
               </form>
@@ -67,7 +71,7 @@
             <!-- BARRE DE FILTRES -->
             <div class="filters-container">
               <div class="search-box">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                <Search :size="18" class="search-icon" aria-hidden="true" />
                 <input v-model="searchQuery" type="text" placeholder="Rechercher par nom ou email..." />
               </div>
               <div class="filter-pills">
@@ -84,13 +88,13 @@
             </div>
 
             <div v-else-if="!admins.length" class="state-container empty-state">
-              <div class="empty-avatar">👑</div>
+              <Crown class="empty-avatar" :size="40" aria-hidden="true" />
               <h3>Aucun chef de projet</h3>
               <p>Commencez par utiliser le formulaire pour donner l'accès à un collaborateur.</p>
             </div>
             
             <div v-else-if="filteredAdmins.length === 0" class="state-container empty-state">
-              <div class="empty-avatar">🔍</div>
+              <Search class="empty-avatar" :size="40" aria-hidden="true" />
               <h3>Aucun résultat</h3>
               <p>Aucun compte ne correspond à votre recherche ou filtre actuel.</p>
             </div>
@@ -105,9 +109,18 @@
                   <h3 class="user-name">{{ a.prenom }} {{ a.nom }}</h3>
                   <p class="user-email">{{ a.email }}</p>
                   <div class="badges-area">
-                    <span v-if="a.force_password_change" class="status-badge pending">⏳ En attente (MDP)</span>
-                    <span v-else-if="a.statut === 'actif'" class="status-badge active">✓ Actif</span>
-                    <span v-else class="status-badge disabled">⊘ Désactivé</span>
+                    <span v-if="a.force_password_change" class="status-badge pending btn-with-icon">
+                      <Clock :size="12" aria-hidden="true" />
+                      En attente (MDP)
+                    </span>
+                    <span v-else-if="a.statut === 'actif'" class="status-badge active btn-with-icon">
+                      <CheckCircle2 :size="12" aria-hidden="true" />
+                      Actif
+                    </span>
+                    <span v-else class="status-badge disabled btn-with-icon">
+                      <Ban :size="12" aria-hidden="true" />
+                      Désactivé
+                    </span>
                   </div>
                 </div>
                 <div class="card-actions" v-if="a.statut === 'actif'">
@@ -123,7 +136,7 @@
           <div v-if="adminToRevoke" class="modal-backdrop">
             <div class="premium-modal">
               <div class="modal-icon-danger">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="24" height="24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <AlertTriangle :size="28" aria-hidden="true" />
               </div>
               <h3 class="modal-title">Désactiver ce compte ?</h3>
               <p class="modal-text">
@@ -138,14 +151,15 @@
           </div>
         </transition>
       </div>
-    </main>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
-import AppSidebar from '../../components/AppSidebar.vue';
+import { AlertTriangle, Ban, CheckCircle2, Clock, Crown, Loader2, Plus, Search } from 'lucide-vue-next';
+import AppLayout from '../../components/layout/AppLayout.vue';
+import AlertBanner from '../../components/ui/AlertBanner.vue';
 
 const admins = ref([]);
 const loading = ref(false);
@@ -220,12 +234,6 @@ const confirmRevoke = async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-* { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
-
-.layout { display: flex; min-height: 100vh; background: #f4f7f9; }
-.main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-
 /* ── HEADER GLASSMORPHISM ── */
 .glass-header {
   background: rgba(255, 255, 255, 0.7);
@@ -239,23 +247,30 @@ const confirmRevoke = async () => {
 }
 .header-content { max-width: 1400px; margin: 0 auto; }
 .page-title {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
   font-size: 2rem;
   font-weight: 800;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.03em;
+}
+.page-title-icon { width: 1.75rem; height: 1.75rem; color: #3b82f6; flex-shrink: 0; }
+.page-title span {
   background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin: 0 0 0.5rem;
-  letter-spacing: -0.03em;
 }
 .page-sub { font-size: 0.95rem; color: #64748b; margin: 0; font-weight: 500; }
 
 .page-content { padding: 2.5rem 3rem; max-width: 1400px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 2rem; }
 
 /* ── ALERTS ── */
-.alert-banner { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 0.9rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+.alert { padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 0.9rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
 .alert-ok { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 .alert-err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
-.alert-icon { font-size: 1.25rem; }
+.search-box .search-icon { color: #94a3b8; flex-shrink: 0; }
+.spin { animation: spin 1s linear infinite; }
 
 /* ── GRID LAYOUT ── */
 .dashboard-grid { display: grid; grid-template-columns: 350px 1fr; gap: 2.5rem; align-items: start; }
@@ -290,7 +305,6 @@ const confirmRevoke = async () => {
 .filters-container { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; background: white; padding: 0.75rem 1rem; border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); border: 1px solid rgba(226, 232, 240, 0.8); }
 .search-box { display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 250px; background: #f8fafc; padding: 0.5rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0; transition: border-color 0.2s; }
 .search-box:focus-within { border-color: #3b82f6; background: white; }
-.search-box svg { color: #94a3b8; }
 .search-box input { border: none; background: transparent; width: 100%; font-size: 0.9rem; color: #1e293b; font-family: inherit; outline: none; }
 .search-box input::placeholder { color: #cbd5e1; }
 
@@ -333,7 +347,8 @@ const confirmRevoke = async () => {
 /* ── STATES ── */
 .state-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center; color: #64748b; background: white; border-radius: 20px; border: 1px dashed #cbd5e1; }
 .loader-pulse { width: 40px; height: 40px; border-radius: 50%; border: 3px solid #e2e8f0; border-top-color: #3b82f6; animation: spin 1s infinite linear; margin-bottom: 1rem; }
-.empty-avatar { font-size: 3rem; margin-bottom: 1rem; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.05)); }
+.empty-avatar { margin-bottom: 1rem; color: #94a3b8; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.05)); }
+.status-badge.btn-with-icon { display: inline-flex; align-items: center; gap: 0.25rem; }
 .empty-state h3 { font-size: 1.25rem; font-weight: 800; color: #1e293b; margin: 0 0 0.5rem; }
 .empty-state p { font-size: 0.9rem; max-width: 300px; margin: 0; line-height: 1.5; }
 

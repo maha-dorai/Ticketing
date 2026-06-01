@@ -1,15 +1,10 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-container">
-      <div class="brand">
-        <div class="brand-icon">🎫</div>
-        <h1 class="brand-name">Ticketing</h1>
-        <p class="brand-sub">Créer un compte — soumis à validation</p>
-      </div>
+  <AuthLayout wide>
+      <AuthBrand subtitle="Créer un compte — soumis à validation" />
       <div class="card">
         <h2 class="card-title">Inscription</h2>
 
-        <div v-if="successMessage" class="alert alert-success">✓ {{ successMessage }}</div>
+        <AlertBanner v-if="successMessage" variant="success" class="alert alert-success">{{ successMessage }}</AlertBanner>
 
         <form v-else @submit.prevent="registerCandidate" class="form">
           <div class="row2">
@@ -52,8 +47,8 @@
           <div class="field">
             <label class="label">Rôle</label>
             <select v-model="form.role" class="select">
-              <option value="developpeur">👨‍💻 Développeur</option>
-              <option value="testeur">🧪 Testeur (QA)</option>
+              <option value="developpeur">Développeur</option>
+              <option value="testeur">Testeur (QA)</option>
             </select>
           </div>
 
@@ -62,7 +57,7 @@
             <input v-model="form.github_link" type="url" placeholder="https://github.com/username" class="input" style="margin-top:0.4rem" />
           </div>
 
-          <div v-if="errorMessage" class="alert alert-error">✕ {{ errorMessage }}</div>
+          <AlertBanner v-if="errorMessage" variant="error" class="alert alert-error">{{ errorMessage }}</AlertBanner>
 
           <button type="submit" :disabled="loading" class="btn-primary">
             <svg v-if="loading" class="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="18" height="18">
@@ -78,14 +73,16 @@
           <router-link to="/login" class="link">Se connecter</router-link>
         </div>
       </div>
-    </div>
-  </div>
+  </AuthLayout>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue';
 import { useAuthStore } from '../stores/authStore';
 import { useRouter } from 'vue-router';
+import AuthLayout from '../components/layout/AuthLayout.vue';
+import AuthBrand from '../components/auth/AuthBrand.vue';
+import AlertBanner from '../components/ui/AlertBanner.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -134,12 +131,6 @@ const registerCandidate = async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-* { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
-.auth-page { min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
-.auth-container { width: 100%; max-width: 460px; }
-.brand { text-align: center; margin-bottom: 2rem; }
-.brand-icon { font-size: 2.5rem; } .brand-name { font-size: 1.75rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.02em; margin: 0; } .brand-sub { color: #64748b; font-size: 0.875rem; margin: 0.25rem 0 0; }
 .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2rem; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
 .card-title { font-size: 1.25rem; font-weight: 700; color: #f1f5f9; margin: 0 0 1.5rem; }
 .alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; }

@@ -1,16 +1,14 @@
 <template>
-  <div class="layout">
-    <AppSidebar />
-    <main class="main">
-      <AppHeader />
+  <AppLayout>
 
       <div class="page-header">
         <div>
           <h1 class="page-title">Notifications</h1>
           <p class="page-sub">Gardez un œil sur l'activité de vos tickets</p>
         </div>
-        <button v-if="unreadCount > 0" @click="markAllAsRead" :disabled="marking" class="mark-btn">
-          ✓ Tout marquer comme lu
+        <button v-if="unreadCount > 0" @click="markAllAsRead" :disabled="marking" class="mark-btn btn-with-icon">
+          <CheckCheck :size="16" aria-hidden="true" />
+          Tout marquer comme lu
         </button>
       </div>
 
@@ -19,7 +17,7 @@
         <div v-if="loading" class="loading">Chargement...</div>
 
         <div v-else-if="notifications.length === 0" class="empty">
-          <div class="empty-icon">📭</div>
+          <Inbox class="empty-icon" :size="48" aria-hidden="true" />
           <p class="empty-title">Aucune notification.</p>
         </div>
 
@@ -31,15 +29,21 @@
             class="notif-item"
             :class="notif.lu ? 'is-read' : 'is-unread'"
           >
-            <span class="notif-dot">{{ notif.lu ? '⚪' : '🔵' }}</span>
+            <span class="notif-read-dot" :class="notif.lu ? 'notif-read-dot--read' : 'notif-read-dot--unread'" aria-hidden="true" />
             <div class="notif-body">
               <p class="notif-msg">{{ notif.message }}</p>
               <p class="notif-time">{{ formatTime(notif.created_at) }}</p>
               
               <!-- Boutons Admin pour l'auto-assignation -->
               <div v-if="isManager && !notif.lu && (notif.message.toLowerCase().includes('validation') || notif.message.toLowerCase().includes('assignation'))" class="notif-actions" @click.stop>
-                <button @click="acceptAssignment(notif)" class="btn-sm btn-accept">✅ Valider</button>
-                <button @click="rejectAssignment(notif)" class="btn-sm btn-reject">❌ Refuser</button>
+                <button @click="acceptAssignment(notif)" class="btn-sm btn-accept btn-with-icon">
+                  <CheckCircle2 :size="14" aria-hidden="true" />
+                  Valider
+                </button>
+                <button @click="rejectAssignment(notif)" class="btn-sm btn-reject btn-with-icon">
+                  <XCircle :size="14" aria-hidden="true" />
+                  Refuser
+                </button>
               </div>
             </div>
           </div>
@@ -90,15 +94,15 @@
         </div>
       </div>
 
-    </main>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../../services/api';
-import AppSidebar from '../../components/AppSidebar.vue';
+import { CheckCheck, CheckCircle2, Inbox, XCircle } from 'lucide-vue-next';
+import AppLayout from '../../components/layout/AppLayout.vue';
 import { useAuthStore } from '../../stores/authStore';
 
 const authStore = useAuthStore();
@@ -287,10 +291,6 @@ const formatTime = (d) =>
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-* { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
-.layout { display: flex; min-height: 100vh; background: #f8fafc; }
-.main { flex: 1; overflow-y: auto; }
 .page-header { display: flex; align-items: center; justify-content: space-between; padding: 2rem 2.5rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: white; gap: 1rem; flex-wrap: wrap; }
 .page-title { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -.02em; }
 .page-sub { font-size: .875rem; color: #64748b; margin: .25rem 0 0; }
@@ -300,7 +300,7 @@ const formatTime = (d) =>
 .page-content { padding: 2rem 2.5rem; max-width: 760px; }
 .loading { color: #94a3b8; font-size: .875rem; padding: 3rem 0; }
 .empty { text-align: center; padding: 5rem 2rem; }
-.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+.empty-icon { margin-bottom: 1rem; color: #94a3b8; }
 .empty-title { font-size: 1rem; font-weight: 600; color: #94a3b8; margin: 0; }
 .notif-list { background: white; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
 .notif-item { display: flex; align-items: flex-start; gap: .875rem; padding: 1rem 1.25rem; cursor: pointer; transition: background .15s; border-bottom: 1px solid #f1f5f9; }

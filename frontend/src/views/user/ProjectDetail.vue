@@ -1,8 +1,5 @@
 <template>
-  <div class="layout">
-    <AppSidebar />
-    <main class="main">
-      <AppHeader />
+  <AppLayout fixed>
       <!-- Header -->
       <div class="page-header">
         <div>
@@ -16,9 +13,9 @@
       </div>
 
       <div class="page-content">
-        <div v-if="globalMsg" class="alert" :class="globalOk ? 'alert-ok' : 'alert-err'">
-          {{ globalOk ? '✓' : '✕' }} {{ globalMsg }}
-        </div>
+        <AlertBanner v-if="globalMsg" :variant="globalOk ? 'success' : 'error'" class="alert" :class="globalOk ? 'alert-ok' : 'alert-err'">
+          {{ globalMsg }}
+        </AlertBanner>
 
         <!-- Search Toolbar -->
         <div class="toolbar">
@@ -44,7 +41,10 @@
             @drop="onDrop($event, col.id)"
           >
             <div class="column-header" :class="'ch-' + col.id">
-              <h3>{{ col.title }}</h3>
+              <h3 class="kanban-col-heading">
+                <span class="ds-status-dot" :class="'ds-status-dot--' + col.status" aria-hidden="true" />
+                {{ col.title }}
+              </h3>
               <span class="col-count">{{ getProjectsByStatus(col.id).length }}</span>
             </div>
 
@@ -67,8 +67,12 @@
                   <div class="card-top">
                     <span class="status-badge" :class="'sb-' + col.id">{{ col.badge }}</span>
                     <div class="card-actions">
-                      <button @click.stop="openEdit(p)" class="btn-icon" title="Modifier">✏</button>
-                      <button @click.stop="openAssign(p)" class="btn-icon" title="Affecter membres">👥</button>
+                      <button @click.stop="openEdit(p)" class="btn-icon" type="button" aria-label="Modifier">
+                        <Pencil :size="14" aria-hidden="true" />
+                      </button>
+                      <button @click.stop="openAssign(p)" class="btn-icon" type="button" aria-label="Affecter membres">
+                        <Users :size="14" aria-hidden="true" />
+                      </button>
                     </div>
                   </div>
 
@@ -109,14 +113,13 @@
           <button @click="loadPage(pagination.current_page+1)" :disabled="pagination.current_page===pagination.last_page" class="page-btn">Suivant →</button>
         </div>
       </div>
-    </main>
 
     <!-- ═══ MODAL CREATE / EDIT ═══ -->
     <div v-if="showModal" class="overlay" @click.self="showModal=false">
       <div class="modal">
         <div class="modal-header">
           <h3 class="modal-title">{{ editing ? 'Modifier le projet' : 'Nouveau projet' }}</h3>
-          <button @click="showModal=false" class="close-btn">✕</button>
+          <ModalCloseBtn class="close-btn" @click="showModal=false" />
         </div>
         <form @submit.prevent="saveProject" class="mform">
           <div class="field">
@@ -140,9 +143,9 @@
           <div v-if="editing" class="field">
             <label class="label">Statut</label>
             <select v-model="form.statut" class="input sel">
-              <option value="ouvert">🟢 Ouvert</option>
-              <option value="en_cours">🔵 En cours</option>
-              <option value="archive">📦 Fermé (Archivé)</option>
+              <option value="ouvert">Ouvert</option>
+              <option value="en_cours">En cours</option>
+              <option value="archive">Fermé (Archivé)</option>
             </select>
             <span v-if="form.statut === 'archive'" class="hint-text">Un projet ne peut être fermé que si tous ses tickets sont VALIDÉS.</span>
           </div>
@@ -165,13 +168,15 @@
                   <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
                   <p class="mc-role">{{ u.role }}</p>
                 </div>
-                <span class="check-mark">{{ form.user_ids.includes(u.id) ? '✓' : '' }}</span>
+                <Check v-if="form.user_ids.includes(u.id)" class="check-mark-icon" :size="14" aria-hidden="true" />
               </label>
             </div>
-            <span v-if="formMembersError" class="hint-text">⚠ {{ formMembersError }}</span>
+            <span v-if="formMembersError" class="hint-text hint-text--warn">
+              <AlertTriangle :size="12" aria-hidden="true" /> {{ formMembersError }}
+            </span>
           </div>
 
-          <div v-if="formError" class="alert alert-err">✕ {{ formError }}</div>
+          <AlertBanner v-if="formError" variant="error" class="alert alert-err">{{ formError }}</AlertBanner>
           <div class="modal-footer">
             <button type="button" @click="showModal=false" class="btn-cancel">Annuler</button>
             <button type="submit" :disabled="saving" class="btn-primary">
@@ -188,11 +193,11 @@
       <div class="modal modal-wide">
         <div class="modal-header">
           <h3 class="modal-title">Affecter des membres — {{ currentProject?.nom }}</h3>
-          <button @click="showAssign=false" class="close-btn">✕</button>
+          <ModalCloseBtn class="close-btn" @click="showAssign=false" />
         </div>
         <div class="assign-body">
           <p class="assign-hint">Sélectionnez les membres actifs à affecter à ce projet.</p>
-          <div v-if="assignError" class="alert alert-err" style="margin-bottom:1rem;">✕ {{ assignError }}</div>
+          <AlertBanner v-if="assignError" variant="error" class="alert alert-err" style="margin-bottom:1rem;">{{ assignError }}</AlertBanner>
           <div class="member-grid">
             <label v-for="u in activeMembers" :key="u.id" class="member-check" :class="{selected: selectedIds.includes(u.id)}">
               <input type="checkbox" :value="u.id" v-model="selectedIds" class="hidden-cb"/>
@@ -201,7 +206,7 @@
                 <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
                 <p class="mc-role">{{ u.role }}</p>
               </div>
-              <span class="check-mark">{{ selectedIds.includes(u.id) ? '✓' : '' }}</span>
+              <Check v-if="selectedIds.includes(u.id)" class="check-mark-icon" :size="14" aria-hidden="true" />
             </label>
           </div>
           <div class="modal-footer">
@@ -213,13 +218,17 @@
         </div>
       </div>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
-import AppSidebar from '../../components/AppSidebar.vue';
+import { AlertTriangle, Check, Pencil, Users } from 'lucide-vue-next';
+import { PROJECT_KANBAN_COLUMNS } from '../../constants/projectKanban';
+import AppLayout from '../../components/layout/AppLayout.vue';
+import AlertBanner from '../../components/ui/AlertBanner.vue';
+import ModalCloseBtn from '../../components/ui/ModalCloseBtn.vue';
 
 const projects = ref([]);
 const allUsers = ref([]);
@@ -245,11 +254,7 @@ const dragProject = ref(null);
 
 const form = ref({ nom: '', description: '', date_debut: '', date_fin: '', statut: 'ouvert', user_ids: [] });
 
-const columns = [
-  { id: 'ouvert',   title: '🟢 Ouverts',  badge: 'Ouvert'   },
-  { id: 'en_cours', title: '🔵 En cours', badge: 'En cours' },
-  { id: 'archive',  title: '📦 Fermés',   badge: 'Fermé'    },
-];
+const columns = PROJECT_KANBAN_COLUMNS;
 
 let searchTimer = null;
 
@@ -330,10 +335,10 @@ const saveProject = async () => {
   try {
     if (editing.value) {
       await api.put(`/projects/${currentProject.value.id}`, form.value);
-      msg('Projet mis à jour ✓');
+      msg('Projet mis à jour');
     } else {
       await api.post('/projects', form.value);
-      msg('Projet créé ✓');
+      msg('Projet créé');
     }
     showModal.value = false;
     await fetchProjects();
@@ -355,7 +360,7 @@ const saveAssign = async () => {
   assignError.value = '';
   try {
     await api.post(`/projects/${currentProject.value.id}/assign`, { user_ids: selectedIds.value });
-    msg('Membres affectés ✓');
+    msg('Membres affectés');
     showAssign.value = false;
     await fetchProjects();
   } catch (e) {
@@ -389,7 +394,7 @@ const onDrop = async (e, newStatus) => {
 
   // Bloquer Ouvert → En cours : ce passage se fait automatiquement lors du premier ticket
   if (p.statut === 'ouvert' && newStatus === 'en_cours') {
-    msg("🔒 Ce passage se fait automatiquement quand le premier ticket est créé.", false);
+    msg('Ce passage se fait automatiquement quand le premier ticket est créé.', false);
     dragProject.value = null;
     return;
   }
@@ -402,7 +407,7 @@ const onDrop = async (e, newStatus) => {
       date_fin: p.date_fin ? p.date_fin.split('T')[0] : '',
       statut: newStatus
     });
-    msg('Projet déplacé avec succès ✓');
+    msg('Projet déplacé avec succès');
     await fetchProjects();
   } catch (err) {
     msg(err.response?.data?.message || 'Erreur lors du déplacement.', false);
@@ -413,10 +418,6 @@ const onDrop = async (e, newStatus) => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-*{font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;}
-.layout{display:flex;height:100vh;background:#f4f7f9;overflow:hidden;}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .page-header{display:flex;align-items:center;justify-content:space-between;padding:1.5rem 2rem 1.25rem;border-bottom:1px solid #e2e8f0;background:white;gap:1rem;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,0.02);}
 .page-title{font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;letter-spacing:-.02em;}
 .page-sub{font-size:.875rem;color:#64748b;margin:.25rem 0 0;}

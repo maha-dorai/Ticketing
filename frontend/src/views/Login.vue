@@ -1,15 +1,10 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-container">
-      <div class="brand">
-        <div class="brand-icon">🎫</div>
-        <h1 class="brand-name">Ticketing</h1>
-        <p class="brand-sub">Plateforme de gestion de tickets</p>
-      </div>
+  <AuthLayout>
+      <AuthBrand subtitle="Plateforme de gestion de tickets" />
       <div class="card">
         <h2 class="card-title">Connexion</h2>
-        <div v-if="errorMessage" class="alert alert-error">✕ {{ errorMessage }}</div>
-        <div v-if="pendingMessage" class="alert alert-warn">⏳ {{ pendingMessage }}</div>
+        <AlertBanner v-if="errorMessage" variant="error" class="alert alert-error">{{ errorMessage }}</AlertBanner>
+        <AlertBanner v-if="pendingMessage" variant="pending" class="alert alert-warn">{{ pendingMessage }}</AlertBanner>
         <form @submit.prevent="onSubmit" class="form">
           <div class="field">
             <label class="label">Adresse email</label>
@@ -46,13 +41,15 @@
           <router-link to="/register" class="link">S'inscrire</router-link>
         </div>
       </div>
-    </div>
-  </div>
+  </AuthLayout>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import { useAuthStore } from '../stores/authStore';
+import AuthLayout from '../components/layout/AuthLayout.vue';
+import AuthBrand from '../components/auth/AuthBrand.vue';
+import AlertBanner from '../components/ui/AlertBanner.vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
@@ -78,14 +75,6 @@ const onSubmit = async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-* { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
-.auth-page { min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
-.auth-container { width: 100%; max-width: 420px; }
-.brand { text-align: center; margin-bottom: 2rem; }
-.brand-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-.brand-name { font-size: 1.75rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.02em; margin: 0; }
-.brand-sub { color: #64748b; font-size: 0.875rem; margin: 0.25rem 0 0; }
 .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2rem; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
 .card-title { font-size: 1.25rem; font-weight: 700; color: #f1f5f9; margin: 0 0 1.5rem; }
 .alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; margin-bottom: 1.25rem; }

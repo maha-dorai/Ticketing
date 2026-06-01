@@ -1,9 +1,6 @@
 <template>
-  <div class="layout">
-    <AppSidebar />
-    <main class="main">
-      <AppHeader />
-
+  <AppLayout>
+    <div class="ticket-details-page">
       <div v-if="loading" class="text-center text-gray-400 py-12 text-sm">Chargement du ticket...</div>
 
       <div v-else-if="ticket" class="space-y-6 max-w-5xl mx-auto pb-12">
@@ -18,7 +15,10 @@
           </div>
         </div>
 
-        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight leading-tight">🎫 {{ ticket.titre }}</h1>
+        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight leading-tight flex items-center gap-3">
+          <Ticket class="text-blue-600 flex-shrink-0" :size="28" aria-hidden="true" />
+          {{ ticket.titre }}
+        </h1>
 
         <div v-if="confirmDialog.show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
           <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform scale-100 transition-all">
@@ -33,7 +33,7 @@
         <div v-if="reclamationModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
           <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full">
             <div class="flex items-center gap-3 mb-4">
-              <span class="text-2xl">⚠️</span>
+              <AlertTriangle class="text-amber-500 flex-shrink-0" :size="24" aria-hidden="true" />
               <h3 class="text-lg font-extrabold text-slate-800">Raison de la réclamation</h3>
             </div>
             <p class="text-sm text-slate-500 mb-4">Décrivez ce qui ne va pas avec la résolution proposée. Le développeur recevra ce message.</p>
@@ -85,8 +85,14 @@
                 @dragstart="onDragStart"
                 @dragend="onDragEnd"
               >
-                <span v-if="canDragTicket">✋ Glissez-moi</span>
-                <span v-else>🔒 Actuel</span>
+                <template v-if="canDragTicket">
+                  <GripVertical :size="14" aria-hidden="true" />
+                  Glissez-moi
+                </template>
+                <template v-else>
+                  <Lock :size="14" aria-hidden="true" />
+                  Actuel
+                </template>
               </div>
             </div>
           </div>
@@ -139,17 +145,19 @@
               <div class="prose prose-slate max-w-none text-sm leading-relaxed">
                 <div v-if="ticket.description && ticket.description.trim()" v-html="formatDescription(ticket.description)"></div>
                 <p v-else class="text-slate-400 italic text-sm flex items-center gap-2">
-                  <span>📝</span> Aucune description fournie.
+                  <FileText :size="16" aria-hidden="true" />
+                  Aucune description fournie.
                 </p>
               </div>
               
               <div v-if="ticket.attachments?.length" class="mt-8 pt-6 border-t border-slate-100">
                 <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  📎 Pièces jointes ({{ ticket.attachments.length }})
+                  <Paperclip :size="14" aria-hidden="true" />
+                  Pièces jointes ({{ ticket.attachments.length }})
                 </h4>
                 <div class="flex flex-wrap gap-3">
-                  <a v-for="att in ticket.attachments" :key="att.id" :href="'http://localhost:8000/storage/' + att.file_path" target="_blank" class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:shadow-md rounded-xl text-sm font-medium text-blue-700 transition-all group">
-                    <span class="text-xl group-hover:scale-110 transition-transform">📄</span>
+                  <a v-for="att in ticket.attachments" :key="att.id" :href="storageAssetUrl(att.file_path)" target="_blank" class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:shadow-md rounded-xl text-sm font-medium text-blue-700 transition-all group">
+                    <File class="group-hover:scale-110 transition-transform flex-shrink-0" :size="20" aria-hidden="true" />
                     <span class="truncate max-w-[200px]">{{ att.file_name }}</span>
                   </a>
                 </div>
@@ -158,7 +166,10 @@
 
             <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 overflow-hidden border border-slate-100 flex flex-col">
               <div class="px-8 py-5 border-b border-slate-100 bg-slate-50/50">
-                <h2 class="text-sm font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-2">💬 Commentaires ({{ ticket.comments?.length || 0 }})</h2>
+                <h2 class="text-sm font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                  <MessageSquare :size="16" aria-hidden="true" />
+                  Commentaires ({{ ticket.comments?.length || 0 }})
+                </h2>
               </div>
 
               <div class="p-8 overflow-y-auto space-y-6 max-h-[500px]" ref="chatBox">
@@ -174,8 +185,12 @@
                     <span class="text-xs font-bold text-slate-700">{{ comment.user?.prenom }} {{ comment.user?.nom }}</span>
                     <span class="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{{ formatTime(comment.created_at) }}</span>
                     <span v-if="comment.user_id === currentUser.id" class="flex gap-1 ml-1 opacity-0 group-hover:opacity-100 transition">
-                      <button @click="startEdit(comment)" class="text-slate-400 hover:text-blue-500 text-xs transition">✏️</button>
-                      <button @click="ask('Supprimer ce commentaire ?', () => deleteComment(comment), true)" class="text-slate-400 hover:text-red-500 text-xs transition">🗑️</button>
+                      <button @click="startEdit(comment)" type="button" class="text-slate-400 hover:text-blue-500 p-0.5 transition" aria-label="Modifier le commentaire">
+                        <Pencil :size="14" aria-hidden="true" />
+                      </button>
+                      <button @click="ask('Supprimer ce commentaire ?', () => deleteComment(comment), true)" type="button" class="text-slate-400 hover:text-red-500 p-0.5 transition" aria-label="Supprimer le commentaire">
+                        <Trash2 :size="14" aria-hidden="true" />
+                      </button>
                     </span>
                   </div>
 
@@ -225,16 +240,21 @@
                 <div class="pt-3 border-t border-slate-100 flex flex-col gap-1">
                   <span class="text-slate-500 font-medium">Assignation</span>
                   <span v-if="ticket.assignment_status === 'approved' && ticket.developpeur" class="font-bold text-blue-700 bg-blue-50 py-1.5 px-3 rounded-lg border border-blue-100 flex items-center gap-2 mt-1">
-                    👨‍💻 {{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}
+                    <Code2 :size="14" aria-hidden="true" />
+                    {{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}
                   </span>
                   <span v-else-if="ticket.assignment_status === 'pending' && ticket.proposed_developpeur" class="font-bold text-amber-700 bg-amber-50 py-1.5 px-3 rounded-lg border border-amber-100 flex items-center gap-2 mt-1 text-xs">
-                    ⏳ Prop: {{ ticket.proposed_developpeur.prenom }}
+                    <Clock :size="14" aria-hidden="true" />
+                    Prop: {{ ticket.proposed_developpeur.prenom }}
                   </span>
                   <span v-else class="italic text-slate-400 mt-1">Non assigné</span>
                 </div>
 
                 <div v-if="ticket.etat === 'RECLAMATION' && ticket.raison_reclamation" class="pt-3 border-t border-slate-100">
-                  <p class="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-2">⚠️ Raison de la réclamation</p>
+                  <p class="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+                    <AlertTriangle :size="12" aria-hidden="true" />
+                    Raison de la réclamation
+                  </p>
                   <div class="bg-orange-50 border border-orange-200 rounded-xl p-3">
                     <p class="text-sm text-orange-900 leading-relaxed">{{ ticket.raison_reclamation }}</p>
                   </div>
@@ -272,8 +292,14 @@
                   <p class="text-[10px] font-bold text-amber-700 uppercase mb-1">Développeur proposé</p>
                   <p class="text-sm font-bold text-amber-900">{{ ticket.proposed_developpeur?.prenom }} {{ ticket.proposed_developpeur?.nom }}</p>
                 </div>
-                <button @click="ask('Valider cette assignation et notifier le développeur ?', acceptTicket)" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-md transition">✅ Valider</button>
-                <button @click="ask('Refuser cette assignation ?', rejectTicket, true)" class="w-full py-2.5 bg-white border-2 border-slate-200 hover:border-red-500 hover:text-red-600 text-slate-600 text-sm font-bold rounded-xl transition">❌ Refuser</button>
+                <button @click="ask('Valider cette assignation et notifier le développeur ?', acceptTicket)" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-md transition btn-with-icon justify-center">
+                  <CheckCircle2 :size="16" aria-hidden="true" />
+                  Valider
+                </button>
+                <button @click="ask('Refuser cette assignation ?', rejectTicket, true)" class="w-full py-2.5 bg-white border-2 border-slate-200 hover:border-red-500 hover:text-red-600 text-slate-600 text-sm font-bold rounded-xl transition btn-with-icon justify-center">
+                  <XCircle :size="16" aria-hidden="true" />
+                  Refuser
+                </button>
               </div>
 
               <div v-if="isManager && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-3 mt-2">
@@ -302,8 +328,8 @@
         </div>
 
       </div>
-    </main>
-  </div>
+    </div>
+  </AppLayout>
 </template>
 
 <script setup>
@@ -311,9 +337,24 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
-import AppSidebar from '../../components/AppSidebar.vue';
-import AppHeader from '../../components/AppHeader.vue';
-;
+import { storageAssetUrl } from '../../utils/storageUrl';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Code2,
+  File,
+  FileText,
+  GripVertical,
+  Lock,
+  MessageSquare,
+  Paperclip,
+  Pencil,
+  Ticket,
+  Trash2,
+  XCircle,
+} from 'lucide-vue-next';
+import AppLayout from '../../components/layout/AppLayout.vue';
 
 const route       = useRoute();
 const router      = useRouter();
@@ -613,8 +654,7 @@ onMounted(fetchTicket);
 </script>
 
 <style scoped>
-.layout { display: flex; min-height: 100vh; background: #f8fafc; }
-.main { flex: 1; padding: 2.5rem; overflow-y: auto; }
+.ticket-details-page { flex: 1; padding: 2.5rem; overflow-y: auto; }
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }

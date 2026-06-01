@@ -1,8 +1,5 @@
 <template>
-  <div class="layout">
-    <AppSidebar />
-    <main class="main">
-      <AppHeader />
+  <AppLayout>
 
       <!-- Page Hero -->
       <div class="page-hero">
@@ -31,9 +28,9 @@
       <div class="page-body">
 
         <!-- Alert -->
-        <div v-if="globalMsg" class="alert" :class="globalOk ? 'alert-ok' : 'alert-err'">
-          {{ globalOk ? '✓' : '✕' }} {{ globalMsg }}
-        </div>
+        <AlertBanner v-if="globalMsg" :variant="globalOk ? 'success' : 'error'" class="alert" :class="globalOk ? 'alert-ok' : 'alert-err'">
+          {{ globalMsg }}
+        </AlertBanner>
 
         <!-- Loading -->
         <div v-if="loading" class="loading-state">
@@ -185,14 +182,13 @@
           </button>
         </div>
       </div>
-    </main>
 
     <!-- ═══ MODAL CREATE / EDIT ═══ -->
     <div v-if="showModal" class="overlay" @click.self="showModal=false">
       <div class="modal">
         <div class="modal-header">
           <h3 class="modal-title">{{ editing ? 'Modifier le projet' : 'Nouveau projet' }}</h3>
-          <button @click="showModal=false" class="close-btn">✕</button>
+          <ModalCloseBtn class="close-btn" @click="showModal=false" />
         </div>
         <form @submit.prevent="saveProject" class="mform">
           <div class="field">
@@ -218,13 +214,13 @@
           <div v-if="editing" class="field">
             <label class="label">Statut</label>
             <select v-model="form.statut" class="input sel">
-              <option value="ouvert">🟢 Ouvert</option>
-              <option value="en_cours">🔵 En cours</option>
-              <option value="archive">📦 Fermé (Archivé)</option>
+              <option value="ouvert">Ouvert</option>
+              <option value="en_cours">En cours</option>
+              <option value="archive">Fermé (Archivé)</option>
             </select>
             <span v-if="form.statut === 'archive'" class="hint-text">Un projet ne peut être fermé que si tous ses tickets sont VALIDÉS.</span>
           </div>
-          <div v-if="formError" class="alert alert-err">✕ {{ formError }}</div>
+          <AlertBanner v-if="formError" variant="error" class="alert alert-err">{{ formError }}</AlertBanner>
 
           <!-- Member selection (create only) -->
           <div v-if="!editing" class="field">
@@ -242,7 +238,7 @@
                   <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
                   <p class="mc-role">{{ u.role }}</p>
                 </div>
-                <span class="check-mark">{{ form.user_ids.includes(u.id) ? '✓' : '' }}</span>
+                <Check v-if="form.user_ids.includes(u.id)" class="check-mark-icon" :size="14" aria-hidden="true" />
               </label>
             </div>
             <span v-if="form.user_ids.length" class="field-hint">{{ form.user_ids.length }} membre(s) sélectionné(s)</span>
@@ -263,11 +259,11 @@
       <div class="modal modal-wide">
         <div class="modal-header">
           <h3 class="modal-title">Affecter des membres — {{ currentProject?.nom }}</h3>
-          <button @click="showAssign=false" class="close-btn">✕</button>
+          <ModalCloseBtn class="close-btn" @click="showAssign=false" />
         </div>
         <div class="assign-body">
           <p class="assign-hint">Sélectionnez les membres actifs à affecter à ce projet.</p>
-          <div v-if="assignError" class="alert alert-err" style="margin-bottom:1rem;">✕ {{ assignError }}</div>
+          <AlertBanner v-if="assignError" variant="error" class="alert alert-err" style="margin-bottom:1rem;">{{ assignError }}</AlertBanner>
           <div class="member-grid">
             <label v-for="u in activeMembers" :key="u.id" class="member-check" :class="{selected: selectedIds.includes(u.id)}">
               <input type="checkbox" :value="u.id" v-model="selectedIds" class="hidden-cb"/>
@@ -276,7 +272,7 @@
                 <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
                 <p class="mc-role">{{ u.role }}</p>
               </div>
-              <span class="check-mark">{{ selectedIds.includes(u.id) ? '✓' : '' }}</span>
+              <Check v-if="selectedIds.includes(u.id)" class="check-mark-icon" :size="14" aria-hidden="true" />
             </label>
           </div>
           <div class="modal-footer">
@@ -288,14 +284,16 @@
         </div>
       </div>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
-import AppSidebar from '../../components/AppSidebar.vue';
-import AppHeader from '../../components/AppHeader.vue';
+import { Check } from 'lucide-vue-next';
+import AppLayout from '../../components/layout/AppLayout.vue';
+import AlertBanner from '../../components/ui/AlertBanner.vue';
+import ModalCloseBtn from '../../components/ui/ModalCloseBtn.vue';
 
 const projects = ref([]);
 const allUsers = ref([]);
@@ -414,10 +412,10 @@ const saveProject = async () => {
   try {
     if (editing.value) {
       await api.put(`/projects/${currentProject.value.id}`, form.value);
-      msg('Projet mis à jour ✓');
+      msg('Projet mis à jour');
     } else {
       await api.post('/projects', form.value);
-      msg('Projet créé ✓');
+      msg('Projet créé');
     }
     showModal.value = false;
     await fetchProjects();
@@ -451,7 +449,7 @@ const saveAssign = async () => {
   assignError.value = '';
   try {
     await api.post(`/projects/${currentProject.value.id}/assign`, { user_ids: selectedIds.value });
-    msg('Membres affectés ✓');
+    msg('Membres affectés');
     showAssign.value = false;
     await fetchProjects();
   } catch (e) {
@@ -492,7 +490,7 @@ const onDrop = async (e, newStatus) => {
       date_fin: p.date_fin ? p.date_fin.split('T')[0] : '',
       statut: newStatus
     });
-    msg('Projet déplacé avec succès ✓');
+    msg('Projet déplacé avec succès');
     await fetchProjects(); // Refresh everything to get updated tickets counts/history
   } catch (err) {
     msg(err.response?.data?.message || 'Erreur lors du déplacement.', false);
@@ -503,14 +501,7 @@ const onDrop = async (e, newStatus) => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
-
-*, *::before, *::after { box-sizing: border-box; }
-
 /* ── Layout ─────────────────────────────────────────────────────── */
-.layout { display: flex; min-height: 100vh; background: #f0f4f9; font-family: 'Plus Jakarta Sans', sans-serif; }
-.main   { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-
 /* ── Page Hero ──────────────────────────────────────────────────── */
 .page-hero {
   background: #fff;

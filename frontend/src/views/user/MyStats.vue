@@ -1,10 +1,10 @@
 <template>
-  <div class="layout">
-    <AppSidebar />
-    <main class="main">
-      <AppHeader />
+  <AppLayout>
       <div class="page-header">
-        <h1 class="page-title">👤 Mes Statistiques Personnelles</h1>
+        <h1 class="page-title">
+          <User class="page-title-icon" aria-hidden="true" />
+          Mes Statistiques Personnelles
+        </h1>
         <p class="page-subtitle">Aperçu de votre activité et de vos performances</p>
       </div>
 
@@ -60,14 +60,14 @@
         </div>
 
       </div>
-    </main>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { User } from 'lucide-vue-next';
 import api from '../../services/api';
-import AppSidebar from '../../components/AppSidebar.vue';
+import AppLayout from '../../components/layout/AppLayout.vue';
 
 const loading = ref(true);
 const stats = ref({});
@@ -155,14 +155,9 @@ const statusOptions = computed(() => ({
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-*{font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;}
-
-.layout{display:flex;min-height:100vh;background:#f8fafc;}
-.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
-
 .page-header{padding:2rem 2.5rem 1rem;background:white;border-bottom:1px solid #e2e8f0;}
-.page-title{font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;}
+.page-title{display:flex;align-items:center;gap:.625rem;font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;}
+.page-title-icon{width:1.375rem;height:1.375rem;color:var(--color-brand);flex-shrink:0;}
 .page-subtitle{font-size:.875rem;color:#64748b;margin-top:4px;}
 
 .time-filters {

@@ -1,4 +1,18 @@
+/* Design system (tokens via theme.css → variables.css) */
+@import './styles/theme.css';
+@import './styles/components.css';
+@import './styles/layout.css';
 
-/* 2. Tailwind v4 — utilitaires uniquement, sans le Preflight */
-@layer theme, base, components, utilities;
-@import "tailwindcss/utilities" layer(utilities);
+/* Tailwind v4 */
+@import "tailwindcss";
+
+/* App shell — router-view root */
+#app {
+  max-width: 100%;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}

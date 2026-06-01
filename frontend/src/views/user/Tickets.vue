@@ -1,8 +1,5 @@
 <template>
-  <div class="layout">
-    <AppSidebar />
-    <main class="main">
-      <AppHeader />
+  <AppLayout fixed>
 
       <div class="page-header">
         <div>
@@ -81,7 +78,10 @@
                       <span class="dev-name">{{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}</span>
                     </div>
                     <div class="dev-info" v-else-if="ticket.assignment_status === 'pending' && ticket.proposed_developpeur">
-                      <span class="dev-name">⏳ {{ ticket.proposed_developpeur.prenom }}</span>
+                      <span class="dev-name dev-name--pending">
+                        <Clock :size="12" aria-hidden="true" />
+                        {{ ticket.proposed_developpeur.prenom }}
+                      </span>
                     </div>
                     <span v-else class="unassigned">Non assigné</span>
                     <span class="card-date">{{ formatDate(ticket.created_at) }}</span>
@@ -95,20 +95,25 @@
           </div>
         </div>
       </div>
-    </main>
 
     <div v-if="showCreateModal" class="overlay" @click.self="closeModal">
       <div class="modal">
 
         <template v-if="assignResult">
           <div class="modal-header">
-            <h3 class="modal-title">Ticket créé ✅</h3>
-            <button @click="closeModal" class="close-btn">✕</button>
+            <h3 class="modal-title modal-title--icon">
+              <CheckCircle2 :size="20" aria-hidden="true" />
+              Ticket créé
+            </h3>
+            <ModalCloseBtn class="close-btn" @click="closeModal" />
           </div>
           <div class="modal-body">
 
             <div class="confirm-ai-block">
-              <div class="confirm-ai-title">🤖 Analyse automatique</div>
+              <div class="confirm-ai-title">
+                <Bot :size="16" aria-hidden="true" />
+                Analyse automatique
+              </div>
               <div class="confirm-ai-row">
                 <div class="confirm-ai-item">
                   <span class="confirm-ai-label">Priorité</span>
@@ -127,7 +132,10 @@
 
             <div class="confirm-assign-block">
               <div v-if="assignResult.success" class="confirm-assign-row">
-                <span class="confirm-assign-icon">{{ assignResult.is_retour ? '🔁' : '⏳' }}</span>
+                <div class="confirm-assign-icon-wrap" :class="assignResult.is_retour ? 'confirm-assign-icon-wrap--success' : ''">
+                  <RotateCcw v-if="assignResult.is_retour" :size="18" aria-hidden="true" />
+                  <Clock v-else :size="18" aria-hidden="true" />
+                </div>
                 <div>
                   <p class="confirm-assign-title">
                     {{ assignResult.is_retour ? 'Assigné d\'office (Retour)' : 'Assignation proposée' }}
@@ -139,7 +147,9 @@
                 </div>
               </div>
               <div v-else class="confirm-assign-row">
-                <span class="confirm-assign-icon">⚠️</span>
+                <div class="confirm-assign-icon-wrap confirm-assign-icon-wrap--warning">
+                  <AlertTriangle :size="18" aria-hidden="true" />
+                </div>
                 <div>
                   <p class="confirm-assign-title" style="color:#dc2626;">Aucun développeur disponible</p>
                   <p class="confirm-assign-sub">{{ assignResult.message }}</p>
@@ -156,7 +166,7 @@
         <template v-else>
           <div class="modal-header">
             <h3 class="modal-title">Nouveau ticket</h3>
-            <button @click="closeModal" class="close-btn">✕</button>
+            <ModalCloseBtn class="close-btn" @click="closeModal" />
           </div>
 
           <div class="modal-body">
@@ -164,13 +174,15 @@
             <div class="field">
               <label class="label">Type</label>
               <div class="radio-group">
-                <label class="radio-option" :class="{ active: form.type === 'NOUVEAU' }">
+                <label class="radio-option btn-with-icon" :class="{ active: form.type === 'NOUVEAU' }">
                   <input type="radio" v-model="form.type" value="NOUVEAU" hidden />
-                  🆕 Nouveau
+                  <Sparkles :size="14" aria-hidden="true" />
+                  Nouveau
                 </label>
-                <label class="radio-option" :class="{ active: form.type === 'RETOUR' }">
+                <label class="radio-option btn-with-icon" :class="{ active: form.type === 'RETOUR' }">
                   <input type="radio" v-model="form.type" value="RETOUR" hidden />
-                  🔁 Retour
+                  <RotateCcw :size="14" aria-hidden="true" />
+                  Retour
                 </label>
               </div>
             </div>
@@ -225,7 +237,7 @@
         </template>
       </div>
     </div>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
@@ -233,8 +245,16 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../../stores/authStore';
 import { useRouter, useRoute } from 'vue-router';
 import api from '../../services/api';
-import AppSidebar from '../../components/AppSidebar.vue';
-import AppHeader from '../../components/AppHeader.vue';
+import {
+  AlertTriangle,
+  Bot,
+  CheckCircle2,
+  Clock,
+  RotateCcw,
+  Sparkles,
+} from 'lucide-vue-next';
+import AppLayout from '../../components/layout/AppLayout.vue';
+import ModalCloseBtn from '../../components/ui/ModalCloseBtn.vue';
 
 const authStore   = useAuthStore();
 const router      = useRouter();
@@ -415,12 +435,6 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-*, *::before, *::after { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
-
-.layout { display: flex; min-height: 100vh; background: #f0f4f8; }
-.main   { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
 .page-header {
   display: flex; align-items: flex-start; justify-content: space-between;
   padding: 1.75rem 2rem 1.25rem; background: white;
@@ -566,7 +580,9 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .confirm-ai-block {
   background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 1rem 1.125rem;
 }
-.confirm-ai-title { font-size: .75rem; font-weight: 800; color: #6d28d9; margin-bottom: .75rem; }
+.confirm-ai-title { display: flex; align-items: center; gap: .5rem; font-size: .75rem; font-weight: 800; color: #6d28d9; margin-bottom: .75rem; }
+.modal-title--icon { display: flex; align-items: center; gap: .5rem; }
+.dev-name--pending { display: inline-flex; align-items: center; gap: .25rem; }
 .confirm-ai-row   { display: flex; gap: .75rem; margin-bottom: .625rem; }
 .confirm-ai-item  { flex: 1; display: flex; flex-direction: column; gap: .3rem; }
 .confirm-ai-label { font-size: .65rem; font-weight: 700; color: #7c3aed; text-transform: uppercase; letter-spacing: .05em; }

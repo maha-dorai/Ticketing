@@ -1,8 +1,5 @@
 <template>
-  <div class="layout">
-    <AppSidebar />
-    <main class="main">
-      <AppHeader />
+  <AppLayout>
 
       <!-- Header Banner -->
       <div class="profile-banner">
@@ -15,7 +12,10 @@
           <div class="banner-info">
             <h1 class="profile-name">{{ user?.prenom }} {{ user?.nom }}</h1>
             <div class="profile-meta">
-              <span class="meta-item">✉ {{ user?.email }}</span>
+              <span class="meta-item meta-item--icon">
+                <Mail :size="14" aria-hidden="true" />
+                {{ user?.email }}
+              </span>
               <a v-if="isDeveloper && user?.github_link" :href="user.github_link" target="_blank" class="meta-item gh-link">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                 GitHub ↗
@@ -30,16 +30,25 @@
         <!-- Infos personnelles -->
         <div class="card">
           <div class="card-header">
-            <h2 class="card-title">👤 Informations personnelles</h2>
+            <h2 class="card-title card-title--icon">
+              <User :size="18" aria-hidden="true" />
+              Informations personnelles
+            </h2>
             <div class="header-actions">
-              <button @click="$router.push({ name: 'MyStats' })" class="btn-stats">📈 Mes statistiques</button>
+              <button @click="$router.push({ name: 'MyStats' })" class="btn-stats btn-with-icon">
+                <TrendingUp :size="14" aria-hidden="true" />
+                Mes statistiques
+              </button>
               <template v-if="!isManagerRole">
-                <button v-if="!editingInfo" @click="startEdit" class="btn-edit">✏ Modifier</button>
+                <button v-if="!editingInfo" @click="startEdit" class="btn-edit btn-with-icon">
+                  <Pencil :size="14" aria-hidden="true" />
+                  Modifier
+                </button>
                 <button v-else @click="cancelEditInfo" class="btn-cancel-sm">Annuler</button>
               </template>
             </div>
           </div>
-          <div v-if="infoMsg" class="alert" :class="infoOk ? 'alert-ok' : 'alert-err'">{{ infoOk ? '✓' : '✕' }} {{ infoMsg }}</div>
+          <AlertBanner v-if="infoMsg" :variant="infoOk ? 'success' : 'error'" class="alert" :class="infoOk ? 'alert-ok' : 'alert-err'">{{ infoMsg }}</AlertBanner>
 
           <div v-if="!editingInfo" class="info-grid">
             <div class="info-item">
@@ -92,9 +101,12 @@
         <!-- Changer Email — utilisateurs uniquement -->
         <div v-if="!isManagerRole" class="card">
           <div class="card-header">
-            <h2 class="card-title">✉ Adresse email</h2>
+            <h2 class="card-title card-title--icon">
+              <Mail :size="18" aria-hidden="true" />
+              Adresse email
+            </h2>
           </div>
-          <div v-if="emMsg" class="alert" :class="emOk ? 'alert-ok' : 'alert-err'">{{ emOk ? '✓' : '✕' }} {{ emMsg }}</div>
+          <AlertBanner v-if="emMsg" :variant="emOk ? 'success' : 'error'" class="alert" :class="emOk ? 'alert-ok' : 'alert-err'">{{ emMsg }}</AlertBanner>
           <form @submit.prevent="changeEm" class="form">
             <div class="row2">
               <div class="field">
@@ -121,9 +133,12 @@
         <!-- Changer MDP — utilisateurs uniquement -->
         <div v-if="!isManagerRole" class="card">
           <div class="card-header">
-            <h2 class="card-title">🔒 Mot de passe</h2>
+            <h2 class="card-title card-title--icon">
+              <Lock :size="18" aria-hidden="true" />
+              Mot de passe
+            </h2>
           </div>
-          <div v-if="pwMsg" class="alert" :class="pwOk ? 'alert-ok' : 'alert-err'">{{ pwOk ? '✓' : '✕' }} {{ pwMsg }}</div>
+          <AlertBanner v-if="pwMsg" :variant="pwOk ? 'success' : 'error'" class="alert" :class="pwOk ? 'alert-ok' : 'alert-err'">{{ pwMsg }}</AlertBanner>
           <form @submit.prevent="changePw" class="form">
             <div class="field">
               <label class="label">Mot de passe actuel</label>
@@ -161,15 +176,16 @@
         </div>
 
       </div>
-    </main>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, defineComponent, h } from 'vue';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
-import AppSidebar from '../../components/AppSidebar.vue';
+import { Lock, Mail, Pencil, TrendingUp, User } from 'lucide-vue-next';
+import AppLayout from '../../components/layout/AppLayout.vue';
+import AlertBanner from '../../components/ui/AlertBanner.vue';
 
 const authStore = useAuthStore();
 const user = computed(() => authStore.currentUser);
@@ -216,7 +232,7 @@ const saveInfo = async () => {
       authStore.currentUser.github_link = infoForm.value.github_link;
       localStorage.setItem('user', JSON.stringify(authStore.currentUser));
     }
-    infoOk.value = true; infoMsg.value = 'Informations mises à jour ✓';
+    infoOk.value = true; infoMsg.value = 'Informations mises à jour';
     editingInfo.value = false;
   } catch (e) { infoOk.value = false; infoMsg.value = e.response?.data?.message || 'Erreur.'; }
   finally { infoL.value = false; }
@@ -233,7 +249,7 @@ const strHintClass = computed(() => (['', 'hint-w', 'hint-f', 'hint-g', 'hint-s'
 const changePw = async () => {
   if (pw.value.nouveau !== pw.value.confirm) { pwMsg.value = 'Les mots de passe ne correspondent pas.'; pwOk.value = false; return; }
   pwL.value = true; pwMsg.value = '';
-  try { await api.put('/users/change-password', { ancien_mot_de_passe: pw.value.ancien, nouveau_mot_de_passe: pw.value.nouveau }); authStore.clearForcePasswordChange(); pwOk.value = true; pwMsg.value = 'Mot de passe modifié ✓'; pw.value = { ancien: '', nouveau: '', confirm: '' }; }
+  try { await api.put('/users/change-password', { ancien_mot_de_passe: pw.value.ancien, nouveau_mot_de_passe: pw.value.nouveau }); authStore.clearForcePasswordChange(); pwOk.value = true; pwMsg.value = 'Mot de passe modifié'; pw.value = { ancien: '', nouveau: '', confirm: '' }; }
   catch (e) { pwOk.value = false; pwMsg.value = e.response?.data?.message || 'Erreur.'; }
   finally { pwL.value = false; }
 };
@@ -242,18 +258,13 @@ const changePw = async () => {
 const em = ref({ email: '', mdp: '' }), emMsg = ref(''), emOk = ref(true), emL = ref(false);
 const changeEm = async () => {
   emL.value = true; emMsg.value = '';
-  try { await api.put('/users/change-email', { new_email: em.value.email, mot_de_passe: em.value.mdp }); if (authStore.currentUser) { authStore.currentUser.email = em.value.email; localStorage.setItem('user', JSON.stringify(authStore.currentUser)); } emOk.value = true; emMsg.value = 'Email modifié ✓'; em.value = { email: '', mdp: '' }; }
+  try { await api.put('/users/change-email', { new_email: em.value.email, mot_de_passe: em.value.mdp }); if (authStore.currentUser) { authStore.currentUser.email = em.value.email; localStorage.setItem('user', JSON.stringify(authStore.currentUser)); } emOk.value = true; emMsg.value = 'Email modifié'; em.value = { email: '', mdp: '' }; }
   catch (e) { emOk.value = false; emMsg.value = e.response?.data?.message || 'Erreur.'; }
   finally { emL.value = false; }
 };
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-*{font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;}
-.layout{display:flex;min-height:100vh;background:#f8fafc;}
-.main{flex:1;overflow-y:auto;}
-
 /* Banner */
 .profile-banner{position:relative;background:#0f172a;overflow:hidden;}
 .banner-bg{position:absolute;inset:0;background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 60%,#1e1b4b 100%);opacity:.9;}

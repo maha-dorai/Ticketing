@@ -28,7 +28,7 @@
               :class="{ 'unread': !n.lu }"
               @click="markAsReadAndGo(n)"
             >
-              <div class="notif-icon">🔔</div>
+              <Bell class="notif-icon" aria-hidden="true" />
               <div class="notif-content">
                 <p class="notif-text">{{ n.message }}</p>
                 <span class="notif-time">{{ timeAgo(n.created_at) }}</span>
@@ -74,6 +74,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { Bell } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 
@@ -395,7 +396,10 @@ onUnmounted(() => {
   background-color: #eff6ff;
 }
 .notif-icon {
-  font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: var(--color-brand-500, #3b82f6);
 }
 .notif-content {
   flex: 1;

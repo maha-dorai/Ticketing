@@ -1,14 +1,13 @@
 <template>
-  <div class="page">
-    <div class="container">
-      <div class="brand"><span class="brand-icon">🔐</span><h1 class="brand-name">Sécurité requise</h1></div>
+  <AuthLayout wide>
+      <AuthBrand title="Sécurité requise" />
       <div class="card">
         <div class="warn-box">
-          <span class="warn-icon">⚠</span>
+          <AlertTriangle class="warn-icon" aria-hidden="true" />
           <p>Votre compte a été créé par un administrateur. Vous devez définir votre propre mot de passe avant de continuer.</p>
         </div>
 
-        <div v-if="message" class="alert" :class="ok ? 'alert-ok' : 'alert-err'">{{ ok ? '✓' : '✕' }} {{ message }}</div>
+        <AlertBanner v-if="message" :variant="ok ? 'success' : 'error'" class="alert" :class="ok ? 'alert-ok' : 'alert-err'">{{ message }}</AlertBanner>
 
         <form @submit.prevent="submit" class="form">
           <div class="field">
@@ -31,8 +30,7 @@
           </button>
         </form>
       </div>
-    </div>
-  </div>
+  </AuthLayout>
 </template>
 
 <script setup>
@@ -40,6 +38,10 @@ import { ref, computed, defineComponent, h } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
 import api from '../services/api';
+import { AlertTriangle } from 'lucide-vue-next';
+import AuthLayout from '../components/layout/AuthLayout.vue';
+import AuthBrand from '../components/auth/AuthBrand.vue';
+import AlertBanner from '../components/ui/AlertBanner.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -88,16 +90,9 @@ const submit = async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-*{font-family:'Plus Jakarta Sans',sans-serif;box-sizing:border-box;}
-.page{min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);display:flex;align-items:center;justify-content:center;padding:2rem 1rem;}
-.container{width:100%;max-width:440px;}
-.brand{text-align:center;margin-bottom:2rem;}
-.brand-icon{font-size:2.5rem;display:block;margin-bottom:.5rem;}
-.brand-name{font-size:1.375rem;font-weight:800;color:#f8fafc;margin:0;letter-spacing:-.02em;}
 .card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:2rem;box-shadow:0 25px 50px rgba(0,0,0,.4);}
 .warn-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:.875rem 1rem;display:flex;align-items:flex-start;gap:.75rem;margin-bottom:1.5rem;}
-.warn-icon{font-size:1.125rem;flex-shrink:0;margin-top:.125rem;}
+.warn-icon{width:1.125rem;height:1.125rem;flex-shrink:0;margin-top:.125rem;color:#fbbf24;}
 .warn-box p{font-size:.8125rem;color:#fcd34d;margin:0;line-height:1.6;}
 .alert{padding:.75rem 1rem;border-radius:8px;font-size:.875rem;font-weight:500;margin-bottom:1.25rem;}
 .alert-ok{background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.2);}

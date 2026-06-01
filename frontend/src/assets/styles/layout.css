@@ -1,0 +1,31 @@
+/**
+ * Ticketing — Authenticated app shell layout
+ * Used by AppLayout.vue; replaces per-view .layout / .main duplication.
+ */
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-bg-app);
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+/* Variant: lock viewport (Kanban-heavy pages) — opt-in via .layout--fixed */
+.layout--fixed {
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.layout--fixed .main {
+  min-height: 0;
+  overflow: hidden;
+}

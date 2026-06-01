@@ -1,17 +1,12 @@
 <template>
-  <div class="auth-page">
-    <div class="auth-container">
-      <div class="brand">
-        <div class="brand-icon">🎫</div>
-        <h1 class="brand-name">Ticketing</h1>
-        <p class="brand-sub">Réinitialisation du mot de passe</p>
-      </div>
+  <AuthLayout>
+      <AuthBrand subtitle="Réinitialisation du mot de passe" />
       <div class="card">
         <h2 class="card-title">Mot de passe oublié ?</h2>
         <p class="card-sub">Saisissez votre email et nous vous enverrons un lien de réinitialisation.</p>
 
-        <div v-if="successMessage" class="alert alert-success">✓ {{ successMessage }}</div>
-        <div v-if="errorMessage" class="alert alert-error">✕ {{ errorMessage }}</div>
+        <AlertBanner v-if="successMessage" variant="success" class="alert alert-success">{{ successMessage }}</AlertBanner>
+        <AlertBanner v-if="errorMessage" variant="error" class="alert alert-error">{{ errorMessage }}</AlertBanner>
 
         <form @submit.prevent="onSubmit" class="form">
           <div class="field">
@@ -23,7 +18,7 @@
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/>
               <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/>
             </svg>
-            <span v-else>{{ successMessage ? 'Lien envoyé ✓' : 'Envoyer le lien →' }}</span>
+            <span v-else>{{ successMessage ? 'Lien envoyé' : 'Envoyer le lien →' }}</span>
           </button>
         </form>
 
@@ -31,13 +26,15 @@
           <router-link to="/login" class="back-link">← Retour à la connexion</router-link>
         </div>
       </div>
-    </div>
-  </div>
+  </AuthLayout>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import api from '../services/api';
+import AuthLayout from '../components/layout/AuthLayout.vue';
+import AuthBrand from '../components/auth/AuthBrand.vue';
+import AlertBanner from '../components/ui/AlertBanner.vue';
 const email = ref(''); const loading = ref(false); const successMessage = ref(''); const errorMessage = ref('');
 const onSubmit = async () => {
   loading.value = true; successMessage.value = ''; errorMessage.value = '';
@@ -48,12 +45,6 @@ const onSubmit = async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-* { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
-.auth-page { min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); display: flex; align-items: center; justify-content: center; padding: 2rem 1rem; }
-.auth-container { width: 100%; max-width: 420px; }
-.brand { text-align: center; margin-bottom: 2rem; }
-.brand-icon { font-size: 2.5rem; } .brand-name { font-size: 1.75rem; font-weight: 800; color: #f8fafc; letter-spacing: -0.02em; margin: 0; } .brand-sub { color: #64748b; font-size: 0.875rem; margin: 0.25rem 0 0; }
 .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2rem; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
 .card-title { font-size: 1.25rem; font-weight: 700; color: #f1f5f9; margin: 0 0 0.5rem; }
 .card-sub { font-size: 0.875rem; color: #64748b; margin: 0 0 1.5rem; line-height: 1.5; }

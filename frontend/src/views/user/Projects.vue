@@ -1,8 +1,5 @@
 <template>
-  <div class="layout">
-    <AppSidebar />
-    <main class="main">
-      <AppHeader />
+  <AppLayout>
 
       <!-- Page Header -->
       <div class="page-hero">
@@ -148,15 +145,13 @@
           </button>
         </div>
       </div>
-    </main>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
-import AppSidebar from '../../components/AppSidebar.vue';
-import AppHeader from '../../components/AppHeader.vue';
+import AppLayout from '../../components/layout/AppLayout.vue';
 
 const projects = ref([]);
 const loading = ref(false);
@@ -203,14 +198,7 @@ const fmt = d => d
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
-
-*, *::before, *::after { box-sizing: border-box; }
-
 /* ── Layout ─────────────────────────────────────────────────────── */
-.layout { display: flex; min-height: 100vh; background: #f0f4f9; font-family: 'Plus Jakarta Sans', sans-serif; }
-.main   { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-
 /* ── Hero / Page header ─────────────────────────────────────────── */
 .page-hero {
   background: #fff;
