@@ -1,96 +1,104 @@
 <template>
-  <Teleport to="body">
+  <div class="ds-field">
+    <label v-if="label" :for="inputId" class="ds-field__label" :class="{ 'ds-field__label--required': required }">
+      {{ label }}
+    </label>
     <div
-      v-if="modelValue"
-      class="ds-modal-backdrop"
-      role="presentation"
-      @click.self="onBackdropClick"
+      v-if="$slots.prefix || $slots.suffix"
+      class="ds-input-wrap"
+      :class="{
+        'ds-input-wrap--icon-left': $slots.prefix,
+        'ds-input-wrap--icon-right': $slots.suffix,
+      }"
     >
-      <div
-        class="ds-modal"
-        :class="sizeClass"
-        role="dialog"
-        :aria-modal="true"
-        :aria-labelledby="titleId"
-        @keydown.esc="onEscape"
-      >
-        <header v-if="$slots.header || title" class="ds-modal__header">
-          <slot name="header">
-            <h2 :id="titleId" class="ds-modal__title">{{ title }}</h2>
-          </slot>
-          <button
-            v-if="closable"
-            type="button"
-            class="ds-modal__close"
-            aria-label="Fermer"
-            @click="close"
-          >
-            <X class="ds-icon ds-icon--sm" aria-hidden="true" />
-          </button>
-        </header>
-        <div class="ds-modal__body">
-          <slot />
-        </div>
-        <footer v-if="$slots.footer" class="ds-modal__footer">
-          <slot name="footer" />
-        </footer>
-      </div>
+      <span v-if="$slots.prefix" class="ds-input-wrap__icon ds-input-wrap__icon--left">
+        <slot name="prefix" />
+      </span>
+      <input
+        :id="inputId"
+        v-bind="$attrs"
+        :value="modelValue"
+        :type="type"
+        :disabled="disabled"
+        :required="required"
+        :aria-invalid="error ? true : undefined"
+        :aria-describedby="describedBy"
+        class="inputClasses"
+        @input="onInput"
+      />
+      <span v-if="$slots.suffix" class="ds-input-wrap__action">
+        <slot name="suffix" />
+      </span>
     </div>
-  </Teleport>
+    <input
+      v-else
+      :id="inputId"
+      v-bind="$attrs"
+      :value="modelValue"
+      :type="type"
+      :disabled="disabled"
+      :required="required"
+      :aria-invalid="error ? true : undefined"
+      :aria-describedby="describedBy"
+      class="inputClasses"
+      @input="onInput"
+    />
+    <p v-if="hint && !error" :id="hintId" class="ds-field__hint">{{ hint }}</p>
+    <p v-if="error" :id="errorId" class="ds-field__error" role="alert">{{ error }}</p>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed, useId, watch } from 'vue';
-import { X } from 'lucide-vue-next';
+import { computed, useId } from 'vue';
+
+defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(
   defineProps<{
-    modelValue: boolean;
-    title?: string;
+    modelValue?: string | number;
+    label?: string;
+    hint?: string;
+    error?: string;
+    type?: string;
     size?: 'sm' | 'md' | 'lg';
-    closable?: boolean;
-    closeOnBackdrop?: boolean;
-    closeOnEscape?: boolean;
+    auth?: boolean;
+    disabled?: boolean;
+    required?: boolean;
   }>(),
   {
+    modelValue: '',
+    type: 'text',
     size: 'md',
-    closable: true,
-    closeOnBackdrop: true,
-    closeOnEscape: true,
+    auth: false,
+    disabled: false,
+    required: false,
   },
 );
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  close: [];
+  'update:modelValue': [value: string];
 }>();
 
 const uid = useId();
-const titleId = computed(() => `ds-modal-title-${uid}`);
+const inputId = computed(() => `ds-input-${uid}`);
+const hintId = computed(() => `ds-hint-${uid}`);
+const errorId = computed(() => `ds-error-${uid}`);
 
-const sizeClass = computed(() => {
-  if (props.size === 'sm') return 'ds-modal--sm';
-  if (props.size === 'lg') return 'ds-modal--lg';
+const describedBy = computed(() => {
+  if (props.error) return errorId.value;
+  if (props.hint) return hintId.value;
   return undefined;
 });
 
-function close() {
-  emit('update:modelValue', false);
-  emit('close');
-}
+const inputClasses = computed(() => [
+  'ds-input',
+  props.size !== 'md' && `ds-input--${props.size}`,
+  props.auth && 'ds-input--auth',
+  props.error && 'ds-input--error',
+]);
 
-function onBackdropClick() {
-  if (props.closeOnBackdrop) close();
+function onInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  emit('update:modelValue', target.value);
 }
-
-function onEscape() {
-  if (props.closeOnEscape) close();
-}
-
-watch(
-  () => props.modelValue,
-  (open) => {
-    document.body.style.overflow = open ? 'hidden' : '';
-  },
-);
 </script>

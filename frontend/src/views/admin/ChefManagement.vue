@@ -1,25 +1,23 @@
 <template>
   <AppLayout>
-      <div class="glass-header">
-        <div class="header-content">
-          <h1 class="page-title">
-            <Crown class="page-title-icon" aria-hidden="true" />
-            <span>Gestion des Chefs de projet</span>
-          </h1>
-          <p class="page-sub">Créez et gérez les accès privilégiés de la plateforme avec simplicité.</p>
-        </div>
-      </div>
+      <PageHeader variant="glass" stacked>
+        <template #title>
+          <Crown aria-hidden="true" />
+          <span>Gestion des Chefs de projet</span>
+        </template>
+        <template #subtitle>Créez et gérez les accès privilégiés de la plateforme avec simplicité.</template>
+      </PageHeader>
 
       <div class="page-content">
         <transition name="fade-slide">
-          <AlertBanner
+          <BaseAlert
             v-if="globalMessage"
-            :variant="globalSuccess ? 'sparkle' : 'error'"
-            class="alert"
-            :class="globalSuccess ? 'alert-ok' : 'alert-err'"
+            :variant="globalSuccess ? 'success' : 'error'"
+            :icon="globalSuccess ? Sparkles : XCircle"
+            class="ds-page-feedback"
           >
             {{ globalMessage }}
-          </AlertBanner>
+          </BaseAlert>
         </transition>
 
         <div class="dashboard-grid">
@@ -157,9 +155,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
-import { AlertTriangle, Ban, CheckCircle2, Clock, Crown, Loader2, Plus, Search } from 'lucide-vue-next';
+import { AlertTriangle, Ban, CheckCircle2, Clock, Crown, Loader2, Plus, Search, Sparkles, XCircle } from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
-import AlertBanner from '../../components/ui/AlertBanner.vue';
+import PageHeader from '../../components/ui/PageHeader.vue';
+import BaseAlert from '../../components/ui/BaseAlert.vue';
 
 const admins = ref([]);
 const loading = ref(false);
@@ -234,41 +233,9 @@ const confirmRevoke = async () => {
 </script>
 
 <style scoped>
-/* ── HEADER GLASSMORPHISM ── */
-.glass-header {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255,255,255,0.4);
-  padding: 2.5rem 3rem;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
-}
-.header-content { max-width: 1400px; margin: 0 auto; }
-.page-title {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  font-size: 2rem;
-  font-weight: 800;
-  margin: 0 0 0.5rem;
-  letter-spacing: -0.03em;
-}
-.page-title-icon { width: 1.75rem; height: 1.75rem; color: #3b82f6; flex-shrink: 0; }
-.page-title span {
-  background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.page-sub { font-size: 0.95rem; color: #64748b; margin: 0; font-weight: 500; }
-
-.page-content { padding: 2.5rem 3rem; max-width: 1400px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 2rem; }
+.page-content { padding: 2rem 2.5rem; max-width: 1400px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 1.5rem; }
 
 /* ── ALERTS ── */
-.alert { padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 0.9rem; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-.alert-ok { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-.alert-err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 .search-box .search-icon { color: #94a3b8; flex-shrink: 0; }
 .spin { animation: spin 1s linear infinite; }
 

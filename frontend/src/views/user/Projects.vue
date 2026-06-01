@@ -1,60 +1,51 @@
 <template>
   <AppLayout>
 
-      <!-- Page Header -->
-      <div class="page-hero">
-        <div class="hero-content">
-          <div class="hero-text">
-            <h1 class="hero-title">Mes Projets</h1>
-            <p class="hero-sub">{{ projects.length }} projet{{ projects.length !== 1 ? 's' : '' }} assigné{{ projects.length !== 1 ? 's' : '' }}</p>
+      <PageHeader variant="hero" stacked>
+        <template #title>Mes Projets</template>
+        <template #subtitle>{{ projects.length }} projet{{ projects.length !== 1 ? 's' : '' }} assigné{{ projects.length !== 1 ? 's' : '' }}</template>
+        <template #toolbar>
+          <div class="ds-search">
+            <Search class="ds-search-icon" :size="16" aria-hidden="true" />
+            <input v-model="search" @input="onSearch" type="text" placeholder="Rechercher un projet..." class="ds-search-input" />
+            <kbd v-if="!search" class="ph-search__kbd">⌘K</kbd>
           </div>
-        </div>
-
-        <!-- Search bar -->
-        <div class="search-bar">
-          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
-          </svg>
-          <input v-model="search" @input="onSearch" type="text" placeholder="Rechercher un projet..." class="search-input" />
-          <kbd v-if="!search" class="search-kbd">⌘K</kbd>
-        </div>
-      </div>
+        </template>
+      </PageHeader>
 
       <div class="page-body">
 
         <!-- Loading -->
-        <div v-if="loading" class="loading-state">
-          <div class="loader-ring"></div>
-          <p>Chargement des projets…</p>
+        <div v-if="loading" class="ds-loading-state">
+          <Loader2 class="spin" :size="20" aria-hidden="true" />
+          Chargement des projets…
         </div>
 
         <!-- Empty -->
-        <div v-else-if="!projects.length" class="empty-state">
-          <div class="empty-visual">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="1.2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-            </svg>
+        <div v-else-if="!projects.length" class="ds-empty-state">
+          <div class="ds-empty-visual">
+            <Folder :size="48" :stroke-width="1.2" aria-hidden="true" />
           </div>
           <h3>Aucun projet trouvé</h3>
           <p>Vous n'avez aucun projet correspondant à votre recherche.</p>
         </div>
 
         <!-- Kanban Board -->
-        <div v-else class="kanban-board">
-          <div v-for="col in columns" :key="col.id" class="kanban-col">
+        <div v-else class="ds-kanban-board">
+          <div v-for="col in columns" :key="col.id" class="ds-kanban-column ds-kanban-column--white">
             <!-- Column header -->
-            <div class="col-head" :class="`col-head--${col.id}`">
-              <div class="col-head-left">
-                <span class="col-indicator" :class="`ind--${col.id}`"></span>
-                <span class="col-title">{{ col.title }}</span>
-              </div>
-              <span class="col-badge">{{ getProjectsByStatus(col.id).length }}</span>
+            <div class="ds-kanban-column-header" :class="`ds-kanban-column--${col.id}`">
+              <h3 class="ds-kanban-column-title">
+                <span class="ds-status-dot" :class="`ds-status-dot--${col.id}`" aria-hidden="true" />
+                {{ col.title }}
+              </h3>
+              <span class="ds-kanban-column-count">{{ getProjectsByStatus(col.id).length }}</span>
             </div>
 
             <!-- Cards -->
-            <div class="col-body">
-              <div v-if="getProjectsByStatus(col.id).length === 0" class="col-empty">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+            <div class="ds-kanban-column-body">
+              <div v-if="getProjectsByStatus(col.id).length === 0" class="ds-kanban-column-empty">
+                <Plus :size="24" :stroke-width="1.2" aria-hidden="true" />
                 <span>Aucun projet</span>
               </div>
 
@@ -71,9 +62,7 @@
                   <!-- Header row -->
                   <div class="card-header">
                     <div class="card-icon" :class="`icon--${col.id}`">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-                      </svg>
+                      <Folder :size="14" :stroke-width="2" aria-hidden="true" />
                     </div>
                     <span class="card-id">#{{ p.id }}</span>
                   </div>
@@ -87,7 +76,7 @@
                   <!-- Archive dates -->
                   <div v-if="p.statut === 'archive' && (p.date_debut || p.date_fin)" class="card-dates">
                     <div class="date-row">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5"/></svg>
+                      <Calendar :size="11" :stroke-width="2" aria-hidden="true" />
                       <span>{{ fmt(p.date_debut) }} → {{ fmt(p.date_fin) }}</span>
                     </div>
                   </div>
@@ -109,7 +98,7 @@
 
                     <!-- Tickets count -->
                     <div class="ticket-count">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" /></svg>
+                      <Ticket :size="11" :stroke-width="2" aria-hidden="true" />
                       <span>{{ p.tickets_count || 0 }} ticket{{ (p.tickets_count || 0) !== 1 ? 's' : '' }}</span>
                     </div>
                   </div>
@@ -117,7 +106,7 @@
 
                 <!-- Hover arrow -->
                 <div class="card-arrow">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                  <ChevronRight :size="14" :stroke-width="2.5" aria-hidden="true" />
                 </div>
               </div>
             </div>
@@ -125,23 +114,23 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="pagination.last_page > 1" class="pagination">
-          <button @click="loadPage(pagination.current_page - 1)" :disabled="pagination.current_page === 1" class="page-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+        <div v-if="pagination.last_page > 1" class="ds-pagination">
+          <button @click="loadPage(pagination.current_page - 1)" :disabled="pagination.current_page === 1" class="ds-page-btn">
+            <ChevronLeft :size="14" :stroke-width="2.5" aria-hidden="true" />
             Précédent
           </button>
-          <div class="page-dots">
+          <div class="ds-page-dots">
             <span
               v-for="n in pagination.last_page"
               :key="n"
-              class="page-dot"
+              class="ds-page-dot"
               :class="{ active: n === pagination.current_page }"
               @click="loadPage(n)"
             ></span>
           </div>
-          <button @click="loadPage(pagination.current_page + 1)" :disabled="pagination.current_page === pagination.last_page" class="page-btn">
+          <button @click="loadPage(pagination.current_page + 1)" :disabled="pagination.current_page === pagination.last_page" class="ds-page-btn">
             Suivant
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+            <ChevronRight :size="14" :stroke-width="2.5" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -151,7 +140,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { Calendar, ChevronLeft, ChevronRight, Folder, Plus, Search, Ticket } from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
+import PageHeader from '../../components/ui/PageHeader.vue';
 
 const projects = ref([]);
 const loading = ref(false);
@@ -198,208 +189,8 @@ const fmt = d => d
 </script>
 
 <style scoped>
-/* ── Layout ─────────────────────────────────────────────────────── */
-/* ── Hero / Page header ─────────────────────────────────────────── */
-.page-hero {
-  background: #fff;
-  border-bottom: 1px solid #e4eaf3;
-  padding: 2rem 2.5rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.hero-content {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.hero-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: .6875rem;
-  font-weight: 700;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  margin-bottom: .5rem;
-}
-.eyebrow-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: #3b82f6;
-  animation: blink 2.4s ease-in-out infinite;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
-
-.hero-title {
-  margin: 0;
-  font-size: 1.875rem;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -.03em;
-  line-height: 1.1;
-}
-.hero-sub {
-  margin: .375rem 0 0;
-  font-size: .875rem;
-  color: #64748b;
-  font-weight: 500;
-}
-
-/* Stats pills */
-.hero-stats {
-  display: flex;
-  align-items: center;
-  background: #f8fafc;
-  border: 1px solid #e4eaf3;
-  border-radius: 12px;
-  padding: .625rem 1rem;
-  gap: .75rem;
-}
-.stat-pill  { display: flex; align-items: center; gap: .4rem; }
-.stat-dot   { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.dot-green  { background: #10b981; }
-.dot-blue   { background: #3b82f6; }
-.dot-gray   { background: #94a3b8; }
-.stat-val   { font-size: 1rem; font-weight: 800; color: #0f172a; line-height: 1; }
-.stat-label { font-size: .75rem; font-weight: 500; color: #64748b; }
-.stat-divider { width: 1px; height: 20px; background: #e4eaf3; }
-
-/* Search bar */
-.search-bar {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.search-icon {
-  position: absolute; left: 14px;
-  color: #94a3b8; pointer-events: none;
-}
-.search-input {
-  width: 100%;
-  padding: .75rem 3rem .75rem 2.5rem;
-  border: 1px solid #e4eaf3;
-  border-radius: 10px;
-  font-size: .875rem;
-  font-family: inherit;
-  color: #1e293b;
-  background: #f8fafc;
-  outline: none;
-  transition: border-color .18s, box-shadow .18s, background .18s;
-}
-.search-input:focus {
-  background: #fff;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,.12);
-}
-.search-input::placeholder { color: #c0cfe0; }
-.search-kbd {
-  position: absolute; right: 12px;
-  font-size: .6875rem; color: #b0bec5;
-  background: #f1f5f9; border: 1px solid #e4eaf3;
-  border-radius: 5px; padding: 2px 6px;
-  font-family: inherit; pointer-events: none;
-}
-
 /* ── Page Body ──────────────────────────────────────────────────── */
 .page-body { flex: 1; padding: 2rem 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
-
-/* ── States ─────────────────────────────────────────────────────── */
-.loading-state {
-  display: flex; flex-direction: row;
-  align-items: center; justify-content: center;
-  gap: .625rem; padding: 5rem 0;
-  color: #94a3b8; font-size: .875rem;
-}
-.loader-ring {
-  width: 36px; height: 36px;
-  border: 3px solid #e4eaf3;
-  border-top-color: #3b82f6;
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.empty-state {
-  display: flex; flex-direction: column;
-  align-items: center; padding: 5rem 2rem;
-  text-align: center;
-}
-.empty-visual {
-  width: 72px; height: 72px;
-  background: #f1f5f9; border-radius: 18px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 1.25rem;
-}
-.empty-state h3 { margin: 0 0 .5rem; font-size: 1.125rem; font-weight: 700; color: #1e293b; }
-.empty-state p  { margin: 0; font-size: .875rem; color: #94a3b8; }
-
-/* ── Kanban Board ───────────────────────────────────────────────── */
-.kanban-board {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-/* Column */
-.kanban-col {
-  background: #fff;
-  border: 1px solid #e4eaf3;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-/* Column header */
-.col-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.125rem;
-  border-bottom: 1px solid #e4eaf3;
-  background: #fafbfd;
-}
-.col-head--ouvert   { border-top: 3px solid #10b981; }
-.col-head--en_cours { border-top: 3px solid #3b82f6; }
-.col-head--archive  { border-top: 3px solid #cbd5e1; }
-
-.col-head-left { display: flex; align-items: center; gap: .5rem; }
-.col-indicator {
-  width: 8px; height: 8px; border-radius: 50%;
-  flex-shrink: 0;
-}
-.ind--ouvert   { background: #10b981; }
-.ind--en_cours { background: #3b82f6; }
-.ind--archive  { background: #cbd5e1; }
-
-.col-title { font-size: .875rem; font-weight: 700; color: #1e293b; }
-.col-badge {
-  min-width: 22px; height: 22px;
-  background: #f1f5f9; color: #475569;
-  font-size: .6875rem; font-weight: 800;
-  border-radius: 11px;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 6px;
-}
-
-/* Column body */
-.col-body {
-  padding: .875rem;
-  display: flex;
-  flex-direction: column;
-  gap: .75rem;
-  min-height: 80px;
-}
-.col-empty {
-  display: flex; align-items: center; justify-content: center;
-  gap: .5rem; color: #c0cfe0;
-  font-size: .8125rem; font-weight: 500;
-  padding: 1.5rem 0;
-}
 
 /* ── Project Card ───────────────────────────────────────────────── */
 .project-card {

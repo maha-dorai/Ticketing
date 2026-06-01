@@ -1,13 +1,13 @@
 <template>
   <AppLayout>
     <div class="ticket-details-page">
-      <div v-if="loading" class="text-center text-gray-400 py-12 text-sm">Chargement du ticket...</div>
+      <div v-if="loading" class="ds-loading-state">Chargement du ticket...</div>
 
       <div v-else-if="ticket" class="space-y-6 max-w-5xl mx-auto pb-12">
 
         <div class="flex items-center justify-between mb-2">
           <button @click="$router.push({ name: 'Tickets', params: { projectId: route.params.projectId } })" class="text-blue-500 hover:text-blue-700 font-bold text-sm flex items-center gap-2 transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+            <ChevronLeft :size="16" :stroke-width="2.5" aria-hidden="true" />
             Retour aux tickets
           </button>
           <div class="flex gap-2">
@@ -57,7 +57,7 @@
         <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100">
           <div class="flex justify-between items-center mb-4">
             <h3 class="text-sm font-extrabold text-slate-700 uppercase tracking-widest flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="text-blue-500"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <File :size="16" :stroke-width="2" class="text-blue-500" aria-hidden="true" />
               Pipeline d'état
             </h3>
             <span v-if="stateUpdating" class="text-xs text-blue-500 font-bold animate-pulse">Synchronisation...</span>
@@ -104,16 +104,14 @@
         <div v-if="ticket.categorie_ia || ticket.priorite_ia || ticket.solution_ia" class="bg-white border border-slate-200 border-l-4 border-l-indigo-500 rounded-2xl shadow-sm p-6">
           <div class="flex items-center gap-3 mb-4">
             <div class="text-indigo-600 flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21m0 0l-.813-5.096M9 21h3.75m-6.53 0h3.28m4.937-5.096l.812 5.096m0 0l.813-5.096M15 21h3.75m-6.53 0h3.28M9 3h6m-6 3h6m-7.5 3h9M3 12h18" />
-              </svg>
+              <Bot :size="20" :stroke-width="2" aria-hidden="true" />
             </div>
             <div>
               <h3 class="text-sm font-extrabold text-slate-800 tracking-tight">Analyse par Intelligence Artificielle</h3>
               <p class="text-[10px] text-slate-400 font-medium">Générée automatiquement à la création du ticket</p>
             </div>
             <button @click="reanalyzeAI" :disabled="aiLoading" class="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition disabled:opacity-50" title="Relancer l'analyse IA">
-              <svg v-if="!aiLoading" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="text-slate-500"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+              <RefreshCw v-if="!aiLoading" :size="12" :stroke-width="2.5" class="text-slate-500" aria-hidden="true" />
               <span>{{ aiLoading ? 'Mise à jour...' : 'Relancer' }}</span>
             </button>
           </div>
@@ -340,6 +338,8 @@ import api from '../../services/api';
 import { storageAssetUrl } from '../../utils/storageUrl';
 import {
   AlertTriangle,
+  Bot,
+  ChevronLeft,
   CheckCircle2,
   Clock,
   Code2,
@@ -350,6 +350,7 @@ import {
   MessageSquare,
   Paperclip,
   Pencil,
+  RefreshCw,
   Ticket,
   Trash2,
   XCircle,

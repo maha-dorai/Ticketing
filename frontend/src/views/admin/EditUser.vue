@@ -1,20 +1,18 @@
 <template>
   <AppLayout>
-    <div class="page-header">
-      <div class="header-left">
+    <PageHeader back-inline>
+      <template #back>
         <button type="button" class="back-btn" @click="$router.push({ name: 'UserManagement' })">
           <ArrowLeft :size="18" aria-hidden="true" />
           Retour
         </button>
-        <div>
-          <h1 class="page-title">
-            <UserPen class="page-title-icon" aria-hidden="true" />
-            Modifier l'utilisateur
-          </h1>
-          <p v-if="!loading" class="page-sub">{{ form.prenom }} {{ form.nom }}</p>
-        </div>
-      </div>
-    </div>
+      </template>
+      <template #title>
+        <UserPen aria-hidden="true" />
+        Modifier l'utilisateur
+      </template>
+      <template v-if="!loading" #subtitle>{{ form.prenom }} {{ form.nom }}</template>
+    </PageHeader>
 
     <div class="page-content">
       <div v-if="loading" class="loading-state">
@@ -23,25 +21,25 @@
       </div>
 
       <div v-else class="form-card">
-        <AlertBanner v-if="errorMsg" variant="error" class="alert alert-err">{{ errorMsg }}</AlertBanner>
-        <AlertBanner v-if="successMsg" variant="success" class="alert alert-ok">{{ successMsg }}</AlertBanner>
+        <BaseAlert v-if="errorMsg" variant="error" :icon="XCircle" class="ds-page-feedback">{{ errorMsg }}</BaseAlert>
+        <BaseAlert v-if="successMsg" variant="success" :icon="CheckCircle2" class="ds-page-feedback">{{ successMsg }}</BaseAlert>
 
         <form class="form" @submit.prevent="sauvegarder">
           <div class="field">
             <label class="label">Nom</label>
-            <input v-model="form.nom" type="text" class="input" required />
+            <BaseInput v-model="form.nom" type="text" required />
           </div>
           <div class="field">
             <label class="label">Prénom</label>
-            <input v-model="form.prenom" type="text" class="input" required />
+            <BaseInput v-model="form.prenom" type="text" required />
           </div>
           <div class="field">
             <label class="label">Email</label>
-            <input v-model="form.email" type="email" class="input" required />
+            <BaseInput v-model="form.email" type="email" required />
           </div>
           <div class="field">
             <label class="label">Rôle</label>
-            <select v-model="form.role" class="input select" required>
+            <select v-model="form.role" class="ds-input ds-select" required>
               <option value="testeur">Testeur</option>
               <option value="developpeur">Développeur</option>
               <option value="chef_de_projet">Chef de projet</option>
@@ -50,10 +48,10 @@
           </div>
 
           <div class="actions">
-            <button type="button" class="btn-secondary" @click="$router.push({ name: 'UserManagement' })">
+            <BaseButton type="button" variant="secondary" @click="$router.push({ name: 'UserManagement' })">
               Annuler
-            </button>
-            <button type="submit" class="btn-primary">Enregistrer</button>
+            </BaseButton>
+            <BaseButton type="submit" variant="primary">Enregistrer</BaseButton>
           </div>
         </form>
       </div>
@@ -64,10 +62,13 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowLeft, Loader2, UserPen } from 'lucide-vue-next';
+import { ArrowLeft, CheckCircle2, Loader2, UserPen, XCircle } from 'lucide-vue-next';
 import api from '../../services/api';
 import AppLayout from '../../components/layout/AppLayout.vue';
-import AlertBanner from '../../components/ui/AlertBanner.vue';
+import PageHeader from '../../components/ui/PageHeader.vue';
+import BaseAlert from '../../components/ui/BaseAlert.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
+import BaseInput from '../../components/ui/BaseInput.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -106,16 +107,6 @@ const sauvegarder = async () => {
 </script>
 
 <style scoped>
-.page-header {
-  padding: 1.5rem 2.5rem;
-  border-bottom: 1px solid #e2e8f0;
-  background: white;
-}
-.header-left {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.25rem;
-}
 .back-btn {
   display: inline-flex;
   align-items: center;
@@ -136,27 +127,6 @@ const sauvegarder = async () => {
   color: #1e293b;
   border-color: #cbd5e1;
   background: #f8fafc;
-}
-.page-title {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-  letter-spacing: -0.02em;
-}
-.page-title-icon {
-  width: 1.375rem;
-  height: 1.375rem;
-  color: var(--color-brand, #2563eb);
-  flex-shrink: 0;
-}
-.page-sub {
-  font-size: 0.875rem;
-  color: #64748b;
-  margin: 0.25rem 0 0;
 }
 .page-content {
   padding: 2rem 2.5rem;
@@ -183,23 +153,6 @@ const sauvegarder = async () => {
     transform: rotate(360deg);
   }
 }
-.alert {
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
-}
-.alert-ok {
-  background: #f0fdf4;
-  color: #16a34a;
-  border: 1px solid #bbf7d0;
-}
-.alert-err {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
 .form {
   display: flex;
   flex-direction: column;
@@ -210,61 +163,21 @@ const sauvegarder = async () => {
   flex-direction: column;
   gap: 0.4rem;
 }
+.field .ds-input,
+.field .ds-select {
+  width: 100%;
+}
 .label {
   font-size: 0.8125rem;
   font-weight: 600;
   color: #475569;
-}
-.input {
-  width: 100%;
-  padding: 0.625rem 0.875rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  color: #1e293b;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-.select {
-  background: white;
-  cursor: pointer;
 }
 .actions {
   display: flex;
   gap: 0.75rem;
   margin-top: 0.5rem;
 }
-.btn-secondary,
-.btn-primary {
+.actions .ds-btn {
   flex: 1;
-  padding: 0.625rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-secondary {
-  background: white;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-}
-.btn-secondary:hover {
-  background: #f8fafc;
-  color: #1e293b;
-}
-.btn-primary {
-  background: #2563eb;
-  color: white;
-  border: none;
-}
-.btn-primary:hover {
-  background: #1d4ed8;
 }
 </style>

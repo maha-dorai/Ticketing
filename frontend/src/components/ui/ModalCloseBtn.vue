@@ -1,37 +1,104 @@
 <template>
-  <button type="button" class="modal-close-btn" :class="$attrs.class" aria-label="Fermer" @click="$emit('click')">
-    <X :size="18" aria-hidden="true" />
-  </button>
+  <div class="ds-field">
+    <label v-if="label" :for="inputId" class="ds-field__label" :class="{ 'ds-field__label--required': required }">
+      {{ label }}
+    </label>
+    <div
+      v-if="$slots.prefix || $slots.suffix"
+      class="ds-input-wrap"
+      :class="{
+        'ds-input-wrap--icon-left': $slots.prefix,
+        'ds-input-wrap--icon-right': $slots.suffix,
+      }"
+    >
+      <span v-if="$slots.prefix" class="ds-input-wrap__icon ds-input-wrap__icon--left">
+        <slot name="prefix" />
+      </span>
+      <input
+        :id="inputId"
+        v-bind="$attrs"
+        :value="modelValue"
+        :type="type"
+        :disabled="disabled"
+        :required="required"
+        :aria-invalid="error ? true : undefined"
+        :aria-describedby="describedBy"
+        class="inputClasses"
+        @input="onInput"
+      />
+      <span v-if="$slots.suffix" class="ds-input-wrap__action">
+        <slot name="suffix" />
+      </span>
+    </div>
+    <input
+      v-else
+      :id="inputId"
+      v-bind="$attrs"
+      :value="modelValue"
+      :type="type"
+      :disabled="disabled"
+      :required="required"
+      :aria-invalid="error ? true : undefined"
+      :aria-describedby="describedBy"
+      class="inputClasses"
+      @input="onInput"
+    />
+    <p v-if="hint && !error" :id="hintId" class="ds-field__hint">{{ hint }}</p>
+    <p v-if="error" :id="errorId" class="ds-field__error" role="alert">{{ error }}</p>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { X } from 'lucide-vue-next';
+import { computed, useId } from 'vue';
 
 defineOptions({ inheritAttrs: false });
 
-defineEmits<{ click: [] }>();
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | number;
+    label?: string;
+    hint?: string;
+    error?: string;
+    type?: string;
+    size?: 'sm' | 'md' | 'lg';
+    auth?: boolean;
+    disabled?: boolean;
+    required?: boolean;
+  }>(),
+  {
+    modelValue: '',
+    type: 'text',
+    size: 'md',
+    auth: false,
+    disabled: false,
+    required: false,
+  },
+);
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string];
+}>();
+
+const uid = useId();
+const inputId = computed(() => `ds-input-${uid}`);
+const hintId = computed(() => `ds-hint-${uid}`);
+const errorId = computed(() => `ds-error-${uid}`);
+
+const describedBy = computed(() => {
+  if (props.error) return errorId.value;
+  if (props.hint) return hintId.value;
+  return undefined;
+});
+
+const inputClasses = computed(() => [
+  'ds-input',
+  props.size !== 'md' && `ds-input--${props.size}`,
+  props.auth && 'ds-input--auth',
+  props.error && 'ds-input--error',
+]);
+
+function onInput(event: Event) {
+  const target = event.target as HTMLInputElement;
+  emit('update:modelValue', target.value);
+}
 </script>
-
-<style scoped>
-.modal-close-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem;
-  color: var(--color-text-muted, #94a3b8);
-  background: none;
-  border: none;
-  border-radius: var(--radius-md, 8px);
-  cursor: pointer;
-  transition: color 0.15s, background-color 0.15s;
-}
-
-.modal-close-btn:hover {
-  color: var(--color-text-primary, #0f172a);
-  background-color: var(--color-bg-subtle, #f1f5f9);
-}
-
-.modal-close-btn:focus-visible {
-  box-shadow: var(--shadow-focus);
-}
-</style>

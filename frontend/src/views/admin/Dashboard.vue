@@ -1,13 +1,15 @@
 <template>
   <AppLayout>
-      <div class="page-header">
-        <h1 class="page-title">
-          <BarChart3 class="page-title-icon" aria-hidden="true" />
+      <PageHeader stacked>
+        <template #title>
+          <BarChart3 aria-hidden="true" />
           Tableau de Bord Analytique
-        </h1>
-        <p class="page-subtitle" v-if="isAdmin">Vue globale de la plateforme (Administrateur)</p>
-        <p class="page-subtitle" v-else>Vue opérationnelle des projets (Chef de Projet)</p>
-      </div>
+        </template>
+        <template #subtitle>
+          <template v-if="isAdmin">Vue globale de la plateforme (Administrateur)</template>
+          <template v-else>Vue opérationnelle des projets (Chef de Projet)</template>
+        </template>
+      </PageHeader>
 
       <!-- Time Filter & Project Selector -->
       <div class="time-filters">
@@ -154,6 +156,7 @@ import { BarChart3 } from 'lucide-vue-next';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
 import AppLayout from '../../components/layout/AppLayout.vue';
+import PageHeader from '../../components/ui/PageHeader.vue';
 
 const authStore = useAuthStore();
 const isAdmin = computed(() => authStore.currentUser?.role === 'admin');
@@ -409,11 +412,6 @@ const managerHeatmapOptions = computed(() => ({
 </script>
 
 <style scoped>
-.page-header{padding:2rem 2.5rem 1rem;background:white;border-bottom:1px solid #e2e8f0;}
-.page-title{display:flex;align-items:center;gap:.625rem;font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;}
-.page-title-icon{width:1.375rem;height:1.375rem;color:var(--color-brand);flex-shrink:0;}
-.page-subtitle{font-size:.875rem;color:#64748b;margin-top:4px;}
-
 .time-filters {
   padding: 1rem 2.5rem;
   background: white;

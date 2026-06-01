@@ -1,21 +1,28 @@
 <template>
   <AppLayout>
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">Gestion des membres</h1>
-          <p class="page-sub">Validez les inscriptions et gérez les accès</p>
-        </div>
-        <div class="header-stats">
-          <div class="stat"><span class="stat-num yellow">{{ pendingUsers.length }}</span><span class="stat-label">En attente</span></div>
-          <div class="stat"><span class="stat-num green">{{ activeUsers.length }}</span><span class="stat-label">Actifs</span></div>
-          <div class="stat"><span class="stat-num gray">{{ disabledUsers.length }}</span><span class="stat-label">Désactivés</span></div>
-        </div>
-      </div>
+      <PageHeader>
+        <template #title>Gestion des membres</template>
+        <template #subtitle>Validez les inscriptions et gérez les accès</template>
+        <template #actions>
+          <div class="header-stats">
+            <div class="stat"><span class="stat-num yellow">{{ pendingUsers.length }}</span><span class="stat-label">En attente</span></div>
+            <div class="stat"><span class="stat-num green">{{ activeUsers.length }}</span><span class="stat-label">Actifs</span></div>
+            <div class="stat"><span class="stat-num gray">{{ disabledUsers.length }}</span><span class="stat-label">Désactivés</span></div>
+          </div>
+        </template>
+      </PageHeader>
 
       <div class="page-content">
-        <AlertBanner v-if="globalMessage" :variant="globalSuccess ? 'success' : 'error'" class="alert" :class="globalSuccess ? 'alert-ok' : 'alert-err'">{{ globalMessage }}</AlertBanner>
-        <div v-if="loading" class="loading-state">
-          <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/></svg>
+        <BaseAlert
+          v-if="globalMessage"
+          :variant="globalSuccess ? 'success' : 'error'"
+          :icon="globalSuccess ? CheckCircle2 : XCircle"
+          class="ds-page-feedback"
+        >
+          {{ globalMessage }}
+        </BaseAlert>
+        <div v-if="loading" class="ds-loading-state">
+          <Loader2 class="spin" :size="22" aria-hidden="true" />
           Chargement...
         </div>
 
@@ -42,9 +49,9 @@
                 Développeurs
               </button>
             </div>
-            <div class="search-wrap">
-              <svg class="si" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-              <input v-model="search" placeholder="Rechercher un membre..." class="search-input" />
+            <div class="ds-search">
+              <Search class="ds-search-icon" :size="14" aria-hidden="true" />
+              <input v-model="search" placeholder="Rechercher un membre..." class="ds-search-input" />
             </div>
           </div>
 
@@ -133,9 +140,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
-import { AlertTriangle, Ban, Check, FlaskConical, Monitor, RotateCcw, Users, X } from 'lucide-vue-next';
+import { AlertTriangle, Ban, Check, CheckCircle2, FlaskConical, Loader2, Monitor, RotateCcw, Search, Users, X, XCircle } from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
-import AlertBanner from '../../components/ui/AlertBanner.vue';
+import PageHeader from '../../components/ui/PageHeader.vue';
+import BaseAlert from '../../components/ui/BaseAlert.vue';
 
 const allUsers = ref([]), loading = ref(false), globalMessage = ref(''), globalSuccess = ref(true), cid = ref(null), pid = ref(null);
 const activeStatus = ref('en_attente');
@@ -182,20 +190,12 @@ const reactiver  = async (id) => { try { await api.put(`/users/${id}/reactivate`
 </script>
 
 <style scoped>
-.page-header{display:flex;align-items:flex-start;justify-content:space-between;padding:2rem 2.5rem 1.5rem;border-bottom:1px solid #e2e8f0;background:white;gap:1rem;flex-wrap:wrap;}
-.page-title{font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;letter-spacing:-.02em;}
-.page-sub{font-size:.875rem;color:#64748b;margin:.25rem 0 0;}
 .header-stats{display:flex;gap:1.5rem;}
 .stat{text-align:center;}
 .stat-num{display:block;font-size:1.5rem;font-weight:800;line-height:1;}
 .yellow{color:#d97706;}.green{color:#16a34a;}.gray{color:#94a3b8;}
 .stat-label{font-size:.75rem;color:#94a3b8;}
-.page-content{padding:1.5rem 2.5rem;display:flex;flex-direction:column;gap:1.25rem;}
-.alert{padding:.75rem 1rem;border-radius:8px;font-size:.875rem;font-weight:500;}
-.alert-ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
-.alert-err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
-.loading-state{display:flex;align-items:center;gap:.5rem;color:#94a3b8;font-size:.875rem;padding:2rem 0;}
-.spin{animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
+.page-content{padding:2rem 2.5rem;display:flex;flex-direction:column;gap:1.5rem;}
 .tab-bar{display:flex;gap:.375rem;background:white;border:1px solid #e2e8f0;border-radius:12px;padding:.375rem;width:fit-content;}
 .tab{display:flex;align-items:center;gap:.5rem;padding:.5rem 1.125rem;border-radius:8px;border:none;background:none;font-size:.8125rem;font-weight:600;color:#64748b;cursor:pointer;font-family:inherit;transition:all .15s;}
 .tab:hover{background:#f8fafc;color:#1e293b;}
@@ -211,11 +211,6 @@ const reactiver  = async (id) => { try { await api.put(`/users/${id}/reactivate`
 .rfb-active{background:#1e293b;color:white;border-color:#1e293b;}
 .rfb-test.rfb-active{background:#7c3aed;border-color:#7c3aed;}
 .rfb-dev.rfb-active{background:#1d4ed8;border-color:#1d4ed8;}
-.search-wrap{position:relative;}
-.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;}
-.search-input{padding:.5rem .875rem .5rem 2rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.875rem;color:#1e293b;background:white;outline:none;width:220px;font-family:inherit;transition:border-color .2s;}
-.search-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);}
-.search-input::placeholder{color:#cbd5e1;}
 .empty{text-align:center;padding:4rem 2rem;}
 .ei{margin-bottom:.75rem;color:#94a3b8;}
 .ct--warn{display:flex;align-items:center;gap:.5rem;}

@@ -1,16 +1,16 @@
 <template>
   <AppLayout>
 
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">Notifications</h1>
-          <p class="page-sub">Gardez un œil sur l'activité de vos tickets</p>
-        </div>
-        <button v-if="unreadCount > 0" @click="markAllAsRead" :disabled="marking" class="mark-btn btn-with-icon">
-          <CheckCheck :size="16" aria-hidden="true" />
-          Tout marquer comme lu
-        </button>
-      </div>
+      <PageHeader align="center">
+        <template #title>Notifications</template>
+        <template #subtitle>Gardez un œil sur l'activité de vos tickets</template>
+        <template #actions>
+          <button v-if="unreadCount > 0" @click="markAllAsRead" :disabled="marking" class="mark-btn btn-with-icon">
+            <CheckCheck :size="16" aria-hidden="true" />
+            Tout marquer comme lu
+          </button>
+        </template>
+      </PageHeader>
 
       <div class="page-content">
 
@@ -62,8 +62,8 @@
           <h2 class="modal-title">{{ confirmDialog.title }}</h2>
           <p class="modal-desc">{{ confirmDialog.message }}</p>
           <div class="modal-actions">
-            <button @click="cancelConfirm" class="btn-sm btn-cancel">Annuler</button>
-            <button @click="executeConfirm" class="btn-sm btn-primary">Confirmer</button>
+            <BaseButton size="sm" variant="secondary" @click="cancelConfirm">Annuler</BaseButton>
+            <BaseButton size="sm" variant="slate" @click="executeConfirm">Confirmer</BaseButton>
           </div>
         </div>
       </div>
@@ -77,7 +77,7 @@
           <div v-if="loadingDevs" class="loading">Chargement des développeurs...</div>
           <div v-else-if="projectDevs.length === 0" class="empty">Aucun développeur disponible sur ce projet.</div>
           <div v-else class="dev-list">
-            <select v-model="selectedDevId" class="form-select">
+            <select v-model="selectedDevId" class="ds-input ds-select">
               <option disabled value="">Sélectionnez un développeur...</option>
               <option v-for="dev in projectDevs" :key="dev.id" :value="dev.id">
                 {{ dev.prenom }} {{ dev.nom }} ({{ dev.active_tickets_count }} tickets actifs)
@@ -86,10 +86,10 @@
           </div>
           
           <div class="modal-actions">
-            <button @click="closeAssignModal" class="btn-sm btn-cancel">Annuler</button>
-            <button @click="submitReassign" class="btn-sm btn-primary" :disabled="!selectedDevId || assignLoading">
+            <BaseButton size="sm" variant="secondary" @click="closeAssignModal">Annuler</BaseButton>
+            <BaseButton size="sm" variant="slate" :disabled="!selectedDevId || assignLoading" :loading="assignLoading" @click="submitReassign">
               {{ assignLoading ? 'Assignation...' : 'Assigner' }}
-            </button>
+            </BaseButton>
           </div>
         </div>
       </div>
@@ -103,6 +103,8 @@ import { useRouter } from 'vue-router';
 import api from '../../services/api';
 import { CheckCheck, CheckCircle2, Inbox, XCircle } from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
+import PageHeader from '../../components/ui/PageHeader.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
 import { useAuthStore } from '../../stores/authStore';
 
 const authStore = useAuthStore();
@@ -291,9 +293,6 @@ const formatTime = (d) =>
 </script>
 
 <style scoped>
-.page-header { display: flex; align-items: center; justify-content: space-between; padding: 2rem 2.5rem 1.5rem; border-bottom: 1px solid #e2e8f0; background: white; gap: 1rem; flex-wrap: wrap; }
-.page-title { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -.02em; }
-.page-sub { font-size: .875rem; color: #64748b; margin: .25rem 0 0; }
 .mark-btn { padding: .5rem 1.125rem; background: #eff6ff; color: #2563eb; border: none; border-radius: 8px; font-size: .875rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: background .15s; }
 .mark-btn:hover:not(:disabled) { background: #dbeafe; }
 .mark-btn:disabled { opacity: .5; cursor: not-allowed; }
@@ -370,15 +369,6 @@ const formatTime = (d) =>
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-}
-
-.btn-cancel {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.btn-cancel:hover {
-  background: #e2e8f0;
 }
 
 @keyframes fadeIn {

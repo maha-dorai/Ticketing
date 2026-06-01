@@ -1,77 +1,73 @@
 <template>
   <AppLayout>
 
-      <!-- Page Hero -->
-      <div class="page-hero">
-        <div class="hero-content">
-          <div class="hero-text">
-            <h1 class="hero-title">Tableau des projets</h1>
+      <PageHeader variant="hero">
+        <template #title>Tableau des projets</template>
+        <template #actions>
+          <BaseButton variant="primary" @click="openCreate">
+            <Plus :size="15" aria-hidden="true" />
+            Nouveau projet
+          </BaseButton>
+        </template>
+        <template #toolbar>
+          <div class="ds-search">
+            <Search class="ds-search-icon" :size="16" aria-hidden="true" />
+            <input v-model="search" @input="onSearch" type="text" placeholder="Rechercher un projet..." class="ds-search-input" />
+            <kbd v-if="!search" class="ph-search__kbd">⌘K</kbd>
           </div>
-          <div class="hero-actions">
-            <button @click="openCreate" class="btn-new">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="15" height="15"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-              Nouveau projet
-            </button>
-          </div>
-        </div>
-
-        <!-- Search bar -->
-        <div class="search-bar">
-          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
-          </svg>
-          <input v-model="search" @input="onSearch" type="text" placeholder="Rechercher un projet..." class="search-input" />
-          <kbd v-if="!search" class="search-kbd">⌘K</kbd>
-        </div>
-      </div>
+        </template>
+      </PageHeader>
 
       <div class="page-body">
 
         <!-- Alert -->
-        <AlertBanner v-if="globalMsg" :variant="globalOk ? 'success' : 'error'" class="alert" :class="globalOk ? 'alert-ok' : 'alert-err'">
+        <BaseAlert
+          v-if="globalMsg"
+          :variant="globalOk ? 'success' : 'error'"
+          :icon="globalOk ? CheckCircle2 : XCircle"
+          class="ds-page-feedback"
+        >
           {{ globalMsg }}
-        </AlertBanner>
+        </BaseAlert>
 
         <!-- Loading -->
-        <div v-if="loading" class="loading-state">
-          <div class="loader-ring"></div>
-          <p>Chargement des projets…</p>
+        <div v-if="loading" class="ds-loading-state">
+          <Loader2 class="spin" :size="20" aria-hidden="true" />
+          Chargement des projets…
         </div>
 
         <!-- Empty -->
-        <div v-else-if="!projects.length" class="empty-state">
-          <div class="empty-visual">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="1.2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-            </svg>
+        <div v-else-if="!projects.length" class="ds-empty-state">
+          <div class="ds-empty-visual">
+            <Folder :size="48" :stroke-width="1.2" aria-hidden="true" />
           </div>
           <h3>Aucun projet trouvé</h3>
           <p>Aucun projet ne correspond à votre recherche.</p>
         </div>
 
         <!-- KANBAN BOARD -->
-        <div v-else class="kanban-board">
+        <div v-else class="ds-kanban-board">
           <div
             v-for="col in columns"
             :key="col.id"
-            class="kanban-col"
+            class="ds-kanban-column ds-kanban-column--white"
             @dragover.prevent
             @dragenter.prevent
             @drop="onDrop($event, col.id)"
           >
             <!-- Column header -->
-            <div class="col-head" :class="`col-head--${col.id}`">
-              <div class="col-head-left">
-                <span class="col-indicator" :class="`ind--${col.id}`"></span>
-                <span class="col-title">{{ col.title }}</span>
-              </div>
-              <span class="col-badge">{{ getProjectsByStatus(col.id).length }}</span>
+            <div class="ds-kanban-column-header" :class="`ds-kanban-column--${col.id}`">
+              <h3 class="ds-kanban-column-title">
+                <span class="ds-status-dot" :class="`ds-status-dot--${col.id}`" aria-hidden="true" />
+                {{ col.title }}
+              </h3>
+              <span class="ds-kanban-column-count">{{ getProjectsByStatus(col.id).length }}</span>
             </div>
 
             <!-- Cards -->
-            <div class="col-body">
-              <div v-if="getProjectsByStatus(col.id).length === 0" class="col-empty">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+            <div class="ds-kanban-column-body">
+              <div v-if="getProjectsByStatus(col.id).length === 0" class="ds-kanban-column-empty">
+                <Plus :size="24" :stroke-width="1.2" aria-hidden="true" />
                 <span>Aucun projet</span>
               </div>
 
@@ -89,16 +85,14 @@
                   <!-- Header row -->
                   <div class="card-header">
                     <div class="card-icon" :class="`icon--${col.id}`">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-                      </svg>
+                      <Folder :size="14" :stroke-width="2" aria-hidden="true" />
                     </div>
                     <div class="card-admin-actions">
-                      <button @click.stop="openEdit(p)" class="btn-icon" title="Modifier">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
+                      <button @click.stop="openEdit(p)" class="btn-icon" aria-label="Modifier le projet">
+                        <Pencil :size="13" aria-hidden="true" />
                       </button>
-                      <button @click.stop="openAssign(p)" class="btn-icon" title="Affecter membres">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                      <button @click.stop="openAssign(p)" class="btn-icon" aria-label="Affecter des membres">
+                        <Users :size="13" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -112,7 +106,7 @@
                   <!-- Deadline badge (ouvert / en_cours only) -->
                   <div v-if="p.statut !== 'archive' && p.date_fin" class="deadline-row">
                     <span class="deadline-badge" :class="deadlineBadge(p)?.color">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a10 10 0 11-20 0 10 10 0 0120 0z"/></svg>
+                      <Clock :size="10" :stroke-width="2.5" aria-hidden="true" />
                       {{ deadlineBadge(p)?.label }}
                     </span>
                   </div>
@@ -120,11 +114,11 @@
                   <!-- Clôture date (archive only) -->
                   <div v-if="p.statut === 'archive'" class="card-dates">
                     <div class="date-row">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5"/></svg>
+                      <Calendar :size="11" :stroke-width="2" aria-hidden="true" />
                       <span>Ouvert le {{ fmt(p.date_debut) }}</span>
                     </div>
                     <div class="date-row" style="margin-top:4px">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                      <Check :size="11" :stroke-width="2" aria-hidden="true" />
                       <span>Clôturé le {{ fmt(p.date_cloture || p.date_fin) }}</span>
                     </div>
                   </div>
@@ -146,7 +140,7 @@
 
                     <!-- Tickets count -->
                     <div class="ticket-count">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" /></svg>
+                      <Ticket :size="11" :stroke-width="2" aria-hidden="true" />
                       <span>{{ p.tickets_count || 0 }} ticket{{ (p.tickets_count || 0) !== 1 ? 's' : '' }}</span>
                     </div>
                   </div>
@@ -154,7 +148,7 @@
 
                 <!-- Drag handle hint -->
                 <div class="card-drag-hint" title="Glisser pour changer de statut">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 100-4 2 2 0 000 4zM8 14a2 2 0 100-4 2 2 0 000 4zM8 22a2 2 0 100-4 2 2 0 000 4zM16 6a2 2 0 100-4 2 2 0 000 4zM16 14a2 2 0 100-4 2 2 0 000 4zM16 22a2 2 0 100-4 2 2 0 000 4z"/></svg>
+                  <GripVertical :size="12" fill="currentColor" aria-hidden="true" />
                 </div>
               </div>
             </div>
@@ -162,138 +156,144 @@
         </div>
 
         <!-- Pagination -->
-        <div v-if="pagination.last_page > 1" class="pagination">
-          <button @click="loadPage(pagination.current_page - 1)" :disabled="pagination.current_page === 1" class="page-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+        <div v-if="pagination.last_page > 1" class="ds-pagination">
+          <button @click="loadPage(pagination.current_page - 1)" :disabled="pagination.current_page === 1" class="ds-page-btn">
+            <ChevronLeft :size="14" :stroke-width="2.5" aria-hidden="true" />
             Précédent
           </button>
-          <div class="page-dots">
+          <div class="ds-page-dots">
             <span
               v-for="n in pagination.last_page"
               :key="n"
-              class="page-dot"
+              class="ds-page-dot"
               :class="{ active: n === pagination.current_page }"
               @click="loadPage(n)"
             ></span>
           </div>
-          <button @click="loadPage(pagination.current_page + 1)" :disabled="pagination.current_page === pagination.last_page" class="page-btn">
+          <button @click="loadPage(pagination.current_page + 1)" :disabled="pagination.current_page === pagination.last_page" class="ds-page-btn">
             Suivant
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+            <ChevronRight :size="14" :stroke-width="2.5" aria-hidden="true" />
           </button>
         </div>
       </div>
 
     <!-- ═══ MODAL CREATE / EDIT ═══ -->
-    <div v-if="showModal" class="overlay" @click.self="showModal=false">
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="modal-title">{{ editing ? 'Modifier le projet' : 'Nouveau projet' }}</h3>
-          <ModalCloseBtn class="close-btn" @click="showModal=false" />
+    <BaseModal v-model="showModal" :title="editing ? 'Modifier le projet' : 'Nouveau projet'" size="lg">
+      <form @submit.prevent="saveProject" class="mform">
+        <div class="field">
+          <label class="label">Nom du projet <span class="required-tag">*</span></label>
+          <BaseInput v-model="form.nom" required placeholder="Ex : Refonte du site web" />
         </div>
-        <form @submit.prevent="saveProject" class="mform">
-          <div class="field">
-            <label class="label">Nom du projet <span class="required-tag">*</span></label>
-            <input v-model="form.nom" required placeholder="Ex : Refonte du site web" class="input" />
-          </div>
-          <div class="field">
-            <label class="label">Description</label>
-            <textarea v-model="form.description" placeholder="Décrivez brièvement l'objectif du projet..." class="input ta" rows="3"></textarea>
-          </div>
-          <div class="row2">
-            <div class="field">
-              <label class="label">Date de début</label>
-              <input v-model="form.date_debut" type="date" class="input" />
-              <span class="field-hint">Aujourd'hui par défaut</span>
-            </div>
-            <div class="field">
-              <label class="label">Deadline <span class="optional-tag">optionnel</span></label>
-              <input v-model="form.date_fin" type="date" :min="form.date_debut" class="input" />
-              <span class="field-hint">Affichée comme badge sur la carte</span>
-            </div>
-          </div>
-          <div v-if="editing" class="field">
-            <label class="label">Statut</label>
-            <select v-model="form.statut" class="input sel">
-              <option value="ouvert">Ouvert</option>
-              <option value="en_cours">En cours</option>
-              <option value="archive">Fermé (Archivé)</option>
-            </select>
-            <span v-if="form.statut === 'archive'" class="hint-text">Un projet ne peut être fermé que si tous ses tickets sont VALIDÉS.</span>
-          </div>
-          <AlertBanner v-if="formError" variant="error" class="alert alert-err">{{ formError }}</AlertBanner>
-
-          <!-- Member selection (create only) -->
-          <div v-if="!editing" class="field">
-            <label class="label">Membres <span class="required-tag">*</span></label>
-            <div class="member-grid-inline">
-              <label
-                v-for="u in allUsers.filter(u => u.statut === 'actif' && ['developpeur', 'testeur'].includes(u.role))"
-                :key="u.id"
-                class="member-check"
-                :class="{ selected: form.user_ids.includes(u.id) }"
-              >
-                <input type="checkbox" :value="u.id" v-model="form.user_ids" class="hidden-cb"/>
-                <div class="mc-av">{{ (u.prenom[0]||'')+(u.nom[0]||'') }}</div>
-                <div class="mc-info">
-                  <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
-                  <p class="mc-role">{{ u.role }}</p>
-                </div>
-                <Check v-if="form.user_ids.includes(u.id)" class="check-mark-icon" :size="14" aria-hidden="true" />
-              </label>
-            </div>
-            <span v-if="form.user_ids.length" class="field-hint">{{ form.user_ids.length }} membre(s) sélectionné(s)</span>
-          </div>
-          <div class="modal-footer">
-            <button type="button" @click="showModal=false" class="btn-cancel">Annuler</button>
-            <button type="submit" :disabled="saving" class="btn-primary">
-              <svg v-if="saving" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/></svg>
-              <span v-else>{{ editing ? 'Enregistrer' : 'Créer le projet' }}</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- ═══ MODAL ASSIGN ═══ -->
-    <div v-if="showAssign" class="overlay" @click.self="showAssign=false">
-      <div class="modal modal-wide">
-        <div class="modal-header">
-          <h3 class="modal-title">Affecter des membres — {{ currentProject?.nom }}</h3>
-          <ModalCloseBtn class="close-btn" @click="showAssign=false" />
+        <div class="field">
+          <label class="label">Description</label>
+          <textarea v-model="form.description" placeholder="Décrivez brièvement l'objectif du projet..." class="input ta" rows="3"></textarea>
         </div>
-        <div class="assign-body">
-          <p class="assign-hint">Sélectionnez les membres actifs à affecter à ce projet.</p>
-          <AlertBanner v-if="assignError" variant="error" class="alert alert-err" style="margin-bottom:1rem;">{{ assignError }}</AlertBanner>
-          <div class="member-grid">
-            <label v-for="u in activeMembers" :key="u.id" class="member-check" :class="{selected: selectedIds.includes(u.id)}">
-              <input type="checkbox" :value="u.id" v-model="selectedIds" class="hidden-cb"/>
+        <div class="row2">
+          <div class="field">
+            <label class="label">Date de début</label>
+            <BaseInput v-model="form.date_debut" type="date" />
+            <span class="field-hint">Aujourd'hui par défaut</span>
+          </div>
+          <div class="field">
+            <label class="label">Deadline <span class="optional-tag">optionnel</span></label>
+            <BaseInput v-model="form.date_fin" type="date" :min="form.date_debut" />
+            <span class="field-hint">Affichée comme badge sur la carte</span>
+          </div>
+        </div>
+        <div v-if="editing" class="field">
+          <label class="label">Statut</label>
+          <select v-model="form.statut" class="input sel">
+            <option value="ouvert">Ouvert</option>
+            <option value="en_cours">En cours</option>
+            <option value="archive">Fermé (Archivé)</option>
+          </select>
+          <span v-if="form.statut === 'archive'" class="hint-text">Un projet ne peut être fermé que si tous ses tickets sont VALIDÉS.</span>
+        </div>
+        <BaseAlert v-if="formError" variant="error" :icon="XCircle" class="ds-page-feedback">{{ formError }}</BaseAlert>
+
+        <!-- Member selection (create only) -->
+        <div v-if="!editing" class="field">
+          <label class="label">Membres <span class="required-tag">*</span></label>
+          <div class="member-grid-inline">
+            <label
+              v-for="u in allUsers.filter(u => u.statut === 'actif' && ['developpeur', 'testeur'].includes(u.role))"
+              :key="u.id"
+              class="member-check"
+              :class="{ selected: form.user_ids.includes(u.id) }"
+            >
+              <input type="checkbox" :value="u.id" v-model="form.user_ids" class="hidden-cb"/>
               <div class="mc-av">{{ (u.prenom[0]||'')+(u.nom[0]||'') }}</div>
               <div class="mc-info">
                 <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
                 <p class="mc-role">{{ u.role }}</p>
               </div>
-              <Check v-if="selectedIds.includes(u.id)" class="check-mark-icon" :size="14" aria-hidden="true" />
+              <Check v-if="form.user_ids.includes(u.id)" class="check-mark-icon" :size="14" aria-hidden="true" />
             </label>
           </div>
-          <div class="modal-footer">
-            <button @click="showAssign=false" class="btn-cancel">Annuler</button>
-            <button @click="saveAssign" :disabled="assigning" class="btn-primary">
-              <span>Confirmer l'affectation ({{ selectedIds.length }})</span>
-            </button>
-          </div>
+          <span v-if="form.user_ids.length" class="field-hint">{{ form.user_ids.length }} membre(s) sélectionné(s)</span>
+        </div>
+      </form>
+      <template #footer>
+        <BaseButton variant="secondary" @click="showModal=false">Annuler</BaseButton>
+        <BaseButton variant="slate" :disabled="saving" :loading="saving" @click="saveProject">
+          <span>{{ editing ? 'Enregistrer' : 'Créer le projet' }}</span>
+        </BaseButton>
+      </template>
+    </BaseModal>
+
+    <!-- ═══ MODAL ASSIGN ═══ -->
+    <BaseModal v-model="showAssign" :title="`Affecter des membres — ${currentProject?.nom}`" size="lg">
+      <div class="assign-body">
+        <p class="assign-hint">Sélectionnez les membres actifs à affecter à ce projet.</p>
+        <BaseAlert v-if="assignError" variant="error" :icon="XCircle" class="ds-page-feedback">{{ assignError }}</BaseAlert>
+        <div class="member-grid">
+          <label v-for="u in activeMembers" :key="u.id" class="member-check" :class="{selected: selectedIds.includes(u.id)}">
+            <input type="checkbox" :value="u.id" v-model="selectedIds" class="hidden-cb"/>
+            <div class="mc-av">{{ (u.prenom[0]||'')+(u.nom[0]||'') }}</div>
+            <div class="mc-info">
+              <p class="mc-name">{{ u.prenom }} {{ u.nom }}</p>
+              <p class="mc-role">{{ u.role }}</p>
+            </div>
+            <Check v-if="selectedIds.includes(u.id)" class="check-mark-icon" :size="14" aria-hidden="true" />
+          </label>
         </div>
       </div>
-    </div>
+      <template #footer>
+        <BaseButton variant="secondary" @click="showAssign=false">Annuler</BaseButton>
+        <BaseButton variant="slate" :disabled="assigning" :loading="assigning" @click="saveAssign">
+          Confirmer l'affectation ({{ selectedIds.length }})
+        </BaseButton>
+      </template>
+    </BaseModal>
   </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
-import { Check } from 'lucide-vue-next';
+import {
+  Calendar,
+  Check,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Folder,
+  GripVertical,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Ticket,
+  Users,
+  XCircle,
+} from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
-import AlertBanner from '../../components/ui/AlertBanner.vue';
-import ModalCloseBtn from '../../components/ui/ModalCloseBtn.vue';
+import PageHeader from '../../components/ui/PageHeader.vue';
+import BaseAlert from '../../components/ui/BaseAlert.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
+import BaseInput from '../../components/ui/BaseInput.vue';
+import BaseModal from '../../components/ui/BaseModal.vue';
 
 const projects = ref([]);
 const allUsers = ref([]);
@@ -502,135 +502,10 @@ const onDrop = async (e, newStatus) => {
 
 <style scoped>
 /* ── Layout ─────────────────────────────────────────────────────── */
-/* ── Page Hero ──────────────────────────────────────────────────── */
-.page-hero {
-  background: #fff;
-  border-bottom: 1px solid #e4eaf3;
-  padding: 2rem 2.5rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  flex-shrink: 0;
-}
-.hero-content {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.hero-title {
-  margin: 0;
-  font-size: 1.875rem;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -.03em;
-  line-height: 1.1;
-}
-.hero-sub {
-  margin: .375rem 0 0;
-  font-size: .875rem;
-  color: #64748b;
-  font-weight: 500;
-}
-.hero-actions {
-  display: flex;
-  align-items: center;
-  gap: .875rem;
-  flex-wrap: wrap;
-}
-
-/* Stats pills */
-.hero-stats {
-  display: flex;
-  align-items: center;
-  background: #f8fafc;
-  border: 1px solid #e4eaf3;
-  border-radius: 12px;
-  padding: .625rem 1rem;
-  gap: .75rem;
-}
-.stat-pill  { display: flex; align-items: center; gap: .4rem; }
-.stat-dot   { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.dot-green  { background: #10b981; }
-.dot-blue   { background: #3b82f6; }
-.dot-gray   { background: #94a3b8; }
-.stat-val   { font-size: 1rem; font-weight: 800; color: #0f172a; line-height: 1; }
-.stat-label { font-size: .75rem; font-weight: 500; color: #64748b; }
-.stat-divider { width: 1px; height: 20px; background: #e4eaf3; }
-
-/* New project button */
-.btn-new {
-  display: flex; align-items: center; gap: .5rem;
-  padding: .625rem 1.25rem;
-  background: linear-gradient(135deg, #2563eb, #4f46e5);
-  color: white; border: none; border-radius: 10px;
-  font-size: .875rem; font-weight: 700; font-family: inherit;
-  cursor: pointer; transition: transform .2s, box-shadow .2s;
-  white-space: nowrap;
-}
-.btn-new:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,.28); }
-
-/* Search bar */
-.search-bar {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.search-icon {
-  position: absolute; left: 14px;
-  color: #94a3b8; pointer-events: none;
-}
-.search-input {
-  width: 100%;
-  padding: .75rem 3rem .75rem 2.5rem;
-  border: 1px solid #e4eaf3;
-  border-radius: 10px;
-  font-size: .875rem;
-  font-family: inherit;
-  color: #1e293b;
-  background: #f8fafc;
-  outline: none;
-  transition: border-color .18s, box-shadow .18s, background .18s;
-}
-.search-input:focus {
-  background: #fff;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59,130,246,.12);
-}
-.search-input::placeholder { color: #c0cfe0; }
-.search-kbd {
-  position: absolute; right: 12px;
-  font-size: .6875rem; color: #b0bec5;
-  background: #f1f5f9; border: 1px solid #e4eaf3;
-  border-radius: 5px; padding: 2px 6px;
-  font-family: inherit; pointer-events: none;
-}
-
 /* ── Page Body ──────────────────────────────────────────────────── */
 .page-body { flex: 1; padding: 2rem 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
 
-/* ── Alert ──────────────────────────────────────────────────────── */
-.alert { padding: .75rem 1rem; border-radius: 8px; font-size: .875rem; font-weight: 600; }
-.alert-ok  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-.alert-err { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-
-/* ── Loading / Empty ────────────────────────────────────────────── */
-.loading-state {
-  display: flex; flex-direction: row;
-  align-items: center; justify-content: center;
-  gap: .625rem; padding: 5rem 0;
-  color: #94a3b8; font-size: .875rem;
-}
-.loader-ring {
-  width: 36px; height: 36px;
-  border: 3px solid #e4eaf3;
-  border-top-color: #3b82f6;
-  border-radius: 50%;
-  animation: spin .7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
+/* ── Form Styles ─────────────────────────────────────────────────── */
 .member-grid-inline {
   max-height: 200px;
   overflow-y: auto;
@@ -643,80 +518,6 @@ const onDrop = async (e, newStatus) => {
   background: #f8fafc;
 }
 .required-tag { color: #ef4444; font-size: .75rem; margin-left: 2px; }
-
-.empty-state {
-  display: flex; flex-direction: column;
-  align-items: center; padding: 5rem 2rem;
-  text-align: center;
-}
-.empty-visual {
-  width: 72px; height: 72px;
-  background: #f1f5f9; border-radius: 18px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 1.25rem;
-}
-.empty-state h3 { margin: 0 0 .5rem; font-size: 1.125rem; font-weight: 700; color: #1e293b; }
-.empty-state p  { margin: 0; font-size: .875rem; color: #94a3b8; }
-
-/* ── Kanban Board ───────────────────────────────────────────────── */
-.kanban-board {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-/* Column */
-.kanban-col {
-  background: #fff;
-  border: 1px solid #e4eaf3;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-/* Column header */
-.col-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.125rem;
-  border-bottom: 1px solid #e4eaf3;
-  background: #fafbfd;
-}
-.col-head--ouvert   { border-top: 3px solid #10b981; }
-.col-head--en_cours { border-top: 3px solid #3b82f6; }
-.col-head--archive  { border-top: 3px solid #cbd5e1; }
-
-.col-head-left { display: flex; align-items: center; gap: .5rem; }
-.col-indicator { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.ind--ouvert   { background: #10b981; }
-.ind--en_cours { background: #3b82f6; }
-.ind--archive  { background: #cbd5e1; }
-
-.col-title { font-size: .875rem; font-weight: 700; color: #1e293b; }
-.col-badge {
-  min-width: 22px; height: 22px;
-  background: #f1f5f9; color: #475569;
-  font-size: .6875rem; font-weight: 800;
-  border-radius: 11px;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 6px;
-}
-
-/* Column body */
-.col-body {
-  padding: .875rem;
-  display: flex;
-  flex-direction: column;
-  gap: .75rem;
-  min-height: 80px;
-}
-.col-empty {
-  display: flex; align-items: center; justify-content: center;
-  gap: .5rem; color: #c0cfe0;
-  font-size: .8125rem; font-weight: 500;
-  padding: 1.5rem 0;
-}
 
 /* ── Project Card ───────────────────────────────────────────────── */
 .project-card {
@@ -902,15 +703,11 @@ const onDrop = async (e, newStatus) => {
 .mform { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
 .field { display: flex; flex-direction: column; gap: .35rem; }
 .label { font-size: .75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
-.input { padding: .625rem .875rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; color: #1e293b; font-size: .9rem; font-family: inherit; outline: none; transition: border-color .2s; }
-.input:focus { border-color: #3b82f6; background: white; }
+.field :deep(.ds-input) { width: 100%; }
 .ta { resize: vertical; min-height: 80px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 .hint-text { font-size: .75rem; color: #eab308; font-weight: 600; margin-top: 4px; }
 .modal-footer { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1rem; }
-.btn-cancel { padding: .5rem 1rem; background: white; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; font-weight: 600; font-family: inherit; cursor: pointer; }
-.btn-primary { padding: .5rem 1rem; background: #1e293b; color: white; border: none; border-radius: 8px; font-weight: 700; font-family: inherit; cursor: pointer; }
-.btn-primary:disabled { opacity: .6; cursor: not-allowed; }
 
 /* Assign modal */
 .assign-body { padding: 1.5rem; }
