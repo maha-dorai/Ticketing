@@ -1,192 +1,244 @@
 <template>
   <AppLayout>
-    <div class="ticket-details-page">
-      <div v-if="loading" class="ds-loading-state">Chargement du ticket...</div>
+    <div class="ds-detail-page">
+      <div v-if="loading" class="ds-loading-state">
+        <Loader2 class="spin" :size="20" aria-hidden="true" />
+        Chargement du ticket…
+      </div>
 
-      <div v-else-if="ticket" class="space-y-6 max-w-5xl mx-auto pb-12">
-
-        <div class="flex items-center justify-between mb-2">
-          <button @click="$router.push({ name: 'Tickets', params: { projectId: route.params.projectId } })" class="text-blue-500 hover:text-blue-700 font-bold text-sm flex items-center gap-2 transition">
-            <ChevronLeft :size="16" :stroke-width="2.5" aria-hidden="true" />
+      <template v-else-if="ticket">
+        <div class="ds-detail-header">
+          <button
+            type="button"
+            class="ds-back-link"
+            @click="$router.push({ name: 'Tickets', params: { projectId: route.params.projectId } })"
+          >
+            <ChevronLeft :size="16" aria-hidden="true" />
             Retour aux tickets
           </button>
-          <div class="flex gap-2">
-            <span :class="prioriteClass(ticket.priorite)" class="px-3 py-1 text-xs font-bold rounded-full border bg-white shadow-sm">{{ ticket.priorite }}</span>
-          </div>
+          <BaseBadge :variant="prioBadge(ticket.priorite)" pill>{{ ticket.priorite }}</BaseBadge>
         </div>
 
-        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight leading-tight flex items-center gap-3">
-          <Ticket class="text-blue-600 flex-shrink-0" :size="28" aria-hidden="true" />
+        <h1 class="ds-detail-title">
+          <Ticket :size="24" aria-hidden="true" />
           {{ ticket.titre }}
         </h1>
 
-        <div v-if="confirmDialog.show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-          <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform scale-100 transition-all">
-            <p class="text-slate-800 font-bold mb-6 text-center text-lg">{{ confirmDialog.message }}</p>
-            <div class="flex justify-center gap-3">
-              <button @click="confirmDialog.show = false" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition">Annuler</button>
-              <button @click="confirmDialog.onConfirm(); confirmDialog.show = false" :class="confirmDialog.danger ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'" class="px-5 py-2.5 rounded-xl font-bold text-white transition shadow-md">Confirmer</button>
+        <div v-if="confirmDialog.show" class="ds-modal-backdrop">
+          <div class="ds-modal ds-modal--sm" role="dialog">
+            <div class="ds-modal__body" style="text-align: center">
+              <p class="ds-callout__title" style="margin-bottom: 1.5rem">{{ confirmDialog.message }}</p>
+              <div style="display: flex; justify-content: center; gap: 0.75rem">
+                <BaseButton variant="secondary" @click="confirmDialog.show = false">Annuler</BaseButton>
+                <BaseButton
+                  :variant="confirmDialog.danger ? 'danger' : 'primary'"
+                  @click="confirmDialog.onConfirm(); confirmDialog.show = false"
+                >
+                  Confirmer
+                </BaseButton>
+              </div>
             </div>
           </div>
         </div>
 
-        <div v-if="reclamationModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-          <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full">
-            <div class="flex items-center gap-3 mb-4">
-              <AlertTriangle class="text-amber-500 flex-shrink-0" :size="24" aria-hidden="true" />
-              <h3 class="text-lg font-extrabold text-slate-800">Raison de la réclamation</h3>
-            </div>
-            <p class="text-sm text-slate-500 mb-4">Décrivez ce qui ne va pas avec la résolution proposée. Le développeur recevra ce message.</p>
-            <textarea
-              v-model="reclamationModal.raison"
-              rows="4"
-              placeholder="Ex: Le bug est toujours présent sur la page de connexion, le formulaire ne valide pas..."
-              class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm resize-none outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 text-slate-800 placeholder-slate-400"
-              autofocus
-            ></textarea>
-            <p v-if="reclamationModal.error" class="text-xs text-red-500 mt-2 font-medium">{{ reclamationModal.error }}</p>
-            <div class="flex justify-end gap-3 mt-5">
-              <button @click="reclamationModal.show = false; reclamationModal.raison = ''; reclamationModal.error = ''" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition">Annuler</button>
-              <button @click="submitReclamation" class="px-5 py-2.5 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition shadow-md">
-                Envoyer la réclamation
+        <div v-if="reclamationModal.show" class="ds-modal-backdrop" @click.self="reclamationModal.show = false">
+          <div class="ds-modal" role="dialog">
+            <div class="ds-modal__header">
+              <h3 class="ds-modal__title">
+                <AlertTriangle :size="18" aria-hidden="true" />
+                Raison de la réclamation
+              </h3>
+              <button
+                type="button"
+                class="ds-modal__close"
+                aria-label="Fermer"
+                @click="reclamationModal.show = false; reclamationModal.raison = ''; reclamationModal.error = ''"
+              >
+                &times;
               </button>
             </div>
+            <div class="ds-modal__body">
+              <p class="ds-callout__text" style="margin-bottom: 1rem">
+                Décrivez ce qui ne va pas avec la résolution proposée. Le développeur recevra ce message.
+              </p>
+              <textarea
+                v-model="reclamationModal.raison"
+                rows="4"
+                class="ds-textarea"
+                placeholder="Ex: Le bug est toujours présent sur la page de connexion…"
+                autofocus
+              />
+              <p v-if="reclamationModal.error" class="ds-field__error">{{ reclamationModal.error }}</p>
+            </div>
+            <div class="ds-modal__footer">
+              <BaseButton
+                variant="secondary"
+                @click="reclamationModal.show = false; reclamationModal.raison = ''; reclamationModal.error = ''"
+              >
+                Annuler
+              </BaseButton>
+              <BaseButton variant="primary" @click="submitReclamation">Envoyer la réclamation</BaseButton>
+            </div>
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-sm font-extrabold text-slate-700 uppercase tracking-widest flex items-center gap-2">
-              <File :size="16" :stroke-width="2" class="text-blue-500" aria-hidden="true" />
-              Pipeline d'état
-            </h3>
-            <span v-if="stateUpdating" class="text-xs text-blue-500 font-bold animate-pulse">Synchronisation...</span>
-          </div>
+        <BaseCard>
+          <template #header>
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+              <h2 class="ds-section-label">
+                <File :size="16" aria-hidden="true" />
+                Pipeline d'état
+              </h2>
+              <span v-if="stateUpdating" class="ds-caption">Synchronisation…</span>
+            </div>
+          </template>
 
-          <div class="flex flex-col md:flex-row items-stretch gap-3 h-auto md:h-28">
+          <div class="ds-pipeline">
             <div
               v-for="col in columns"
               :key="col.etat"
-              class="flex-1 rounded-xl border-2 transition-all relative overflow-hidden flex flex-col justify-center items-center p-3"
-              :class="[
-                dragTarget === col.etat ? 'border-blue-400 bg-blue-50 scale-[1.02] shadow-inner' : 'border-slate-100 bg-slate-50',
-                ticket.etat === col.etat ? 'border-blue-200 bg-blue-50/50' : ''
-              ]"
+              class="ds-pipeline__step"
+              :class="{
+                'ds-pipeline__step--active': ticket.etat === col.etat,
+                'ds-pipeline__step--dragover': dragTarget === col.etat,
+              }"
               @dragover.prevent="onDragOver(col.etat)"
               @drop.prevent="onDrop(col.etat)"
             >
-              <span class="text-[11px] font-extrabold text-slate-500 mb-3 uppercase tracking-wider text-center">{{ col.label }}</span>
-              
+              <span class="ds-pipeline__label">{{ col.label }}</span>
               <div
                 v-if="ticket.etat === col.etat"
-                class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-5 py-2.5 rounded-full shadow-lg shadow-blue-600/30 transition-transform flex items-center gap-2"
-                :class="canDragTicket ? 'cursor-grab active:cursor-grabbing hover:scale-105' : 'opacity-70 cursor-not-allowed'"
+                class="ds-pipeline__chip"
+                :class="canDragTicket ? 'ds-pipeline__chip--draggable' : 'ds-pipeline__chip--static'"
                 :draggable="canDragTicket"
                 @dragstart="onDragStart"
                 @dragend="onDragEnd"
               >
-                <template v-if="canDragTicket">
-                  <GripVertical :size="14" aria-hidden="true" />
-                  Glissez-moi
-                </template>
-                <template v-else>
-                  <Lock :size="14" aria-hidden="true" />
-                  Actuel
-                </template>
+                <GripVertical v-if="canDragTicket" :size="14" aria-hidden="true" />
+                <Lock v-else :size="14" aria-hidden="true" />
+                {{ canDragTicket ? 'Glisser' : 'Actuel' }}
               </div>
             </div>
           </div>
-          <p v-if="!canDragTicket" class="text-xs text-center text-slate-400 mt-4 font-medium italic">
-            {{ isManager ? 'En tant que manager, vous êtes en lecture seule sur le flux Kanban.' : 'Vous n\'avez pas les droits de modifier cet état ou le ticket ne vous est pas assigné.' }}
+          <p v-if="!canDragTicket" class="ds-pipeline__hint">
+            {{
+              isManager
+                ? 'En tant que manager, vous êtes en lecture seule sur le flux.'
+                : "Vous n'avez pas les droits de modifier cet état ou le ticket ne vous est pas assigné."
+            }}
           </p>
+        </BaseCard>
+
+        <div
+          v-if="ticket.categorie_ia || ticket.priorite_ia || ticket.solution_ia"
+          class="ds-ai-panel"
+        >
+          <div class="ds-ai-panel__head">
+            <Bot :size="20" aria-hidden="true" />
+            <div style="flex: 1">
+              <h3 class="ds-ai-panel__title">Analyse automatique</h3>
+              <p class="ds-ai-panel__sub">Générée à la création du ticket</p>
+            </div>
+            <BaseButton variant="ghost" size="sm" :loading="aiLoading" @click="reanalyzeAI">
+              <RefreshCw v-if="!aiLoading" :size="14" aria-hidden="true" />
+              {{ aiLoading ? 'Mise à jour…' : 'Relancer' }}
+            </BaseButton>
+          </div>
+          <div class="ds-ai-tags">
+            <div v-if="ticket.categorie_ia" class="ds-ai-tag">
+              <span class="ds-ai-tag__label">Catégorie</span>
+              <span>{{ categorieLabel(ticket.categorie_ia) }}</span>
+            </div>
+            <div v-if="ticket.priorite_ia" class="ds-ai-tag">
+              <span class="ds-ai-tag__label">Priorité suggérée</span>
+              <BaseBadge :variant="prioBadge(ticket.priorite_ia)" pill>{{ ticket.priorite_ia }}</BaseBadge>
+              <span v-if="ticket.priorite_ia !== ticket.priorite" class="ds-caption">
+                (actuelle : {{ ticket.priorite }})
+              </span>
+            </div>
+          </div>
+          <div
+            v-if="ticket.solution_ia && currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser?.id"
+            class="ds-ai-solution"
+          >
+            <p class="ds-ai-tag__label">Solution suggérée</p>
+            <p class="ds-description">{{ ticket.solution_ia }}</p>
+          </div>
         </div>
 
-        <div v-if="ticket.categorie_ia || ticket.priorite_ia || ticket.solution_ia" class="bg-white border border-slate-200 border-l-4 border-l-indigo-500 rounded-2xl shadow-sm p-6">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="text-indigo-600 flex-shrink-0">
-              <Bot :size="20" :stroke-width="2" aria-hidden="true" />
-            </div>
-            <div>
-              <h3 class="text-sm font-extrabold text-slate-800 tracking-tight">Analyse par Intelligence Artificielle</h3>
-              <p class="text-[10px] text-slate-400 font-medium">Générée automatiquement à la création du ticket</p>
-            </div>
-            <button @click="reanalyzeAI" :disabled="aiLoading" class="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition disabled:opacity-50" title="Relancer l'analyse IA">
-              <RefreshCw v-if="!aiLoading" :size="12" :stroke-width="2.5" class="text-slate-500" aria-hidden="true" />
-              <span>{{ aiLoading ? 'Mise à jour...' : 'Relancer' }}</span>
-            </button>
-          </div>
+        <div class="ds-detail-layout">
+          <div class="ds-detail-main">
+            <BaseCard>
+              <div
+                v-if="ticket.description && ticket.description.trim()"
+                class="ds-description"
+                v-html="formatDescription(ticket.description)"
+              />
+              <p v-else class="ds-description ds-description--empty">
+                <FileText :size="16" aria-hidden="true" />
+                Aucune description fournie.
+              </p>
 
-          <div class="flex flex-wrap items-center gap-3">
-            <div v-if="ticket.categorie_ia" class="flex items-center gap-2 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-lg">
-              <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Catégorie :</span>
-              <span class="text-xs font-bold text-indigo-700">{{ categorieLabel(ticket.categorie_ia) }}</span>
-            </div>
-
-            <div v-if="ticket.priorite_ia" class="flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priorité suggérée :</span>
-              <span :class="prioriteClass(ticket.priorite_ia)" class="px-2 py-0.5 text-xs font-extrabold rounded border shadow-sm">{{ ticket.priorite_ia }}</span>
-              <span v-if="ticket.priorite_ia !== ticket.priorite" class="text-[10px] text-slate-400 italic font-normal">(actuelle : {{ ticket.priorite }})</span>
-            </div>
-          </div>
-
-          <div v-if="ticket.solution_ia && currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser?.id" class="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-100">
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Solution suggérée</p>
-            <p class="text-sm text-slate-700 leading-relaxed">{{ ticket.solution_ia }}</p>
-          </div>
-        </div>
-
-        <div class="flex flex-col lg:flex-row gap-6">
-          
-          <div class="flex-1 space-y-6">
-            
-            <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-8 border border-slate-100">
-              <div class="prose prose-slate max-w-none text-sm leading-relaxed">
-                <div v-if="ticket.description && ticket.description.trim()" v-html="formatDescription(ticket.description)"></div>
-                <p v-else class="text-slate-400 italic text-sm flex items-center gap-2">
-                  <FileText :size="16" aria-hidden="true" />
-                  Aucune description fournie.
-                </p>
-              </div>
-              
-              <div v-if="ticket.attachments?.length" class="mt-8 pt-6 border-t border-slate-100">
-                <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <div v-if="ticket.attachments?.length" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border)">
+                <h4 class="ds-section-label" style="margin-bottom: 1rem">
                   <Paperclip :size="14" aria-hidden="true" />
                   Pièces jointes ({{ ticket.attachments.length }})
                 </h4>
-                <div class="flex flex-wrap gap-3">
-                  <a v-for="att in ticket.attachments" :key="att.id" :href="storageAssetUrl(att.file_path)" target="_blank" class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:shadow-md rounded-xl text-sm font-medium text-blue-700 transition-all group">
-                    <File class="group-hover:scale-110 transition-transform flex-shrink-0" :size="20" aria-hidden="true" />
-                    <span class="truncate max-w-[200px]">{{ att.file_name }}</span>
+                <div class="ds-attachment-grid">
+                  <a
+                    v-for="att in ticket.attachments"
+                    :key="att.id"
+                    :href="storageAssetUrl(att.file_path)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="ds-attachment-link"
+                  >
+                    <File :size="18" aria-hidden="true" />
+                    <span>{{ att.file_name }}</span>
                   </a>
                 </div>
               </div>
-            </div>
+            </BaseCard>
 
-            <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 overflow-hidden border border-slate-100 flex flex-col">
-              <div class="px-8 py-5 border-b border-slate-100 bg-slate-50/50">
-                <h2 class="text-sm font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-2">
+            <div class="ds-card ds-comments" style="padding: 0; overflow: hidden">
+              <div class="ds-comments__header">
+                <h2 class="ds-section-label">
                   <MessageSquare :size="16" aria-hidden="true" />
                   Commentaires ({{ ticket.comments?.length || 0 }})
                 </h2>
               </div>
 
-              <div class="p-8 overflow-y-auto space-y-6 max-h-[500px]" ref="chatBox">
-                <div v-if="!ticket.comments?.length" class="text-center text-sm text-slate-400 py-10 font-medium italic">Aucun commentaire pour le moment.</div>
+              <div ref="chatBox" class="ds-comments__list">
+                <p v-if="!ticket.comments?.length" class="ds-comments__empty">
+                  Aucun commentaire pour le moment.
+                </p>
 
                 <div
                   v-for="comment in ticket.comments"
                   :key="comment.id"
-                  class="flex flex-col max-w-[85%]"
-                  :class="comment.user_id === currentUser.id ? 'ml-auto items-end' : 'mr-auto items-start'"
+                  class="ds-comment group"
+                  :class="{ 'ds-comment--own': comment.user_id === currentUser.id }"
                 >
-                  <div class="flex items-center gap-2 mb-1.5" :class="comment.user_id === currentUser.id ? 'flex-row-reverse' : ''">
-                    <span class="text-xs font-bold text-slate-700">{{ comment.user?.prenom }} {{ comment.user?.nom }}</span>
-                    <span class="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{{ formatTime(comment.created_at) }}</span>
-                    <span v-if="comment.user_id === currentUser.id" class="flex gap-1 ml-1 opacity-0 group-hover:opacity-100 transition">
-                      <button @click="startEdit(comment)" type="button" class="text-slate-400 hover:text-blue-500 p-0.5 transition" aria-label="Modifier le commentaire">
+                  <div class="ds-comment__head">
+                    <span class="ds-comment__author">
+                      {{ comment.user?.prenom }} {{ comment.user?.nom }}
+                    </span>
+                    <span class="ds-comment__time">{{ formatTime(comment.created_at) }}</span>
+                    <span v-if="comment.user_id === currentUser.id" class="ds-comment__actions">
+                      <button
+                        type="button"
+                        class="ds-back-link"
+                        aria-label="Modifier le commentaire"
+                        @click="startEdit(comment)"
+                      >
                         <Pencil :size="14" aria-hidden="true" />
                       </button>
-                      <button @click="ask('Supprimer ce commentaire ?', () => deleteComment(comment), true)" type="button" class="text-slate-400 hover:text-red-500 p-0.5 transition" aria-label="Supprimer le commentaire">
+                      <button
+                        type="button"
+                        class="ds-back-link"
+                        aria-label="Supprimer le commentaire"
+                        @click="ask('Supprimer ce commentaire ?', () => deleteComment(comment), true)"
+                      >
                         <Trash2 :size="14" aria-hidden="true" />
                       </button>
                     </span>
@@ -194,138 +246,212 @@
 
                   <div
                     v-if="editingCommentId !== comment.id"
-                    class="px-5 py-3.5 rounded-2xl text-sm shadow-sm group relative"
-                    :class="comment.user_id === currentUser.id ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-none shadow-blue-600/20' : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-bl-none'"
+                    class="ds-comment__bubble"
+                    :class="comment.user_id === currentUser.id ? 'ds-comment__bubble--own' : 'ds-comment__bubble--other'"
                   >
                     {{ comment.contenu }}
                   </div>
 
-                  <div v-else class="flex flex-col gap-2 w-full mt-1">
-                    <textarea v-model="editContent" rows="2" class="w-full px-4 py-3 border border-blue-200 rounded-xl text-sm resize-none outline-none focus:ring-4 focus:ring-blue-500/20 text-slate-800 bg-blue-50" @keydown.esc="cancelEdit"></textarea>
-                    <div class="flex gap-2 justify-end">
-                      <button @click="cancelEdit" class="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 transition">Annuler</button>
-                      <button @click="saveEdit(comment)" :disabled="!editContent.trim() || savingEdit" class="px-4 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-md hover:bg-blue-700 transition">{{ savingEdit ? '...' : 'Enregistrer' }}</button>
+                  <div v-else class="ds-form-stack" style="width: 100%">
+                    <textarea
+                      v-model="editContent"
+                      rows="2"
+                      class="ds-textarea"
+                      @keydown.esc="cancelEdit"
+                    />
+                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end">
+                      <BaseButton variant="ghost" size="sm" @click="cancelEdit">Annuler</BaseButton>
+                      <BaseButton size="sm" :loading="savingEdit" :disabled="!editContent.trim()" @click="saveEdit(comment)">
+                        Enregistrer
+                      </BaseButton>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div class="p-5 border-t border-slate-100 bg-slate-50">
-                <div class="flex items-end gap-3">
-                  <textarea v-model="newComment" rows="2" placeholder="Ajouter un commentaire..." class="flex-1 px-4 py-3 border-slate-200 rounded-xl text-sm resize-none outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 shadow-sm" @keydown.enter.prevent="submitComment"></textarea>
-                  <button @click="submitComment" :disabled="!newComment.trim() || submittingComment" class="px-6 py-3 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold rounded-xl shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed">Envoyer</button>
-                </div>
+              <div class="ds-comments__composer">
+                <textarea
+                  v-model="newComment"
+                  rows="2"
+                  class="ds-textarea"
+                  placeholder="Ajouter un commentaire…"
+                  @keydown.enter.prevent="submitComment"
+                />
+                <BaseButton :disabled="!newComment.trim() || submittingComment" @click="submitComment">
+                  Envoyer
+                </BaseButton>
               </div>
             </div>
-
           </div>
 
-          <div class="w-full lg:w-80 space-y-6 flex-shrink-0">
-            
-            <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100 space-y-4">
-              <h3 class="text-xs font-extrabold text-slate-700 uppercase tracking-widest border-b border-slate-100 pb-3">Informations</h3>
-              
-              <div class="space-y-3 text-sm">
-                <div class="flex justify-between items-center">
-                  <span class="text-slate-500 font-medium">Projet</span>
-                  <span class="font-bold text-slate-800 truncate max-w-[140px]">{{ ticket.project?.nom }}</span>
+          <aside class="ds-detail-sidebar">
+            <BaseCard>
+              <h3 class="ds-section-label" style="margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border)">
+                Informations
+              </h3>
+              <dl class="ds-meta-list">
+                <div class="ds-meta-list__row">
+                  <dt class="ds-meta-list__label">Projet</dt>
+                  <dd class="ds-meta-list__value ds-meta-list__value--truncate">{{ ticket.project?.nom }}</dd>
                 </div>
-                <div class="flex justify-between items-center">
-                  <span class="text-slate-500 font-medium">Testeur</span>
-                  <span class="font-bold text-slate-800">{{ ticket.testeur?.prenom }} {{ ticket.testeur?.nom }}</span>
+                <div class="ds-meta-list__row">
+                  <dt class="ds-meta-list__label">Testeur</dt>
+                  <dd class="ds-meta-list__value">
+                    {{ ticket.testeur?.prenom }} {{ ticket.testeur?.nom }}
+                  </dd>
                 </div>
-                
-                <div class="pt-3 border-t border-slate-100 flex flex-col gap-1">
-                  <span class="text-slate-500 font-medium">Assignation</span>
-                  <span v-if="ticket.assignment_status === 'approved' && ticket.developpeur" class="font-bold text-blue-700 bg-blue-50 py-1.5 px-3 rounded-lg border border-blue-100 flex items-center gap-2 mt-1">
-                    <Code2 :size="14" aria-hidden="true" />
-                    {{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}
-                  </span>
-                  <span v-else-if="ticket.assignment_status === 'pending' && ticket.proposed_developpeur" class="font-bold text-amber-700 bg-amber-50 py-1.5 px-3 rounded-lg border border-amber-100 flex items-center gap-2 mt-1 text-xs">
-                    <Clock :size="14" aria-hidden="true" />
-                    Prop: {{ ticket.proposed_developpeur.prenom }}
-                  </span>
-                  <span v-else class="italic text-slate-400 mt-1">Non assigné</span>
+                <div class="ds-meta-list__row" style="flex-direction: column; align-items: flex-start">
+                  <dt class="ds-meta-list__label">Assignation</dt>
+                  <dd>
+                    <span
+                      v-if="ticket.assignment_status === 'approved' && ticket.developpeur"
+                      class="ds-assign-badge ds-assign-badge--approved"
+                    >
+                      <Code2 :size="14" aria-hidden="true" />
+                      {{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}
+                    </span>
+                    <span
+                      v-else-if="ticket.assignment_status === 'pending' && ticket.proposed_developpeur"
+                      class="ds-assign-badge ds-assign-badge--pending"
+                    >
+                      <Clock :size="14" aria-hidden="true" />
+                      Proposé : {{ ticket.proposed_developpeur.prenom }}
+                    </span>
+                    <span v-else class="ds-caption">Non assigné</span>
+                  </dd>
                 </div>
+              </dl>
 
-                <div v-if="ticket.etat === 'RECLAMATION' && ticket.raison_reclamation" class="pt-3 border-t border-slate-100">
-                  <p class="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-                    <AlertTriangle :size="12" aria-hidden="true" />
-                    Raison de la réclamation
+              <div
+                v-if="ticket.etat === 'RECLAMATION' && ticket.raison_reclamation"
+                style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border)"
+              >
+                <p class="ds-section-label" style="margin-bottom: 0.5rem">
+                  <AlertTriangle :size="12" aria-hidden="true" />
+                  Raison de la réclamation
+                </p>
+                <div class="ds-alert ds-alert--warning">
+                  <p>{{ ticket.raison_reclamation }}</p>
+                </div>
+              </div>
+            </BaseCard>
+
+            <BaseCard v-if="ticket.temps_estime">
+              <h3 class="ds-section-label" style="margin-bottom: 1rem">Suivi du temps</h3>
+              <div class="ds-progress-block__header">
+                <span class="ds-progress-block__value">
+                  {{ ticket.temps_passe || 0 }}<span>h</span>
+                </span>
+                <span class="ds-progress-block__target">/ {{ ticket.temps_estime }}h</span>
+              </div>
+              <div class="ds-progress">
+                <div
+                  class="ds-progress__bar"
+                  :class="{ 'ds-progress__bar--over': ticket.temps_passe > ticket.temps_estime }"
+                  :style="{
+                    width: Math.min(100, ((ticket.temps_passe || 0) / ticket.temps_estime) * 100) + '%',
+                  }"
+                />
+              </div>
+              <div
+                v-if="
+                  currentUser?.role === 'developpeur' &&
+                  ticket.assignment_status === 'approved' &&
+                  ticket.developpeur_id === currentUser.id &&
+                  ticket.etat !== 'FERME'
+                "
+                class="ds-form-stack"
+                style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border)"
+              >
+                <label class="ds-field__label">Ajouter des heures</label>
+                <div style="display: flex; gap: 0.5rem">
+                  <input
+                    v-model="timeToAdd"
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    class="ds-input"
+                    placeholder="Ex: 1.5"
+                  />
+                  <BaseButton :disabled="!timeToAdd || stateUpdating" @click="logTime">OK</BaseButton>
+                </div>
+              </div>
+            </BaseCard>
+
+            <BaseCard>
+              <h3 class="ds-section-label" style="margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border)">
+                Actions requises
+              </h3>
+
+              <div
+                v-if="isManager && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'"
+                class="ds-form-stack"
+              >
+                <div class="ds-alert ds-alert--warning">
+                  <p class="ds-alert__title">Développeur proposé</p>
+                  <p>
+                    {{ ticket.proposed_developpeur?.prenom }} {{ ticket.proposed_developpeur?.nom }}
                   </p>
-                  <div class="bg-orange-50 border border-orange-200 rounded-xl p-3">
-                    <p class="text-sm text-orange-900 leading-relaxed">{{ ticket.raison_reclamation }}</p>
-                  </div>
                 </div>
-              </div>
-            </div>
-
-            <div v-if="ticket.temps_estime" class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 p-6 text-slate-800 relative overflow-hidden">
-              <div class="absolute -right-6 -top-6 w-24 h-24 bg-white/40 rounded-full blur-2xl"></div>
-              <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-4">Suivi du temps</h3>
-              
-              <div class="flex justify-between items-end mb-2">
-                <span class="text-3xl font-black text-slate-800">{{ ticket.temps_passe || 0 }}<span class="text-lg text-slate-400 font-bold">h</span></span>
-                <span class="text-sm font-bold text-slate-400 mb-1">/ {{ ticket.temps_estime }}h</span>
-              </div>
-              
-              <div class="w-full bg-slate-200/70 rounded-full h-3 border border-slate-300/50">
-                <div class="h-3 rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(59,130,246,0.4)]" :class="ticket.temps_passe > ticket.temps_estime ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-blue-400 to-indigo-500'" :style="{ width: Math.min(100, ((ticket.temps_passe || 0) / ticket.temps_estime) * 100) + '%' }"></div>
-              </div>
-
-              <div v-if="currentUser?.role === 'developpeur' && ticket.assignment_status === 'approved' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME'" class="mt-5 pt-5 border-t border-slate-200">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ajouter des heures</label>
-                <div class="flex gap-2">
-                  <input v-model="timeToAdd" type="number" step="0.5" min="0.5" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-slate-800 placeholder-slate-400 transition-all" placeholder="Ex: 1.5">
-                  <button @click="logTime" :disabled="!timeToAdd || stateUpdating" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed">OK</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100 space-y-4">
-              <h3 class="text-xs font-extrabold text-slate-700 uppercase tracking-widest border-b border-slate-100 pb-3">Actions requises</h3>
-
-              <div v-if="isManager && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'" class="space-y-3">
-                <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl">
-                  <p class="text-[10px] font-bold text-amber-700 uppercase mb-1">Développeur proposé</p>
-                  <p class="text-sm font-bold text-amber-900">{{ ticket.proposed_developpeur?.prenom }} {{ ticket.proposed_developpeur?.nom }}</p>
-                </div>
-                <button @click="ask('Valider cette assignation et notifier le développeur ?', acceptTicket)" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-md transition btn-with-icon justify-center">
+                <BaseButton block @click="ask('Valider cette assignation et notifier le développeur ?', acceptTicket)">
                   <CheckCircle2 :size="16" aria-hidden="true" />
                   Valider
-                </button>
-                <button @click="ask('Refuser cette assignation ?', rejectTicket, true)" class="w-full py-2.5 bg-white border-2 border-slate-200 hover:border-red-500 hover:text-red-600 text-slate-600 text-sm font-bold rounded-xl transition btn-with-icon justify-center">
+                </BaseButton>
+                <BaseButton
+                  block
+                  variant="danger-outline"
+                  @click="ask('Refuser cette assignation ?', rejectTicket, true)"
+                >
                   <XCircle :size="16" aria-hidden="true" />
                   Refuser
-                </button>
+                </BaseButton>
               </div>
 
-              <div v-if="isManager && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-3 mt-2">
-                <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Assigner manuellement</h4>
-                <div v-if="workloads.length === 0" class="text-xs text-slate-400 italic text-center py-2">Aucun développeur disponible</div>
-                <div v-else class="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
-                  <div v-for="dev in workloads" :key="dev.id" class="flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-100 transition group">
+              <div
+                v-if="isManager && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'"
+                class="ds-form-stack"
+                style="margin-top: 1rem"
+              >
+                <p class="ds-filter-label">Assigner manuellement</p>
+                <p v-if="workloads.length === 0" class="ds-caption">Aucun développeur disponible</p>
+                <div v-else class="ds-workload-list">
+                  <div v-for="dev in workloads" :key="dev.id" class="ds-workload-item">
                     <div>
-                      <div class="text-xs font-bold text-slate-800">{{ dev.prenom }} {{ dev.nom }}</div>
-                      <div class="text-[10px] font-medium text-slate-500 mt-0.5"><span class="w-2 h-2 inline-block rounded-full bg-blue-500 mr-1"></span>{{ dev.active_tickets_count }} actifs</div>
+                      <div class="ds-member-card__name">{{ dev.prenom }} {{ dev.nom }}</div>
+                      <div class="ds-caption">{{ dev.active_tickets_count }} actifs</div>
                     </div>
-                    <button @click="ask(`Assigner ce ticket à ${dev.prenom} ${dev.nom} ?`, () => reassignTicket(dev.id))" class="px-3 py-1.5 bg-white border border-slate-300 hover:border-blue-500 hover:text-blue-600 text-slate-600 text-[10px] font-bold uppercase rounded-lg shadow-sm transition opacity-0 group-hover:opacity-100">Go</button>
+                    <BaseButton
+                      size="sm"
+                      variant="secondary"
+                      @click="ask(`Assigner ce ticket à ${dev.prenom} ${dev.nom} ?`, () => reassignTicket(dev.id))"
+                    >
+                      Assigner
+                    </BaseButton>
                   </div>
                 </div>
               </div>
 
-              <div v-if="!isManager && !canDragTicket && !(currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME') && !(currentUser?.role === 'testeur' && ticket.testeur_id === currentUser.id)" class="text-center py-6">
-                <Coffee :size="40" class="mx-auto mb-2 text-slate-300" aria-hidden="true" />
-                <p class="text-xs font-medium text-slate-400">Aucune action requise de votre part on ce ticket.</p>
+              <div
+                v-if="
+                  !isManager &&
+                  !canDragTicket &&
+                  !(currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME') &&
+                  !(currentUser?.role === 'testeur' && ticket.testeur_id === currentUser.id)
+                "
+                class="ds-empty-state"
+                style="padding: 2rem 0"
+              >
+                <Coffee :size="32" aria-hidden="true" />
+                <p class="ds-caption">Aucune action requise de votre part sur ce ticket.</p>
               </div>
 
-              <div v-if="stateUpdating" class="text-xs text-blue-500 font-bold text-center py-2 animate-pulse">Synchronisation...</div>
-            </div>
-
-          </div>
+              <p v-if="stateUpdating" class="ds-caption" style="text-align: center; margin-top: 0.5rem">
+                Synchronisation…
+              </p>
+            </BaseCard>
+          </aside>
         </div>
-
-      </div>
+      </template>
     </div>
   </AppLayout>
 </template>
@@ -347,6 +473,7 @@ import {
   File,
   FileText,
   GripVertical,
+  Loader2,
   Lock,
   MessageSquare,
   Paperclip,
@@ -355,54 +482,55 @@ import {
   Ticket,
   Trash2,
   XCircle,
-} from "lucide-vue-next";
+} from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
+import BaseBadge from '../../components/ui/BaseBadge.vue';
+import BaseCard from '../../components/ui/BaseCard.vue';
 
-const route       = useRoute();
-const router      = useRouter();
-const authStore   = useAuthStore();
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
 const currentUser = authStore.currentUser;
-const isManager   = computed(() => ['chef_de_projet', 'admin'].includes(currentUser?.role));
+const isManager = computed(() => ['chef_de_projet', 'admin'].includes(currentUser?.role));
 
-const ticket        = ref(null);
-const loading       = ref(true);
+const ticket = ref(null);
+const loading = ref(true);
 const stateUpdating = ref(false);
-const chatBox       = ref(null);
-const workloads     = ref([]);
-const timeToAdd     = ref(null);
-const aiLoading     = ref(false);
+const chatBox = ref(null);
+const workloads = ref([]);
+const timeToAdd = ref(null);
+const aiLoading = ref(false);
 
-const newComment        = ref('');
+const newComment = ref('');
 const submittingComment = ref(false);
-const editingCommentId  = ref(null);
-const editContent       = ref('');
-const savingEdit        = ref(false);
+const editingCommentId = ref(null);
+const editContent = ref('');
+const savingEdit = ref(false);
 
-// Drag & Drop Timeline State
 const columns = [
-  { etat: 'OUVERT',      label: 'À traiter'   },
-  { etat: 'EN_COURS',    label: 'En cours'    },
-  { etat: 'A_TESTER',    label: 'À tester'    },
+  { etat: 'OUVERT', label: 'À traiter' },
+  { etat: 'EN_COURS', label: 'En cours' },
+  { etat: 'A_TESTER', label: 'À tester' },
   { etat: 'RECLAMATION', label: 'Réclamation' },
-  { etat: 'VALIDE',      label: 'Validé'      },
+  { etat: 'VALIDE', label: 'Validé' },
 ];
 const dragTarget = ref(null);
 
-const globalMsg = ref('');
-const globalOk = ref(true);
-const msg = (m, ok = true) => {
-  globalMsg.value = m; globalOk.value = ok;
-  setTimeout(() => globalMsg.value = '', 4000);
-};
-
-// Confirm dialog state
 const confirmDialog = ref({ show: false, message: '', danger: false, onConfirm: () => {} });
 const ask = (message, onConfirm, danger = false) => {
   confirmDialog.value = { show: true, message, onConfirm, danger };
 };
 
-// Modal réclamation
 const reclamationModal = ref({ show: false, raison: '', error: '', pendingEtat: null });
+
+const prioBadge = (p) =>
+  ({
+    CRITIQUE: 'priority-critical',
+    HAUTE: 'priority-high',
+    MOYENNE: 'priority-medium',
+    BASSE: 'priority-low',
+  }[p] || 'neutral');
 
 const submitReclamation = async () => {
   if (!reclamationModal.value.raison.trim()) {
@@ -434,42 +562,47 @@ const fetchWorkloads = async () => {
   try {
     const res = await api.get(`/projects/${ticket.value.project_id}/developers/workload`);
     workloads.value = res.data;
-  } catch (e) { console.error('Erreur workloads', e); }
+  } catch (e) {
+    console.error('Erreur workloads', e);
+  }
 };
 
 const acceptTicket = async () => {
   stateUpdating.value = true;
   try {
     await api.patch(`/tickets/${ticket.value.id}/accept`);
-    msg("Ticket accepté avec succès !", true);
     await fetchTicket();
+  } catch (e) {
+    console.error(e);
+  } finally {
+    stateUpdating.value = false;
   }
-  catch (e) { msg(e.response?.data?.message || "Erreur lors de l'acceptation", false); }
-  finally { stateUpdating.value = false; }
 };
 
 const rejectTicket = async () => {
   stateUpdating.value = true;
   try {
     await api.patch(`/tickets/${ticket.value.id}/reject`);
-    msg("Assignation refusée. Le ticket est réinitialisé.", true);
     await fetchTicket();
     if (isManager.value) fetchWorkloads();
+  } catch {
+    console.error('Erreur refus');
+  } finally {
+    stateUpdating.value = false;
   }
-  catch { msg("Erreur lors du refus", false); }
-  finally { stateUpdating.value = false; }
 };
 
 const reassignTicket = async (devId) => {
   stateUpdating.value = true;
   try {
     await api.patch(`/tickets/${ticket.value.id}/reassign`, { developpeur_id: devId });
-    msg("Ticket réassigné avec succès !", true);
     await fetchTicket();
     fetchWorkloads();
+  } catch {
+    console.error('Erreur réassignation');
+  } finally {
+    stateUpdating.value = false;
   }
-  catch { msg("Erreur lors de la réassignation", false); }
-  finally { stateUpdating.value = false; }
 };
 
 const logTime = async () => {
@@ -477,17 +610,15 @@ const logTime = async () => {
   stateUpdating.value = true;
   try {
     await api.post(`/tickets/${ticket.value.id}/log-time`, { temps_ajoute: timeToAdd.value });
-    msg('Temps ajouté avec succès', true);
     timeToAdd.value = null;
     await fetchTicket();
   } catch (e) {
-    msg(e.response?.data?.message || 'Erreur lors de l\'ajout de temps', false);
+    console.error(e);
   } finally {
     stateUpdating.value = false;
   }
 };
 
-// Timeline Drag & Drop Handlers
 const canDragTicket = computed(() => {
   if (!ticket.value) return false;
   const role = currentUser?.role;
@@ -514,7 +645,9 @@ const canTransition = (ticket, toEtat) => {
 };
 
 const onDragStart = () => {};
-const onDragEnd = () => { dragTarget.value = null; };
+const onDragEnd = () => {
+  dragTarget.value = null;
+};
 const onDragOver = (etat) => {
   if (!isManager.value) dragTarget.value = etat;
 };
@@ -524,7 +657,6 @@ const onDrop = async (etat) => {
   if (!ticket.value || ticket.value.etat === etat) return;
 
   if (!canTransition(ticket.value, etat)) {
-    msg(`Vous n'êtes pas autorisé à glisser le ticket vers l'état "${etat}".`, false);
     return;
   }
 
@@ -546,11 +678,10 @@ const changeStatus = async (etat, raisonReclamation = null) => {
     const payload = { etat };
     if (raisonReclamation) payload.raison_reclamation = raisonReclamation;
     await api.put(`/tickets/${ticket.value.id}/status`, payload);
-    msg("Statut du ticket mis à jour", true);
     await fetchTicket();
   } catch (e) {
     ticket.value.etat = oldEtat;
-    msg(e.response?.data?.message || 'Erreur lors du déplacement.', false);
+    console.error(e);
   } finally {
     stateUpdating.value = false;
   }
@@ -560,15 +691,14 @@ const submitComment = async () => {
   if (!newComment.value.trim()) return;
   submittingComment.value = true;
   try {
-    const res = await api.post('/comments', { ticket_id: ticket.value.id, contenu: newComment.value.trim() });
-    if (!ticket.value.comments) ticket.value.comments = [];
-    ticket.value.comments.push(res.data);
+    await api.post('/comments', { ticket_id: ticket.value.id, contenu: newComment.value.trim() });
     newComment.value = '';
-    msg("Commentaire ajouté", true);
     await fetchTicket();
-    nextTick(() => { if (chatBox.value) chatBox.value.scrollTop = chatBox.value.scrollHeight; });
+    nextTick(() => {
+      if (chatBox.value) chatBox.value.scrollTop = chatBox.value.scrollHeight;
+    });
   } catch {
-    msg('Erreur lors de l\'envoi', false);
+    console.error('Erreur envoi commentaire');
   } finally {
     submittingComment.value = false;
   }
@@ -594,10 +724,9 @@ const saveEdit = async (comment) => {
     const res = await api.put(`/comments/${comment.id}`, { contenu: editContent.value });
     comment.contenu = res.data.contenu;
     editingCommentId.value = null;
-    msg("Commentaire modifié", true);
     await fetchTicket();
   } catch {
-    msg('Erreur de modification', false);
+    console.error('Erreur modification');
   } finally {
     savingEdit.value = false;
   }
@@ -606,25 +735,32 @@ const saveEdit = async (comment) => {
 const deleteComment = async (comment) => {
   try {
     await api.delete(`/comments/${comment.id}`);
-    ticket.value.comments = ticket.value.comments.filter(c => c.id !== comment.id);
+    ticket.value.comments = ticket.value.comments.filter((c) => c.id !== comment.id);
   } catch {
-    alert('Erreur de suppression');
+    console.error('Erreur suppression');
   }
 };
 
 const formatDescription = (text) => {
   if (!text) return '';
-  return text.replace(/\n/g, '<br>')
-             .replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>')
-             .replace(/_(.*?)_/g, '<em>$1</em>')
-             .replace(/- (.*)/g, '<li>$1</li>');
+  return text
+    .replace(/\n/g, '<br>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/_(.*?)_/g, '<em>$1</em>')
+    .replace(/- (.*)/g, '<li>$1</li>');
 };
 
 const categorieLabel = (cat) => {
   const map = {
-    BUG: 'Bug', PERFORMANCE: 'Performance', SECURITE: 'Sécurité',
-    UI_UX: 'UI/UX', BASE_DE_DONNEES: 'Base de données', API: 'API',
-    CONFIGURATION: 'Configuration', AUTRE: 'Autre', NON_CLASSE: 'Non classé'
+    BUG: 'Bug',
+    PERFORMANCE: 'Performance',
+    SECURITE: 'Sécurité',
+    UI_UX: 'UI/UX',
+    BASE_DE_DONNEES: 'Base de données',
+    API: 'API',
+    CONFIGURATION: 'Configuration',
+    AUTRE: 'Autre',
+    NON_CLASSE: 'Non classé',
   };
   return map[cat] || cat;
 };
@@ -634,30 +770,17 @@ const reanalyzeAI = async () => {
   try {
     await api.post(`/tickets/${ticket.value.id}/analyze-ai`);
     await fetchTicket();
-    msg('Analyse IA mise à jour !', true);
   } catch (e) {
-    msg("Erreur lors de l'analyse IA", false);
+    console.error(e);
   } finally {
     aiLoading.value = false;
   }
 };
 
-const prioriteClass = (prio) => {
-  const map = { CRITIQUE: 'border-red-200 text-red-700 bg-red-50', HAUTE: 'border-orange-200 text-orange-700 bg-orange-50', MOYENNE: 'border-blue-200 text-blue-700 bg-blue-50', BASSE: 'border-emerald-200 text-emerald-700 bg-emerald-50' };
-  return map[prio] || 'border-gray-200 text-gray-700 bg-gray-50';
-};
-
 const formatTime = (iso) => {
   const d = new Date(iso);
-  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 };
 
 onMounted(fetchTicket);
 </script>
-
-<style scoped>
-.ticket-details-page { flex: 1; padding: 2.5rem; overflow-y: auto; }
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-</style>

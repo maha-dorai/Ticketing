@@ -42,6 +42,7 @@
   --color-bg-app: var(--color-neutral-50);
   --color-bg-subtle: var(--color-neutral-100);
   --color-bg-elevated: var(--color-neutral-0);
+  --color-bg-surface: var(--color-neutral-0);
   --color-bg-muted: var(--color-neutral-100);
   --color-bg-inset: var(--color-neutral-100);
 
@@ -52,8 +53,11 @@
   --color-text-primary: var(--color-neutral-900);
   --color-text-secondary: var(--color-neutral-600);
   --color-text-muted: var(--color-neutral-400);
+  --color-text-tertiary: var(--color-neutral-400);
   --color-text-disabled: var(--color-neutral-400);
   --color-text-inverse: var(--color-neutral-0);
+
+  --color-success: var(--color-success-500);
 
   /* ── Sidebar (dark rail) ─────────────────────────────────────────────── */
   --color-sidebar-bg: var(--color-neutral-900);
@@ -173,6 +177,7 @@
   --space-2: 0.5rem;
   --space-2-5: 0.625rem;
   --space-3: 0.75rem;
+  --space-3-5: 0.875rem;
   --space-4: 1rem;
   --space-5: 1.25rem;
   --space-6: 1.5rem;
