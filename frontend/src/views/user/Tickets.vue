@@ -20,6 +20,7 @@
       </template>
     </PageHeader>
 
+    <!-- Fixed toast — floats over the board -->
     <div
       v-if="globalMsg"
       class="ds-toast-inline"
@@ -29,18 +30,20 @@
       {{ globalMsg }}
     </div>
 
-    <div v-if="loading" class="ds-loading-state">
+    <!-- Loading state — padded so it breathes below the header -->
+    <div v-if="loading" class="tickets-loading">
       <Loader2 class="spin" :size="20" aria-hidden="true" />
       Chargement…
     </div>
 
-    <div v-else class="ds-page-body ds-page-body--kanban">
-      <div class="ds-kanban-scroll">
-        <div class="ds-kanban-board ds-kanban-board--horizontal">
+    <!-- Kanban board -->
+    <div v-else class="kanban-shell">
+      <div class="kanban-scroll">
+        <div class="ds-kanban-board kanban-board">
           <div
             v-for="col in columns"
             :key="col.etat"
-            class="ds-kanban-column ds-kanban-column--white ds-kanban-column--narrow"
+            class="ds-kanban-column ds-kanban-column--white ds-kanban-column--narrow kanban-column"
             :class="`ds-kanban-column--ticket-${col.key}`"
             :data-dragover="dragTarget === col.etat"
             @dragover.prevent="onDragOver(col.etat)"
@@ -113,6 +116,7 @@
       </div>
     </div>
 
+    <!-- Create ticket modal -->
     <div v-if="showCreateModal" class="ds-modal-backdrop" @click.self="closeModal">
       <div class="ds-modal ds-modal--sm" role="dialog" aria-labelledby="ticket-create-title">
         <template v-if="assignResult">
@@ -358,16 +362,9 @@ const ticketsByEtat = (etat) =>
       return (o[a.priorite] ?? 9) - (o[b.priorite] ?? 9);
     });
 
-const onDragStart = (t) => {
-  dragging.value = t;
-};
-const onDragEnd = () => {
-  dragging.value = null;
-  dragTarget.value = null;
-};
-const onDragOver = (etat) => {
-  if (!isManager) dragTarget.value = etat;
-};
+const onDragStart = (t) => { dragging.value = t; };
+const onDragEnd = () => { dragging.value = null; dragTarget.value = null; };
+const onDragOver = (etat) => { if (!isManager) dragTarget.value = etat; };
 
 const onDrop = async (etat) => {
   if (isManager) return;
@@ -434,9 +431,7 @@ const fetchProjectInfo = async () => {
       const all = res.data.data || res.data;
       const cur = all.find((p) => p.id == projectId);
       if (cur) projectName.value = cur.nom;
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }
 };
 
@@ -453,30 +448,23 @@ const fetchTickets = async () => {
 };
 
 const submitTicket = async () => {
-  if (!form.value.titre) {
-    formError.value = 'Le titre est requis.';
-    return;
-  }
+  if (!form.value.titre) { formError.value = 'Le titre est requis.'; return; }
   if (!form.value.temps_estime || form.value.temps_estime <= 0) {
-    formError.value = 'Une estimation de temps valide est requise.';
-    return;
+    formError.value = 'Une estimation de temps valide est requise.'; return;
   }
   submitting.value = true;
   formError.value = '';
   try {
     const formData = new FormData();
     formData.append('titre', form.value.titre);
-
     const desc = form.value.description?.trim();
     if (desc) formData.append('description', desc);
-
     formData.append('temps_estime', form.value.temps_estime);
     formData.append('type', form.value.type);
     if (form.value.type === 'RETOUR' && form.value.parent_ticket_id) {
       formData.append('parent_ticket_id', form.value.parent_ticket_id);
     }
     attachments.value.forEach((file, i) => formData.append(`attachments[${i}]`, file));
-
     const res = await api.post(`/projects/${projectId}/tickets`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
@@ -507,18 +495,83 @@ onMounted(() => {
 const initials = (u) => ((u?.prenom?.[0] || '') + (u?.nom?.[0] || '')).toUpperCase();
 const categorieLabel = (cat) => {
   const map = {
-    BUG: 'Bug',
-    PERFORMANCE: 'Perf',
-    SECURITE: 'Sécu',
-    UI_UX: 'UI/UX',
-    BASE_DE_DONNEES: 'BDD',
-    API: 'API',
-    CONFIGURATION: 'Config',
-    AUTRE: 'Autre',
-    NON_CLASSE: '?',
+    BUG: 'Bug', PERFORMANCE: 'Perf', SECURITE: 'Sécu', UI_UX: 'UI/UX',
+    BASE_DE_DONNEES: 'BDD', API: 'API', CONFIGURATION: 'Config', AUTRE: 'Autre', NON_CLASSE: '?',
   };
   return map[cat] || cat;
 };
 const formatDate = (d) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '';
 </script>
+
+<style scoped>
+/*
+ * Kanban layout — self-contained, no dependency on ds-page-body / ds-kanban-scroll globals.
+ *
+ * Chrome heights (measured from source):
+ *   AppHeader  (AppHeader.vue scoped) : 64px
+ *   PageHeader compact                : ~92px  (padding 1.5rem + content + 1.25rem)
+ *   Total                             : 156px  → use 158px with 2px safety
+ *
+ * These classes are LOCAL to this file so there is zero risk of specificity conflict.
+ */
+
+/* Full-height shell that fills whatever .main gives us */
+.kanban-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Horizontal scroll wrapper — fills the shell exactly */
+.kanban-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 1.5rem 2rem;
+  /* Remove bottom padding so columns reach the edge cleanly */
+  padding-bottom: 0;
+}
+
+/* Board row — columns laid out horizontally, stretch to full height */
+.kanban-board {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 1rem;
+  align-items: stretch !important;  /* columns all same height */
+  min-width: max-content;
+  height: 100%;
+  min-height: calc(100vh - 158px);
+}
+
+/* Individual column — fills board height, content scrolls inside */
+.kanban-column {
+  max-height: none !important;   /* remove the global max-height calc */
+  height: 100%;
+  min-height: calc(100vh - 182px); /* 158 + 24px top padding of scroll */
+}
+
+/* Loading state */
+.tickets-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 4rem 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.tickets-loading .spin {
+  animation: spin 0.8s linear infinite;
+  color: var(--color-brand);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>

@@ -1,29 +1,16 @@
 <template>
   <AppLayout>
     <div class="ds-detail-page">
+
+      <!-- Loading -->
       <div v-if="loading" class="ds-loading-state">
         <Loader2 class="spin" :size="20" aria-hidden="true" />
         Chargement du ticket…
       </div>
 
       <template v-else-if="ticket">
-        <div class="ds-detail-header">
-          <button
-            type="button"
-            class="ds-back-link"
-            @click="$router.push({ name: 'Tickets', params: { projectId: route.params.projectId } })"
-          >
-            <ChevronLeft :size="16" aria-hidden="true" />
-            Retour aux tickets
-          </button>
-          <BaseBadge :variant="prioBadge(ticket.priorite)" pill>{{ ticket.priorite }}</BaseBadge>
-        </div>
 
-        <h1 class="ds-detail-title">
-          <Ticket :size="24" aria-hidden="true" />
-          {{ ticket.titre }}
-        </h1>
-
+        <!-- Confirm dialog -->
         <div v-if="confirmDialog.show" class="ds-modal-backdrop">
           <div class="ds-modal ds-modal--sm" role="dialog">
             <div class="ds-modal__body" style="text-align: center">
@@ -41,6 +28,7 @@
           </div>
         </div>
 
+        <!-- Reclamation modal -->
         <div v-if="reclamationModal.show" class="ds-modal-backdrop" @click.self="reclamationModal.show = false">
           <div class="ds-modal" role="dialog">
             <div class="ds-modal__header">
@@ -82,93 +70,150 @@
           </div>
         </div>
 
-        <BaseCard>
-          <template #header>
-            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
-              <h2 class="ds-section-label">
-                <File :size="16" aria-hidden="true" />
-                Pipeline d'état
-              </h2>
-              <span v-if="stateUpdating" class="ds-caption">Synchronisation…</span>
-            </div>
-          </template>
-
-          <div class="ds-pipeline">
-            <div
-              v-for="col in columns"
-              :key="col.etat"
-              class="ds-pipeline__step"
-              :class="{
-                'ds-pipeline__step--active': ticket.etat === col.etat,
-                'ds-pipeline__step--dragover': dragTarget === col.etat,
-              }"
-              @dragover.prevent="onDragOver(col.etat)"
-              @drop.prevent="onDrop(col.etat)"
+        <!-- ── Page header ─────────────────────────────────────────────── -->
+        <div class="td-header">
+          <div class="td-header__nav">
+            <button
+              type="button"
+              class="ds-back-link"
+              @click="$router.push({ name: 'Tickets', params: { projectId: route.params.projectId } })"
             >
-              <span class="ds-pipeline__label">{{ col.label }}</span>
-              <div
-                v-if="ticket.etat === col.etat"
-                class="ds-pipeline__chip"
-                :class="canDragTicket ? 'ds-pipeline__chip--draggable' : 'ds-pipeline__chip--static'"
-                :draggable="canDragTicket"
-                @dragstart="onDragStart"
-                @dragend="onDragEnd"
-              >
-                <GripVertical v-if="canDragTicket" :size="14" aria-hidden="true" />
-                <Lock v-else :size="14" aria-hidden="true" />
-                {{ canDragTicket ? 'Glisser' : 'Actuel' }}
-              </div>
-            </div>
+              <ChevronLeft :size="16" aria-hidden="true" />
+              Retour aux tickets
+            </button>
+            <span class="td-header__id">#{{ ticket.id }}</span>
           </div>
-          <p v-if="!canDragTicket" class="ds-pipeline__hint">
-            {{
-              isManager
-                ? 'En tant que manager, vous êtes en lecture seule sur le flux.'
-                : "Vous n'avez pas les droits de modifier cet état ou le ticket ne vous est pas assigné."
-            }}
-          </p>
-        </BaseCard>
 
-        <div
-          v-if="ticket.categorie_ia || ticket.priorite_ia || ticket.solution_ia"
-          class="ds-ai-panel"
-        >
-          <div class="ds-ai-panel__head">
-            <Bot :size="20" aria-hidden="true" />
-            <div style="flex: 1">
-              <h3 class="ds-ai-panel__title">Analyse automatique</h3>
-              <p class="ds-ai-panel__sub">Générée à la création du ticket</p>
-            </div>
-            <BaseButton variant="ghost" size="sm" :loading="aiLoading" @click="reanalyzeAI">
-              <RefreshCw v-if="!aiLoading" :size="14" aria-hidden="true" />
-              {{ aiLoading ? 'Mise à jour…' : 'Relancer' }}
-            </BaseButton>
-          </div>
-          <div class="ds-ai-tags">
-            <div v-if="ticket.categorie_ia" class="ds-ai-tag">
-              <span class="ds-ai-tag__label">Catégorie</span>
-              <span>{{ categorieLabel(ticket.categorie_ia) }}</span>
-            </div>
-            <div v-if="ticket.priorite_ia" class="ds-ai-tag">
-              <span class="ds-ai-tag__label">Priorité suggérée</span>
-              <BaseBadge :variant="prioBadge(ticket.priorite_ia)" pill>{{ ticket.priorite_ia }}</BaseBadge>
-              <span v-if="ticket.priorite_ia !== ticket.priorite" class="ds-caption">
-                (actuelle : {{ ticket.priorite }})
-              </span>
+          <div class="td-header__title-row">
+            <h1 class="td-title">{{ ticket.titre }}</h1>
+            <div class="td-header__badges">
+              <BaseBadge :variant="statusBadge(ticket.etat)" pill>{{ etatLabel(ticket.etat) }}</BaseBadge>
+              <BaseBadge :variant="prioBadge(ticket.priorite)" pill>
+                <Flag :size="11" aria-hidden="true" />
+                {{ ticket.priorite }}
+              </BaseBadge>
             </div>
           </div>
-          <div
-            v-if="ticket.solution_ia && currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser?.id"
-            class="ds-ai-solution"
-          >
-            <p class="ds-ai-tag__label">Solution suggérée</p>
-            <p class="ds-description">{{ ticket.solution_ia }}</p>
+
+          <div class="td-header__meta">
+            <span class="td-meta-item">
+              <FolderKanban :size="13" aria-hidden="true" />
+              {{ ticket.project?.nom }}
+            </span>
+            <span class="td-meta-sep" aria-hidden="true">·</span>
+            <span class="td-meta-item">
+              <Users :size="13" aria-hidden="true" />
+              {{ ticket.testeur?.prenom }} {{ ticket.testeur?.nom }}
+            </span>
+            <span class="td-meta-sep" aria-hidden="true">·</span>
+            <span class="td-meta-item">
+              <Calendar :size="13" aria-hidden="true" />
+              {{ formatDate(ticket.created_at) }}
+            </span>
+            <span v-if="stateUpdating" class="td-meta-syncing">
+              <Loader2 :size="12" class="spin" aria-hidden="true" />
+              Synchronisation…
+            </span>
           </div>
         </div>
 
+        <!-- ── Main body ───────────────────────────────────────────────── -->
         <div class="ds-detail-layout">
+
+          <!-- Left column: pipeline + AI + description + attachments + comments -->
           <div class="ds-detail-main">
+
+            <!-- Status pipeline -->
             <BaseCard>
+              <template #header>
+                <h2 class="ds-section-label">
+                  <Activity :size="14" aria-hidden="true" />
+                  Pipeline d'état
+                </h2>
+              </template>
+              <div class="ds-pipeline">
+                <div
+                  v-for="col in columns"
+                  :key="col.etat"
+                  class="ds-pipeline__step"
+                  :class="{
+                    'ds-pipeline__step--active': ticket.etat === col.etat,
+                    'ds-pipeline__step--dragover': dragTarget === col.etat,
+                  }"
+                  @dragover.prevent="onDragOver(col.etat)"
+                  @drop.prevent="onDrop(col.etat)"
+                >
+                  <span class="ds-pipeline__label">{{ col.label }}</span>
+                  <div
+                    v-if="ticket.etat === col.etat"
+                    class="ds-pipeline__chip"
+                    :class="canDragTicket ? 'ds-pipeline__chip--draggable' : 'ds-pipeline__chip--static'"
+                    :draggable="canDragTicket"
+                    @dragstart="onDragStart"
+                    @dragend="onDragEnd"
+                  >
+                    <GripVertical v-if="canDragTicket" :size="14" aria-hidden="true" />
+                    <Lock v-else :size="14" aria-hidden="true" />
+                    {{ canDragTicket ? 'Glisser' : 'Actuel' }}
+                  </div>
+                </div>
+              </div>
+              <p v-if="!canDragTicket" class="ds-pipeline__hint">
+                {{
+                  isManager
+                    ? 'En tant que manager, vous êtes en lecture seule sur le flux.'
+                    : "Vous n'avez pas les droits de modifier cet état ou le ticket ne vous est pas assigné."
+                }}
+              </p>
+            </BaseCard>
+
+            <!-- AI analysis panel -->
+            <div
+              v-if="ticket.categorie_ia || ticket.priorite_ia || ticket.solution_ia"
+              class="ds-ai-panel"
+            >
+              <div class="ds-ai-panel__head">
+                <Bot :size="20" aria-hidden="true" />
+                <div style="flex: 1">
+                  <h3 class="ds-ai-panel__title">Analyse automatique</h3>
+                  <p class="ds-ai-panel__sub">Générée à la création du ticket</p>
+                </div>
+                <BaseButton variant="ghost" size="sm" :loading="aiLoading" @click="reanalyzeAI">
+                  <RefreshCw v-if="!aiLoading" :size="14" aria-hidden="true" />
+                  {{ aiLoading ? 'Mise à jour…' : 'Relancer' }}
+                </BaseButton>
+              </div>
+              <div class="ds-ai-tags">
+                <div v-if="ticket.categorie_ia" class="ds-ai-tag">
+                  <span class="ds-ai-tag__label">Catégorie</span>
+                  <span>{{ categorieLabel(ticket.categorie_ia) }}</span>
+                </div>
+                <div v-if="ticket.priorite_ia" class="ds-ai-tag">
+                  <span class="ds-ai-tag__label">Priorité suggérée</span>
+                  <BaseBadge :variant="prioBadge(ticket.priorite_ia)" pill>{{ ticket.priorite_ia }}</BaseBadge>
+                  <span v-if="ticket.priorite_ia !== ticket.priorite" class="ds-caption">
+                    (actuelle : {{ ticket.priorite }})
+                  </span>
+                </div>
+              </div>
+              <div
+                v-if="ticket.solution_ia && currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser?.id"
+                class="ds-ai-solution"
+              >
+                <p class="ds-ai-tag__label">Solution suggérée</p>
+                <p class="ds-description">{{ ticket.solution_ia }}</p>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <BaseCard>
+              <template #header>
+                <h2 class="ds-section-label">
+                  <FileText :size="14" aria-hidden="true" />
+                  Description
+                </h2>
+              </template>
+
               <div
                 v-if="ticket.description && ticket.description.trim()"
                 class="ds-description"
@@ -178,28 +223,32 @@
                 <FileText :size="16" aria-hidden="true" />
                 Aucune description fournie.
               </p>
+            </BaseCard>
 
-              <div v-if="ticket.attachments?.length" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border)">
-                <h4 class="ds-section-label" style="margin-bottom: 1rem">
+            <!-- Attachments -->
+            <BaseCard v-if="ticket.attachments?.length">
+              <template #header>
+                <h2 class="ds-section-label">
                   <Paperclip :size="14" aria-hidden="true" />
                   Pièces jointes ({{ ticket.attachments.length }})
-                </h4>
-                <div class="ds-attachment-grid">
-                  <a
-                    v-for="att in ticket.attachments"
-                    :key="att.id"
-                    :href="storageAssetUrl(att.file_path)"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="ds-attachment-link"
-                  >
-                    <File :size="18" aria-hidden="true" />
-                    <span>{{ att.file_name }}</span>
-                  </a>
-                </div>
+                </h2>
+              </template>
+              <div class="ds-attachment-grid">
+                <a
+                  v-for="att in ticket.attachments"
+                  :key="att.id"
+                  :href="storageAssetUrl(att.file_path)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="ds-attachment-link"
+                >
+                  <File :size="18" aria-hidden="true" />
+                  <span>{{ att.file_name }}</span>
+                </a>
               </div>
             </BaseCard>
 
+            <!-- Comments -->
             <div class="ds-card ds-comments" style="padding: 0; overflow: hidden">
               <div class="ds-comments__header">
                 <h2 class="ds-section-label">
@@ -284,25 +333,23 @@
             </div>
           </div>
 
+          <!-- ── Sidebar ──────────────────────────────────────────────── -->
           <aside class="ds-detail-sidebar">
+
+            <!-- Ticket info card -->
             <BaseCard>
-              <h3 class="ds-section-label" style="margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border)">
-                Informations
-              </h3>
-              <dl class="ds-meta-list">
-                <div class="ds-meta-list__row">
-                  <dt class="ds-meta-list__label">Projet</dt>
-                  <dd class="ds-meta-list__value ds-meta-list__value--truncate">{{ ticket.project?.nom }}</dd>
-                </div>
-                <div class="ds-meta-list__row">
-                  <dt class="ds-meta-list__label">Testeur</dt>
-                  <dd class="ds-meta-list__value">
-                    {{ ticket.testeur?.prenom }} {{ ticket.testeur?.nom }}
-                  </dd>
-                </div>
-                <div class="ds-meta-list__row" style="flex-direction: column; align-items: flex-start">
-                  <dt class="ds-meta-list__label">Assignation</dt>
-                  <dd>
+              <template #header>
+                <h3 class="ds-section-label">Informations</h3>
+              </template>
+
+              <dl class="td-info-list">
+                <!-- Assignee -->
+                <div class="td-info-row">
+                  <dt class="td-info-label">
+                    <User :size="13" aria-hidden="true" />
+                    Assigné à
+                  </dt>
+                  <dd class="td-info-value">
                     <span
                       v-if="ticket.assignment_status === 'approved' && ticket.developpeur"
                       class="ds-assign-badge ds-assign-badge--approved"
@@ -320,11 +367,59 @@
                     <span v-else class="ds-caption">Non assigné</span>
                   </dd>
                 </div>
+
+                <!-- Reporter -->
+                <div class="td-info-row">
+                  <dt class="td-info-label">
+                    <Users :size="13" aria-hidden="true" />
+                    Rapporteur
+                  </dt>
+                  <dd class="td-info-value">
+                    {{ ticket.testeur?.prenom }} {{ ticket.testeur?.nom }}
+                  </dd>
+                </div>
+
+                <!-- Project -->
+                <div class="td-info-row">
+                  <dt class="td-info-label">
+                    <FolderKanban :size="13" aria-hidden="true" />
+                    Projet
+                  </dt>
+                  <dd class="td-info-value td-info-value--truncate">{{ ticket.project?.nom }}</dd>
+                </div>
+
+                <!-- Category -->
+                <div v-if="ticket.categorie_ia" class="td-info-row">
+                  <dt class="td-info-label">
+                    <Tags :size="13" aria-hidden="true" />
+                    Catégorie
+                  </dt>
+                  <dd class="td-info-value">{{ categorieLabel(ticket.categorie_ia) }}</dd>
+                </div>
+
+                <!-- Created -->
+                <div class="td-info-row">
+                  <dt class="td-info-label">
+                    <Calendar :size="13" aria-hidden="true" />
+                    Créé le
+                  </dt>
+                  <dd class="td-info-value">{{ formatDate(ticket.created_at) }}</dd>
+                </div>
+
+                <!-- Updated -->
+                <div class="td-info-row">
+                  <dt class="td-info-label">
+                    <Clock :size="13" aria-hidden="true" />
+                    Modifié le
+                  </dt>
+                  <dd class="td-info-value">{{ formatDate(ticket.updated_at) }}</dd>
+                </div>
               </dl>
 
+              <!-- Reclamation reason -->
               <div
                 v-if="ticket.etat === 'RECLAMATION' && ticket.raison_reclamation"
-                style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--color-border)"
+                class="td-reclamation"
               >
                 <p class="ds-section-label" style="margin-bottom: 0.5rem">
                   <AlertTriangle :size="12" aria-hidden="true" />
@@ -336,8 +431,15 @@
               </div>
             </BaseCard>
 
+            <!-- Time tracking card -->
             <BaseCard v-if="ticket.temps_estime">
-              <h3 class="ds-section-label" style="margin-bottom: 1rem">Suivi du temps</h3>
+              <template #header>
+                <h3 class="ds-section-label">
+                  <Clock :size="14" aria-hidden="true" />
+                  Suivi du temps
+                </h3>
+              </template>
+
               <div class="ds-progress-block__header">
                 <span class="ds-progress-block__value">
                   {{ ticket.temps_passe || 0 }}<span>h</span>
@@ -353,6 +455,7 @@
                   }"
                 />
               </div>
+
               <div
                 v-if="
                   currentUser?.role === 'developpeur' &&
@@ -378,11 +481,13 @@
               </div>
             </BaseCard>
 
+            <!-- Actions card -->
             <BaseCard>
-              <h3 class="ds-section-label" style="margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border)">
-                Actions requises
-              </h3>
+              <template #header>
+                <h3 class="ds-section-label">Actions requises</h3>
+              </template>
 
+              <!-- Manager: pending assignment -->
               <div
                 v-if="isManager && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'"
                 class="ds-form-stack"
@@ -407,6 +512,7 @@
                 </BaseButton>
               </div>
 
+              <!-- Manager: manual assignment -->
               <div
                 v-if="isManager && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'"
                 class="ds-form-stack"
@@ -431,6 +537,7 @@
                 </div>
               </div>
 
+              <!-- No actions -->
               <div
                 v-if="
                   !isManager &&
@@ -463,15 +570,19 @@ import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
 import { storageAssetUrl } from '../../utils/storageUrl';
 import {
+  Activity,
   AlertTriangle,
   Bot,
+  Calendar,
   ChevronLeft,
   CheckCircle2,
-  Coffee,
   Clock,
   Code2,
+  Coffee,
   File,
   FileText,
+  Flag,
+  FolderKanban,
   GripVertical,
   Loader2,
   Lock,
@@ -479,8 +590,11 @@ import {
   Paperclip,
   Pencil,
   RefreshCw,
+  Tags,
   Ticket,
   Trash2,
+  User,
+  Users,
   XCircle,
 } from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
@@ -531,6 +645,26 @@ const prioBadge = (p) =>
     MOYENNE: 'priority-medium',
     BASSE: 'priority-low',
   }[p] || 'neutral');
+
+const statusBadge = (etat) =>
+  ({
+    OUVERT: 'open',
+    EN_COURS: 'progress',
+    A_TESTER: 'pending',
+    RECLAMATION: 'warning',
+    VALIDE: 'success',
+    FERME: 'closed',
+  }[etat] || 'neutral');
+
+const etatLabel = (etat) =>
+  ({
+    OUVERT: 'À traiter',
+    EN_COURS: 'En cours',
+    A_TESTER: 'À tester',
+    RECLAMATION: 'Réclamation',
+    VALIDE: 'Validé',
+    FERME: 'Fermé',
+  }[etat] || etat);
 
 const submitReclamation = async () => {
   if (!reclamationModal.value.raison.trim()) {
@@ -645,28 +779,19 @@ const canTransition = (ticket, toEtat) => {
 };
 
 const onDragStart = () => {};
-const onDragEnd = () => {
-  dragTarget.value = null;
-};
-const onDragOver = (etat) => {
-  if (!isManager.value) dragTarget.value = etat;
-};
+const onDragEnd = () => { dragTarget.value = null; };
+const onDragOver = (etat) => { if (!isManager.value) dragTarget.value = etat; };
 
 const onDrop = async (etat) => {
   dragTarget.value = null;
   if (!ticket.value || ticket.value.etat === etat) return;
-
-  if (!canTransition(ticket.value, etat)) {
-    return;
-  }
-
+  if (!canTransition(ticket.value, etat)) return;
   if (etat === 'RECLAMATION') {
     reclamationModal.value.show = true;
     reclamationModal.value.raison = '';
     reclamationModal.value.error = '';
     return;
   }
-
   await changeStatus(etat);
 };
 
@@ -752,15 +877,9 @@ const formatDescription = (text) => {
 
 const categorieLabel = (cat) => {
   const map = {
-    BUG: 'Bug',
-    PERFORMANCE: 'Performance',
-    SECURITE: 'Sécurité',
-    UI_UX: 'UI/UX',
-    BASE_DE_DONNEES: 'Base de données',
-    API: 'API',
-    CONFIGURATION: 'Configuration',
-    AUTRE: 'Autre',
-    NON_CLASSE: 'Non classé',
+    BUG: 'Bug', PERFORMANCE: 'Performance', SECURITE: 'Sécurité', UI_UX: 'UI/UX',
+    BASE_DE_DONNEES: 'Base de données', API: 'API', CONFIGURATION: 'Configuration',
+    AUTRE: 'Autre', NON_CLASSE: 'Non classé',
   };
   return map[cat] || cat;
 };
@@ -782,5 +901,155 @@ const formatTime = (iso) => {
   return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 };
 
+const formatDate = (iso) => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+};
+
 onMounted(fetchTicket);
 </script>
+
+<style scoped>
+/* ── Page-level header ───────────────────────────────────────────────── */
+.td-header {
+  margin-bottom: var(--space-8);
+}
+
+.td-header__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.td-header__id {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 0.125rem 0.625rem;
+  letter-spacing: 0.04em;
+}
+
+.td-header__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.td-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-extrabold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.td-header__badges {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-shrink: 0;
+  padding-top: 0.3rem; /* align with title cap height */
+}
+
+.td-header__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.td-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.td-meta-sep {
+  color: var(--color-border-strong);
+}
+
+.td-meta-syncing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--color-brand);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ── Sidebar info list ────────────────────────────────────────────────── */
+.td-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.td-info-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.td-info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.td-info-row:first-child {
+  padding-top: 0;
+}
+
+.td-info-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.td-info-value {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  text-align: right;
+}
+
+.td-info-value--truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 9rem;
+}
+
+/* ── Reclamation callout inside info card ─────────────────────────────── */
+.td-reclamation {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ── Spinner ──────────────────────────────────────────────────────────── */
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
