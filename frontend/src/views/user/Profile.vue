@@ -17,7 +17,7 @@
                 {{ user?.email }}
               </span>
               <a v-if="isDeveloper && user?.github_link" :href="user.github_link" target="_blank" class="meta-item gh-link">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                 GitHub ↗
               </a>
             </div>
@@ -35,16 +35,16 @@
               Informations personnelles
             </h2>
             <div class="header-actions">
-              <button @click="$router.push({ name: 'MyStats' })" class="btn-stats btn-with-icon">
+              <BaseButton @click="$router.push({ name: 'MyStats' })" variant="secondary" size="sm">
                 <TrendingUp :size="14" aria-hidden="true" />
                 Mes statistiques
-              </button>
+              </BaseButton>
               <template v-if="!isManagerRole">
-                <button v-if="!editingInfo" @click="startEdit" class="btn-edit btn-with-icon">
+                <BaseButton v-if="!editingInfo" @click="startEdit" variant="ghost" size="sm">
                   <Pencil :size="14" aria-hidden="true" />
                   Modifier
-                </button>
-                <button v-else @click="cancelEditInfo" class="btn-cancel-sm">Annuler</button>
+                </BaseButton>
+                <BaseButton v-else @click="cancelEditInfo" variant="ghost" size="sm">Annuler</BaseButton>
               </template>
             </div>
           </div>
@@ -90,10 +90,9 @@
               <input v-model="infoForm.github_link" class="input" placeholder="https://github.com/votre-profil" />
             </div>
             <div class="form-actions">
-              <button type="submit" :disabled="infoL" class="btn-primary">
-                <svg v-if="infoL" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/></svg>
-                <span v-else>Enregistrer</span>
-              </button>
+              <BaseButton type="submit" :disabled="infoL" variant="primary" size="sm" :loading="infoL">
+                <span>Enregistrer</span>
+              </BaseButton>
             </div>
           </form>
         </div>
@@ -122,10 +121,9 @@
               </div>
             </div>
             <div class="form-actions">
-              <button type="submit" :disabled="emL" class="btn-primary">
-                <svg v-if="emL" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/></svg>
-                <span v-else>Mettre à jour l'email</span>
-              </button>
+              <BaseButton type="submit" :disabled="emL" variant="primary" size="sm" :loading="emL">
+                <span>Mettre à jour l'email</span>
+              </BaseButton>
             </div>
           </form>
         </div>
@@ -167,10 +165,9 @@
               </div>
             </div>
             <div class="form-actions">
-              <button type="submit" :disabled="pwL || (pw.confirm && pw.nouveau !== pw.confirm)" class="btn-primary">
-                <svg v-if="pwL" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/></svg>
-                <span v-else>Mettre à jour le mot de passe</span>
-              </button>
+              <BaseButton type="submit" :disabled="pwL || (pw.confirm && pw.nouveau !== pw.confirm)" variant="primary" size="sm" :loading="pwL">
+                <span>Mettre à jour le mot de passe</span>
+              </BaseButton>
             </div>
           </form>
         </div>
@@ -183,8 +180,9 @@
 import { ref, computed, defineComponent, h } from 'vue';
 import { useAuthStore } from '../../stores/authStore';
 import api from '../../services/api';
-import { Lock, Mail, Pencil, TrendingUp, User } from 'lucide-vue-next';
+import { Lock, Loader2, Mail, Pencil, TrendingUp, User } from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
 import AlertBanner from '../../components/ui/AlertBanner.vue';
 
 const authStore = useAuthStore();
@@ -293,11 +291,6 @@ const changeEm = async () => {
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;}
 .header-actions{display:flex;align-items:center;gap:.75rem;}
 .card-title{font-size:1rem;font-weight:700;color:#1e293b;margin:0;}
-.btn-stats{padding:.375rem .875rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:7px;font-size:.8125rem;font-weight:700;color:#1d4ed8;cursor:pointer;transition:all .15s;}
-.btn-stats:hover{background:#dbeafe;}
-.btn-edit{padding:.375rem .875rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;font-size:.8125rem;font-weight:600;color:#475569;cursor:pointer;font-family:inherit;transition:all .15s;}
-.btn-edit:hover{background:#f1f5f9;border-color:#cbd5e1;}
-.btn-cancel-sm{padding:.375rem .875rem;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;font-size:.8125rem;font-weight:600;color:#dc2626;cursor:pointer;font-family:inherit;}
 
 /* Info grid */
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
@@ -332,10 +325,6 @@ const changeEm = async () => {
 .seg{height:3px;flex:1;border-radius:2px;transition:background .3s;}
 .seg-e{background:#f1f5f9;}.seg-w{background:#ef4444;}.seg-f{background:#f59e0b;}.seg-g{background:#3b82f6;}.seg-s{background:#22c55e;}
 .form-actions{display:flex;justify-content:flex-end;padding-top:.25rem;}
-.btn-primary{padding:.625rem 1.25rem;background:#1e293b;color:white;border:none;border-radius:8px;font-size:.875rem;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:.5rem;transition:background .15s;}
-.btn-primary:hover:not(:disabled){background:#0f172a;}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
-.spin{animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
 .alert{padding:.75rem 1rem;border-radius:8px;font-size:.875rem;font-weight:500;margin-bottom:1rem;}
 .alert-ok{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;}
 .alert-err{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}

@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="page-header">
       <div class="header-left">
-        <button type="button" class="back-btn" @click="$router.push({ name: 'UserManagement' })">
+        <button type="button" class="back-btn" @click="$router.push({ name: 'UserManagement' })" aria-label="Retour à la gestion des utilisateurs">
           <ArrowLeft :size="18" aria-hidden="true" />
           Retour
         </button>
@@ -27,21 +27,12 @@
         <AlertBanner v-if="successMsg" variant="success" class="alert alert-ok">{{ successMsg }}</AlertBanner>
 
         <form class="form" @submit.prevent="sauvegarder">
-          <div class="field">
-            <label class="label">Nom</label>
-            <input v-model="form.nom" type="text" class="input" required />
-          </div>
-          <div class="field">
-            <label class="label">Prénom</label>
-            <input v-model="form.prenom" type="text" class="input" required />
-          </div>
-          <div class="field">
-            <label class="label">Email</label>
-            <input v-model="form.email" type="email" class="input" required />
-          </div>
+          <BaseInput v-model="form.nom" label="Nom" type="text" required />
+          <BaseInput v-model="form.prenom" label="Prénom" type="text" required />
+          <BaseInput v-model="form.email" label="Email" type="email" required />
           <div class="field">
             <label class="label">Rôle</label>
-            <select v-model="form.role" class="input select" required>
+            <select v-model="form.role" class="ds-input" required>
               <option value="testeur">Testeur</option>
               <option value="developpeur">Développeur</option>
               <option value="chef_de_projet">Chef de projet</option>
@@ -50,10 +41,10 @@
           </div>
 
           <div class="actions">
-            <button type="button" class="btn-secondary" @click="$router.push({ name: 'UserManagement' })">
+            <BaseButton type="button" variant="secondary" size="sm" @click="$router.push({ name: 'UserManagement' })">
               Annuler
-            </button>
-            <button type="submit" class="btn-primary">Enregistrer</button>
+            </BaseButton>
+            <BaseButton type="submit" variant="primary" size="sm">Enregistrer</BaseButton>
           </div>
         </form>
       </div>
@@ -67,6 +58,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { ArrowLeft, Loader2, UserPen } from 'lucide-vue-next';
 import api from '../../services/api';
 import AppLayout from '../../components/layout/AppLayout.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
+import BaseInput from '../../components/ui/BaseInput.vue';
 import AlertBanner from '../../components/ui/AlertBanner.vue';
 
 const route = useRoute();
@@ -215,56 +208,9 @@ const sauvegarder = async () => {
   font-weight: 600;
   color: #475569;
 }
-.input {
-  width: 100%;
-  padding: 0.625rem 0.875rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  color: #1e293b;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-.select {
-  background: white;
-  cursor: pointer;
-}
 .actions {
   display: flex;
   gap: 0.75rem;
   margin-top: 0.5rem;
-}
-.btn-secondary,
-.btn-primary {
-  flex: 1;
-  padding: 0.625rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.btn-secondary {
-  background: white;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-}
-.btn-secondary:hover {
-  background: #f8fafc;
-  color: #1e293b;
-}
-.btn-primary {
-  background: #2563eb;
-  color: white;
-  border: none;
-}
-.btn-primary:hover {
-  background: #1d4ed8;
 }
 </style>

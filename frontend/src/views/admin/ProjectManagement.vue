@@ -88,12 +88,12 @@
                       <Folder :size="14" :stroke-width="2" aria-hidden="true" />
                     </div>
                     <div class="card-admin-actions">
-                      <button @click.stop="openEdit(p)" class="btn-icon" aria-label="Modifier le projet">
+                      <BaseButton @click.stop="openEdit(p)" variant="ghost" size="sm" aria-label="Modifier le projet">
                         <Pencil :size="13" aria-hidden="true" />
-                      </button>
-                      <button @click.stop="openAssign(p)" class="btn-icon" aria-label="Affecter des membres">
+                      </BaseButton>
+                      <BaseButton @click.stop="openAssign(p)" variant="ghost" size="sm" aria-label="Affecter des membres">
                         <Users :size="13" aria-hidden="true" />
-                      </button>
+                      </BaseButton>
                     </div>
                   </div>
 
@@ -157,7 +157,7 @@
 
         <!-- Pagination -->
         <div v-if="pagination.last_page > 1" class="ds-pagination">
-          <button @click="loadPage(pagination.current_page - 1)" :disabled="pagination.current_page === 1" class="ds-page-btn">
+          <button @click="loadPage(pagination.current_page - 1)" :disabled="pagination.current_page === 1" class="ds-page-btn" aria-label="Page précédente">
             <ChevronLeft :size="14" :stroke-width="2.5" aria-hidden="true" />
             Précédent
           </button>
@@ -170,7 +170,7 @@
               @click="loadPage(n)"
             ></span>
           </div>
-          <button @click="loadPage(pagination.current_page + 1)" :disabled="pagination.current_page === pagination.last_page" class="ds-page-btn">
+          <button @click="loadPage(pagination.current_page + 1)" :disabled="pagination.current_page === pagination.last_page" class="ds-page-btn" aria-label="Page suivante">
             Suivant
             <ChevronRight :size="14" :stroke-width="2.5" aria-hidden="true" />
           </button>
@@ -184,10 +184,7 @@
           <label class="label">Nom du projet <span class="required-tag">*</span></label>
           <BaseInput v-model="form.nom" required placeholder="Ex : Refonte du site web" />
         </div>
-        <div class="field">
-          <label class="label">Description</label>
-          <textarea v-model="form.description" placeholder="Décrivez brièvement l'objectif du projet..." class="input ta" rows="3"></textarea>
-        </div>
+        <BaseInput v-model="form.description" label="Description" placeholder="Décrivez brièvement l'objectif du projet..." textarea rows="3" />
         <div class="row2">
           <div class="field">
             <label class="label">Date de début</label>
@@ -202,7 +199,7 @@
         </div>
         <div v-if="editing" class="field">
           <label class="label">Statut</label>
-          <select v-model="form.statut" class="input sel">
+          <select v-model="form.statut" class="ds-input">
             <option value="ouvert">Ouvert</option>
             <option value="en_cours">En cours</option>
             <option value="archive">Fermé (Archivé)</option>
@@ -562,14 +559,6 @@ const onDrop = async (e, newStatus) => {
 
 /* Admin action buttons */
 .card-admin-actions { display: flex; gap: .25rem; }
-.btn-icon {
-  display: flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px;
-  background: #f8fafc; border: 1px solid #e4eaf3;
-  border-radius: 6px; cursor: pointer; color: #64748b;
-  transition: background .15s, color .15s, border-color .15s;
-}
-.btn-icon:hover { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
 
 /* Title */
 .card-title {

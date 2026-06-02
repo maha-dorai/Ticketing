@@ -12,34 +12,34 @@
         <form @submit.prevent="submit" class="form">
           <div class="field">
             <label class="label">Mot de passe temporaire (reçu par email)</label>
-            <div class="iw"><input v-model="f.ancien" :type="s1?'text':'password'" required placeholder="••••••••" class="input ipr"/><button type="button" class="eye" @click="s1=!s1" tabindex="-1"><Eye :o="s1"/></button></div>
+            <div class="iw"><input v-model="f.ancien" :type="s1?'text':'password'" required placeholder="••••••••" class="input ipr"/><button type="button" class="eye" @click="s1=!s1" tabindex="-1" aria-label="Afficher le mot de passe"><Eye v-if="s1" :size="17" aria-hidden="true" /><EyeOff v-else :size="17" aria-hidden="true" /></button></div>
           </div>
           <div class="field">
             <label class="label">Nouveau mot de passe</label>
-            <div class="iw"><input v-model="f.nouveau" :type="s2?'text':'password'" required placeholder="Min 8 car., MAJ, chiffre, symbole" class="input ipr"/><button type="button" class="eye" @click="s2=!s2" tabindex="-1"><Eye :o="s2"/></button></div>
+            <div class="iw"><input v-model="f.nouveau" :type="s2?'text':'password'" required placeholder="Min 8 car., MAJ, chiffre, symbole" class="input ipr"/><button type="button" class="eye" @click="s2=!s2" tabindex="-1" aria-label="Afficher le mot de passe"><Eye v-if="s2" :size="17" aria-hidden="true" /><EyeOff v-else :size="17" aria-hidden="true" /></button></div>
             <div class="sbar"><div v-for="i in 4" :key="i" class="seg" :class="sc(i)"></div></div>
           </div>
           <div class="field">
             <label class="label">Confirmer le nouveau mot de passe</label>
-            <div class="iw"><input v-model="f.confirm" :type="s3?'text':'password'" required placeholder="••••••••" class="input ipr" :class="{mm:f.confirm&&f.nouveau!==f.confirm}"/><button type="button" class="eye" @click="s3=!s3" tabindex="-1"><Eye :o="s3"/></button></div>
+            <div class="iw"><input v-model="f.confirm" :type="s3?'text':'password'" required placeholder="••••••••" class="input ipr" :class="{mm:f.confirm&&f.nouveau!==f.confirm}"/><button type="button" class="eye" @click="s3=!s3" tabindex="-1" aria-label="Afficher le mot de passe"><Eye v-if="s3" :size="17" aria-hidden="true" /><EyeOff v-else :size="17" aria-hidden="true" /></button></div>
             <p v-if="f.confirm&&f.nouveau!==f.confirm" class="mm-txt">Les mots de passe ne correspondent pas</p>
           </div>
-          <button type="submit" :disabled="loading||(f.confirm&&f.nouveau!==f.confirm)" class="btn-primary">
-            <svg v-if="loading" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/></svg>
-            <span v-else>Définir mon mot de passe →</span>
-          </button>
+          <BaseButton type="submit" :disabled="loading||(f.confirm&&f.nouveau!==f.confirm)" variant="primary" size="sm" :loading="loading">
+            <span>Définir mon mot de passe →</span>
+          </BaseButton>
         </form>
       </div>
   </AuthLayout>
 </template>
 
 <script setup>
-import { ref, computed, defineComponent, h } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore';
+import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-vue-next';
 import api from '../services/api';
-import { AlertTriangle } from 'lucide-vue-next';
 import AuthLayout from '../components/layout/AuthLayout.vue';
+import BaseButton from '../components/ui/BaseButton.vue';
 import AuthBrand from '../components/auth/AuthBrand.vue';
 import AlertBanner from '../components/ui/AlertBanner.vue';
 
@@ -55,14 +55,6 @@ const str = computed(() => {
   return s;
 });
 const sc = (i) => { if (str.value < i) return 'seg-e'; return ['','seg-w','seg-f','seg-g','seg-s'][str.value] || 'seg-s'; };
-
-const Eye = defineComponent({ props: ['o'], setup: (p) => () => p.o
-  ? h('svg', { xmlns:'http://www.w3.org/2000/svg', width:17, height:17, fill:'none', viewBox:'0 0 24 24', 'stroke-width':'1.8', stroke:'currentColor' }, [
-      h('path', { 'stroke-linecap':'round','stroke-linejoin':'round', d:'M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z' }),
-      h('path', { 'stroke-linecap':'round','stroke-linejoin':'round', d:'M15 12a3 3 0 11-6 0 3 3 0 016 0z' })])
-  : h('svg', { xmlns:'http://www.w3.org/2000/svg', width:17, height:17, fill:'none', viewBox:'0 0 24 24', 'stroke-width':'1.8', stroke:'currentColor' }, [
-      h('path', { 'stroke-linecap':'round','stroke-linejoin':'round', d:'M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88' })])
-});
 
 const submit = async () => {
   if (f.value.nouveau !== f.value.confirm) { message.value = 'Les mots de passe ne correspondent pas.'; ok.value = false; return; }
@@ -113,8 +105,4 @@ const submit = async () => {
 .seg{height:3px;flex:1;border-radius:2px;transition:background .3s;}
 .seg-e{background:#1e293b;border:1px solid #334155;}
 .seg-w{background:#ef4444;}.seg-f{background:#f59e0b;}.seg-g{background:#3b82f6;}.seg-s{background:#22c55e;}
-.btn-primary{padding:.75rem;background:#3b82f6;color:white;border:none;border-radius:8px;font-size:.9375rem;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:background .2s;margin-top:.25rem;}
-.btn-primary:hover:not(:disabled){background:#2563eb;}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
-.spin{animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
 </style>

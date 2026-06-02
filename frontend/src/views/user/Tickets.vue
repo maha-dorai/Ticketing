@@ -4,19 +4,19 @@
       <div class="page-header">
         <div>
           <button @click="goBack" class="back-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+            <ArrowLeft :size="14" :stroke-width="2.5" aria-hidden="true" />
             Retour
           </button>
           <h1 class="page-title">{{ projectName || 'Chargement…' }}</h1>
           <p class="page-sub">{{ tickets.length }} ticket{{ tickets.length !== 1 ? 's' : '' }}</p>
         </div>
         <div class="flex items-center gap-3">
-          <button @click="$router.push({ name: 'ProjectDetail', params: { id: projectId } })" class="btn-info">
+          <BaseButton @click="$router.push({ name: 'ProjectDetail', params: { id: projectId } })" variant="secondary" size="sm">
             Infos du projet
-          </button>
-          <button v-if="currentUser?.role === 'testeur'" @click="showCreateModal = true" class="btn-new">
+          </BaseButton>
+          <BaseButton v-if="currentUser?.role === 'testeur'" @click="showCreateModal = true" variant="primary" size="sm">
             + Nouveau ticket
-          </button>
+          </BaseButton>
         </div>
       </div>
 
@@ -25,33 +25,29 @@
       </div>
 
       <div v-if="loading" class="loading-state">
-        <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="20" height="20">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/>
-          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/>
-        </svg>
+        <Loader2 :size="20" class="spin" aria-hidden="true" />
         Chargement…
       </div>
 
       <div v-else class="kanban-scroll">
-        <div class="kanban-board">
+        <div class="ds-kanban-board">
           <div
             v-for="col in columns"
             :key="col.etat"
-            class="kanban-col"
-            :class="'col-' + col.key"
+            class="ds-kanban-column ds-kanban-column--white"
+            :class="`ds-kanban-column--${col.key}`"
             @dragover.prevent="onDragOver(col.etat)"
             @drop.prevent="onDrop(col.etat)"
-            :data-dragover="dragTarget === col.etat"
           >
-            <div class="col-header">
-              <div class="col-label">
-                <span class="col-dot" :class="'dot-' + col.key"></span>
-                <span class="col-name">{{ col.label }}</span>
-              </div>
-              <span class="col-count">{{ ticketsByEtat(col.etat).length }}</span>
+            <div class="ds-kanban-column-header">
+              <h3 class="ds-kanban-column-title">
+                <span class="ds-status-dot" :class="`ds-status-dot--${col.key}`" aria-hidden="true" />
+                {{ col.label }}
+              </h3>
+              <span class="ds-kanban-column-count">{{ ticketsByEtat(col.etat).length }}</span>
             </div>
 
-            <div class="col-cards">
+            <div class="ds-kanban-column-body">
               <div
                 v-for="ticket in ticketsByEtat(col.etat)"
                 :key="ticket.id"
@@ -89,8 +85,8 @@
                 </div>
               </div>
 
-              <div v-if="dragTarget === col.etat && dragging" class="drop-ghost">Déposer ici</div>
-              <div v-if="!ticketsByEtat(col.etat).length && dragTarget !== col.etat" class="col-empty">Aucun ticket</div>
+              <div v-if="dragTarget === col.etat && dragging" class="ds-kanban-column-drop-ghost">Déposer ici</div>
+              <div v-if="!ticketsByEtat(col.etat).length && dragTarget !== col.etat" class="ds-kanban-column-empty">Aucun ticket</div>
             </div>
           </div>
         </div>
@@ -159,7 +155,7 @@
 
           </div>
           <div class="modal-footer">
-            <button @click="closeModal" class="btn-cancel">Fermer</button>
+            <BaseButton @click="closeModal" variant="ghost" size="sm">Fermer</BaseButton>
           </div>
         </template>
 
@@ -215,7 +211,7 @@
             <div class="field">
               <label class="label">Pièces jointes</label>
               <label class="file-upload">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                <Paperclip :size="15" aria-hidden="true" />
                 {{ attachments.length ? attachments.length + ' fichier(s) sélectionné(s)' : 'Choisir des fichiers' }}
                 <input type="file" multiple @change="handleFileUpload" hidden />
               </label>
@@ -225,14 +221,10 @@
           </div>
 
           <div class="modal-footer">
-            <button @click="closeModal" class="btn-cancel">Annuler</button>
-            <button @click="submitTicket" :disabled="submitting" class="btn-primary">
-              <svg v-if="submitting" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="14" height="14">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/>
-                <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/>
-              </svg>
+            <BaseButton @click="closeModal" variant="ghost" size="sm">Annuler</BaseButton>
+            <BaseButton @click="submitTicket" :disabled="submitting" variant="primary" size="sm" :loading="submitting">
               <span>{{ submitting ? 'Création en cours…' : 'Créer' }}</span>
-            </button>
+            </BaseButton>
           </div>
         </template>
       </div>
@@ -247,13 +239,17 @@ import { useRouter, useRoute } from 'vue-router';
 import api from '../../services/api';
 import {
   AlertTriangle,
+  ArrowLeft,
   Bot,
   CheckCircle2,
   Clock,
+  Loader2,
+  Paperclip,
   RotateCcw,
   Sparkles,
 } from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
 import ModalCloseBtn from '../../components/ui/ModalCloseBtn.vue';
 
 const authStore   = useAuthStore();
@@ -448,18 +444,6 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .back-btn:hover { color: #1d4ed8; }
 .page-title { font-size: 1.375rem; font-weight: 800; color: #0f172a; margin: 0; }
 .page-sub   { font-size: .8125rem; color: #94a3b8; margin: .2rem 0 0; }
-.btn-info {
-  padding: .5rem 1rem; background: #f1f5f9; color: #475569;
-  border: 1px solid #e2e8f0; border-radius: 8px; font-size: .8125rem;
-  font-weight: 600; cursor: pointer; transition: background .15s;
-}
-.btn-info:hover { background: #e2e8f0; }
-.btn-new {
-  padding: .5rem 1.125rem; background: #1e293b; color: white;
-  border: none; border-radius: 8px; font-size: .8125rem; font-weight: 700;
-  cursor: pointer; transition: background .15s;
-}
-.btn-new:hover { background: #0f172a; }
 
 .toast {
   position: fixed; top: 5.5rem; left: 50%; transform: translateX(-50%);
@@ -474,32 +458,6 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .kanban-scroll { flex: 1; overflow-x: auto; overflow-y: hidden; padding: 1.5rem 1.75rem 1.75rem; }
-.kanban-board  { display: flex; gap: 1rem; align-items: flex-start; min-height: calc(100vh - 130px); min-width: max-content; }
-.kanban-col {
-  width: 260px; flex-shrink: 0; background: #fff; border-radius: 14px;
-  border: 1px solid #e2e8f0; display: flex; flex-direction: column;
-  max-height: calc(100vh - 150px); transition: border-color .2s, box-shadow .2s;
-}
-.kanban-col[data-dragover="true"] { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
-.col-open { border-top: 3px solid #22c55e; }
-.col-prog { border-top: 3px solid #3b82f6; }
-.col-test { border-top: 3px solid #f59e0b; }
-.col-recl { border-top: 3px solid #ef4444; }
-.col-done { border-top: 3px solid #8b5cf6; }
-.col-header { display: flex; align-items: center; justify-content: space-between; padding: .875rem 1rem .75rem; flex-shrink: 0; }
-.col-label  { display: flex; align-items: center; gap: .5rem; }
-.col-dot    { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.dot-open  { background: #22c55e; }
-.dot-prog  { background: #3b82f6; }
-.dot-test  { background: #f59e0b; }
-.dot-recl  { background: #ef4444; }
-.dot-done  { background: #8b5cf6; }
-.col-name  { font-size: .8125rem; font-weight: 700; color: #1e293b; }
-.col-count { font-size: .6875rem; font-weight: 700; color: #94a3b8; background: #f1f5f9; border-radius: 20px; padding: 2px 8px; }
-.col-cards { flex: 1; overflow-y: auto; padding: .25rem .625rem .75rem; display: flex; flex-direction: column; gap: .5rem; }
-.col-cards::-webkit-scrollbar { width: 4px; }
-.col-cards::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
-.col-empty { text-align: center; font-size: .75rem; color: #cbd5e1; padding: 1.5rem .5rem; font-style: italic; }
 
 .ticket-card {
   background: white; border: 1px solid #e2e8f0; border-radius: 10px;
@@ -543,7 +501,6 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .dev-name    { font-size: .6875rem; font-weight: 600; color: #475569; }
 .unassigned  { font-size: .6875rem; color: #e2e8f0; font-style: italic; }
 .card-date   { font-size: .625rem; color: #cbd5e1; }
-.drop-ghost  { border: 2px dashed #3b82f6; border-radius: 10px; padding: 1rem; text-align: center; font-size: .75rem; font-weight: 600; color: #3b82f6; background: rgba(59,130,246,.04); min-height: 60px; display: flex; align-items: center; justify-content: center; }
 
 .overlay { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
 .modal   { background: white; border-radius: 16px; width: 100%; max-width: 460px; box-shadow: 0 24px 48px rgba(0,0,0,.2); overflow: hidden; max-height: 90vh; overflow-y: auto; }
@@ -610,10 +567,4 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .confirm-assign-sub   { font-size: .8125rem; color: #64748b; margin: 0; }
 
 .alert-err { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; padding: .625rem .875rem; font-size: .8125rem; }
-
-.btn-cancel { padding: .5rem 1rem; background: white; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; font-size: .8125rem; font-weight: 600; cursor: pointer; font-family: inherit; }
-.btn-cancel:hover { background: #f8fafc; }
-.btn-primary { padding: .5rem 1.25rem; background: #1e293b; color: white; border: none; border-radius: 8px; font-size: .8125rem; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: .375rem; }
-.btn-primary:hover:not(:disabled) { background: #0f172a; }
-.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
 </style>

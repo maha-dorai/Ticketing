@@ -1274,9 +1274,37 @@
 
 /* Status indicators for kanban columns */
 .ds-kanban-column--open { border-top: 3px solid var(--color-success); }
+.ds-kanban-column--prog { border-top: 3px solid var(--color-brand); }
 .ds-kanban-column--progress { border-top: 3px solid var(--color-brand); }
 .ds-kanban-column--test { border-top: 3px solid var(--color-warning); }
+.ds-kanban-column--recl { border-top: 3px solid var(--color-error); }
+.ds-kanban-column--done { border-top: 3px solid var(--color-purple-500); }
 .ds-kanban-column--closed { border-top: 3px solid var(--color-neutral-400); }
+
+/* Status dots for kanban columns */
+.ds-status-dot--open { background: var(--color-success); }
+.ds-status-dot--prog { background: var(--color-brand); }
+.ds-status-dot--progress { background: var(--color-brand); }
+.ds-status-dot--test { background: var(--color-warning); }
+.ds-status-dot--recl { background: var(--color-error); }
+.ds-status-dot--done { background: var(--color-purple-500); }
+.ds-status-dot--closed { background: var(--color-neutral-400); }
+
+/* Drop ghost for kanban */
+.ds-kanban-column-drop-ghost {
+  border: 2px dashed var(--color-brand);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-brand);
+  background: rgba(59, 130, 246, 0.04);
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* Loading state for kanban */
 .ds-kanban-loading {

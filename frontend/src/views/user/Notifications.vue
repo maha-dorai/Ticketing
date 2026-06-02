@@ -36,14 +36,14 @@
               
               <!-- Boutons Admin pour l'auto-assignation -->
               <div v-if="isManager && !notif.lu && (notif.message.toLowerCase().includes('validation') || notif.message.toLowerCase().includes('assignation'))" class="notif-actions" @click.stop>
-                <button @click="acceptAssignment(notif)" class="btn-sm btn-accept btn-with-icon">
+                <BaseButton @click="acceptAssignment(notif)" variant="success" size="sm">
                   <CheckCircle2 :size="14" aria-hidden="true" />
                   Valider
-                </button>
-                <button @click="rejectAssignment(notif)" class="btn-sm btn-reject btn-with-icon">
+                </BaseButton>
+                <BaseButton @click="rejectAssignment(notif)" variant="danger" size="sm">
                   <XCircle :size="14" aria-hidden="true" />
                   Refuser
-                </button>
+                </BaseButton>
               </div>
             </div>
           </div>
@@ -313,11 +313,6 @@ const formatTime = (d) =>
 .is-read .notif-msg { color: #64748b; font-weight: 400; }
 .notif-time { font-size: .75rem; color: #94a3b8; margin: 0; }
 .notif-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-.btn-sm { padding: 4px 10px; font-size: 0.75rem; font-weight: 700; border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: background 0.15s; }
-.btn-accept { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
-.btn-accept:hover { background: #bbf7d0; }
-.btn-reject { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
-.btn-reject:hover { background: #fecaca; }
 
 .modal-overlay {
   position: fixed;

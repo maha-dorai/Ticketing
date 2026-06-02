@@ -14,10 +14,10 @@
       <!-- Time Filter & Project Selector -->
       <div class="time-filters">
         <div class="time-buttons">
-          <button @click="setPeriod('today')" :class="['time-btn', period === 'today' ? 'active' : '']">Aujourd'hui</button>
-          <button @click="setPeriod('week')" :class="['time-btn', period === 'week' ? 'active' : '']">Cette Semaine</button>
-          <button @click="setPeriod('month')" :class="['time-btn', period === 'month' ? 'active' : '']">Ce Mois</button>
-          <button @click="setPeriod('all')" :class="['time-btn', period === 'all' ? 'active' : '']">Global</button>
+          <button @click="setPeriod('today')" :class="['time-btn', period === 'today' ? 'active' : '']" aria-label="Filtrer par: Aujourd'hui">Aujourd'hui</button>
+          <button @click="setPeriod('week')" :class="['time-btn', period === 'week' ? 'active' : '']" aria-label="Filtrer par: Cette semaine">Cette Semaine</button>
+          <button @click="setPeriod('month')" :class="['time-btn', period === 'month' ? 'active' : '']" aria-label="Filtrer par: Ce mois">Ce Mois</button>
+          <button @click="setPeriod('all')" :class="['time-btn', period === 'all' ? 'active' : '']" aria-label="Filtrer par: Global">Global</button>
         </div>
 
         <div v-if="!isAdmin" class="project-selector">

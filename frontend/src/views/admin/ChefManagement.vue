@@ -36,25 +36,14 @@
 
               <form @submit.prevent="createAdmin" class="premium-form">
                 <div class="input-group-row">
-                  <div class="input-field">
-                    <label>Prénom</label>
-                    <input v-model="f.prenom" type="text" required />
-                  </div>
-                  <div class="input-field">
-                    <label>Nom</label>
-                    <input v-model="f.nom" type="text" required />
-                  </div>
+                  <BaseInput v-model="f.prenom" label="Prénom" required />
+                  <BaseInput v-model="f.nom" label="Nom" required />
                 </div>
-                <div class="input-field">
-                  <label>Email Professionnel</label>
-                  <input v-model="f.email" type="email"  required />
-                  <span class="field-hint">Le mot de passe y sera envoyé.</span>
-                </div>
+                <BaseInput v-model="f.email" type="email" label="Email Professionnel" required hint="Le mot de passe y sera envoyé." />
                 
-                <button type="submit" :disabled="creating" class="btn-gradient">
-                  <Loader2 v-if="creating" :size="18" class="spin" aria-hidden="true" />
-                  <span v-else>Créer le compte</span>
-                </button>
+                <BaseButton type="submit" :disabled="creating" variant="primary" size="sm" :loading="creating">
+                  <span>Créer le compte</span>
+                </BaseButton>
               </form>
             </div>
           </div>
@@ -73,10 +62,10 @@
                 <input v-model="searchQuery" type="text" placeholder="Rechercher par nom ou email..." />
               </div>
               <div class="filter-pills">
-                <button @click="filterStatus = 'all'" :class="{ 'active-pill': filterStatus === 'all' }">Tous</button>
-                <button @click="filterStatus = 'actif'" :class="{ 'active-pill': filterStatus === 'actif' }">Actifs</button>
-                <button @click="filterStatus = 'pending'" :class="{ 'active-pill': filterStatus === 'pending' }">En attente</button>
-                <button @click="filterStatus = 'desactive'" :class="{ 'active-pill': filterStatus === 'desactive' }">Désactivés</button>
+                <button @click="filterStatus = 'all'" :class="{ 'active-pill': filterStatus === 'all' }" aria-label="Filtrer: Tous les comptes">Tous</button>
+                <button @click="filterStatus = 'actif'" :class="{ 'active-pill': filterStatus === 'actif' }" aria-label="Filtrer: Comptes actifs">Actifs</button>
+                <button @click="filterStatus = 'pending'" :class="{ 'active-pill': filterStatus === 'pending' }" aria-label="Filtrer: Comptes en attente">En attente</button>
+                <button @click="filterStatus = 'desactive'" :class="{ 'active-pill': filterStatus === 'desactive' }" aria-label="Filtrer: Comptes désactivés">Désactivés</button>
               </div>
             </div>
 
@@ -122,7 +111,7 @@
                   </div>
                 </div>
                 <div class="card-actions" v-if="a.statut === 'actif'">
-                  <button @click="askRevoke(a)" class="btn-ghost-danger">Révoquer l'accès</button>
+                  <BaseButton @click="askRevoke(a)" variant="ghost" size="sm" class="text-red-600 hover:text-red-700">Révoquer l'accès</BaseButton>
                 </div>
               </div>
             </div>
@@ -142,8 +131,8 @@
                 Cette personne sera immédiatement déconnectée.
               </p>
               <div class="modal-buttons">
-                <button @click="adminToRevoke = null" class="btn-secondary">Annuler</button>
-                <button @click="confirmRevoke" class="btn-danger-fill">Confirmer la révocation</button>
+                <BaseButton @click="adminToRevoke = null" variant="secondary" size="sm">Annuler</BaseButton>
+                <BaseButton @click="confirmRevoke" variant="danger" size="sm">Confirmer la révocation</BaseButton>
               </div>
             </div>
           </div>
@@ -157,6 +146,8 @@ import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
 import { AlertTriangle, Ban, CheckCircle2, Clock, Crown, Loader2, Plus, Search, Sparkles, XCircle } from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
+import BaseInput from '../../components/ui/BaseInput.vue';
 import PageHeader from '../../components/ui/PageHeader.vue';
 import BaseAlert from '../../components/ui/BaseAlert.vue';
 
@@ -252,17 +243,6 @@ const confirmRevoke = async () => {
 
 .premium-form { display: flex; flex-direction: column; gap: 1.25rem; }
 .input-group-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-.input-field { display: flex; flex-direction: column; gap: 0.5rem; }
-.input-field label { font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
-.input-field input { width: 100%; padding: 0.75rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; color: #1e293b; font-size: 0.9rem; font-weight: 500; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); outline: none; }
-.input-field input:focus { background: white; border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); transform: translateY(-1px); }
-.input-field input::placeholder { color: #cbd5e1; font-weight: 400; }
-.field-hint { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
-
-.btn-gradient { padding: 0.875rem; border-radius: 10px; border: none; background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%); color: white; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.3s ease; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); margin-top: 0.5rem; }
-.btn-gradient:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 25px rgba(37, 99, 235, 0.3); }
-.btn-gradient:active:not(:disabled) { transform: translateY(0); }
-.btn-gradient:disabled { opacity: 0.7; filter: grayscale(50%); cursor: not-allowed; }
 
 /* ── LIST SECTION & FILTERS ── */
 .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
@@ -308,8 +288,6 @@ const confirmRevoke = async () => {
 .status-badge.disabled { background: #f1f5f9; color: #64748b; }
 
 .card-actions { border-top: 1px solid #f1f5f9; padding-top: 1rem; margin-top: auto; }
-.btn-ghost-danger { width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid transparent; background: transparent; color: #ef4444; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
-.btn-ghost-danger:hover { background: #fef2f2; border-color: #fecaca; }
 
 /* ── STATES ── */
 .state-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; text-align: center; color: #64748b; background: white; border-radius: 20px; border: 1px dashed #cbd5e1; }
@@ -327,10 +305,6 @@ const confirmRevoke = async () => {
 .modal-text { font-size: 0.9rem; color: #64748b; line-height: 1.6; margin: 0 0 2rem; }
 .text-highlight { color: #1e293b; font-weight: 700; }
 .modal-buttons { display: flex; gap: 1rem; }
-.btn-secondary { flex: 1; padding: 0.75rem; background: #f1f5f9; color: #475569; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: background 0.2s; }
-.btn-secondary:hover { background: #e2e8f0; }
-.btn-danger-fill { flex: 1; padding: 0.75rem; background: #ef4444; color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: background 0.2s; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
-.btn-danger-fill:hover { background: #dc2626; box-shadow: 0 6px 15px rgba(239, 68, 68, 0.4); }
 
 /* ── ANIMATIONS ── */
 @keyframes spin { to { transform: rotate(360deg); } }

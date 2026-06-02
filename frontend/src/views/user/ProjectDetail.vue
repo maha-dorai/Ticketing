@@ -8,7 +8,7 @@
       <div class="page-header">
         <div class="header-left">
           <button @click="$router.push({ name: 'Projects' })" class="back-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+            <ArrowLeft :size="16" aria-hidden="true" />
             Mes Projets
           </button>
           <div v-if="project" class="header-info">
@@ -20,9 +20,9 @@
             </div>
           </div>
         </div>
-        <button v-if="isTesteur && activeTab === 'tickets'" @click="showCreateModal = true" class="btn-create">
+        <BaseButton v-if="isTesteur && activeTab === 'tickets'" @click="showCreateModal = true" variant="primary" size="sm">
           + Nouveau ticket
-        </button>
+        </BaseButton>
       </div>
 
       <!-- Tabs -->
@@ -36,7 +36,7 @@
 
       <!-- Loading -->
       <div v-if="loading" class="loading-wrap">
-        <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/></svg>
+        <Loader2 :size="24" class="spin" aria-hidden="true" />
         Chargement...
       </div>
 
@@ -97,17 +97,6 @@
 
         <!-- TAB TICKETS -->
         <template v-if="activeTab === 'tickets'">
-
-          <!-- Header Tickets Tab (Kanban Button) -->
-          <div class="flex justify-between items-center mb-6 bg-blue-50 border border-blue-100 p-4 rounded-xl">
-            <div>
-              <h3 class="text-sm font-bold text-blue-900">Tableau Kanban</h3>
-              <p class="text-xs text-blue-700 mt-1">Gérez vos tickets visuellement avec le glisser-déposer.</p>
-            </div>
-            <button @click="$router.push(`/projects/${projectId}/tickets`)" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-md transition-all flex items-center gap-2">
-              <span class="text-lg">📊</span> Ouvrir le Tableau
-            </button>
-          </div>
 
           <!-- Filters -->
           <div class="filters-bar">
@@ -177,7 +166,7 @@
                 </div>
               </div>
 
-              <svg class="ticket-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+              <ArrowRight :size="16" class="ticket-arrow" aria-hidden="true" />
             </div>
           </div>
         </template>
@@ -222,7 +211,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button @click="closeModal" class="btn-submit">Fermer</button>
+            <BaseButton @click="closeModal" variant="primary" size="sm">Fermer</BaseButton>
           </div>
         </template>
 
@@ -300,10 +289,10 @@
             <div v-if="formError" class="form-error">{{ formError }}</div>
           </div>
           <div class="modal-footer">
-            <button @click="closeModal" class="btn-cancel">Annuler</button>
-            <button @click="submitTicket" :disabled="submitting" class="btn-submit">
+            <BaseButton @click="closeModal" variant="ghost" size="sm">Annuler</BaseButton>
+            <BaseButton @click="submitTicket" :disabled="submitting" variant="primary" size="sm" :loading="submitting">
               {{ submitting ? 'Création...' : 'Créer le ticket' }}
-            </button>
+            </BaseButton>
           </div>
         </template>
 
@@ -317,8 +306,10 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/authStore';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-vue-next';
 import api from '../../services/api';
 import AppSidebar from '../../components/AppSidebar.vue';
+import BaseButton from '../../components/ui/BaseButton.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -483,8 +474,6 @@ const prioBadgeClass = p => ({ BASSE: 'pb-basse', MOYENNE: 'pb-moyenne', HAUTE: 
 .header-meta{display:flex;align-items:center;gap:.5rem;margin-top:4px;}
 .meta-sep{color:#cbd5e1;}
 .meta-text{font-size:.8125rem;color:#64748b;}
-.btn-create{padding:.5625rem 1.25rem;background:#2563eb;color:white;border:none;border-radius:9px;font-size:.875rem;font-weight:700;cursor:pointer;transition:background .15s;font-family:inherit;}
-.btn-create:hover{background:#1d4ed8;}
 
 /* Tabs */
 .tabs{display:flex;gap:4px;padding:.75rem 2.5rem 0;background:white;border-bottom:1px solid #e2e8f0;}
@@ -602,9 +591,4 @@ const prioBadgeClass = p => ({ BASSE: 'pb-basse', MOYENNE: 'pb-moyenne', HAUTE: 
 .form-input{padding:.5625rem .875rem;border:1px solid #e2e8f0;border-radius:9px;font-size:.875rem;color:#1e293b;outline:none;font-family:inherit;transition:border-color .2s,box-shadow .2s;width:100%;}
 .form-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);}
 .form-error{font-size:.8125rem;color:#dc2626;background:#fef2f2;padding:.625rem .875rem;border-radius:8px;}
-.btn-cancel{padding:.5625rem 1.25rem;background:#f1f5f9;color:#475569;border:none;border-radius:9px;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;}
-.btn-cancel:hover{background:#e2e8f0;}
-.btn-submit{padding:.5625rem 1.25rem;background:#2563eb;color:white;border:none;border-radius:9px;font-size:.875rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s;}
-.btn-submit:hover:not(:disabled){background:#1d4ed8;}
-.btn-submit:disabled{opacity:.5;cursor:not-allowed;}
 </style>

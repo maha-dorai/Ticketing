@@ -1,8 +1,8 @@
 <template>
   <AuthLayout wide>
       <AuthBrand subtitle="Créer un compte — soumis à validation" />
-      <div class="card">
-        <h2 class="card-title">Inscription</h2>
+      <div class="ds-card ds-card--auth">
+        <h2 class="ds-card__title">Inscription</h2>
 
         <BaseAlert v-if="successMessage" variant="success" :icon="CheckCircle2" class="ds-page-feedback">{{ successMessage }}</BaseAlert>
 
@@ -127,8 +127,6 @@ const registerCandidate = async () => {
 </script>
 
 <style scoped>
-.card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2rem; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
-.card-title { font-size: 1.25rem; font-weight: 700; color: #f1f5f9; margin: 0 0 1.5rem; }
 .form { display: flex; flex-direction: column; gap: 1.1rem; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .field { display: flex; flex-direction: column; gap: 0.4rem; }
