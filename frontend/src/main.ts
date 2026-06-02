@@ -12,13 +12,15 @@ const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
+
+// ✅ Init auth AVANT d'utiliser le router
+// pour que le guard beforeEach ait accès à la session restaurée
+const authStore = useAuthStore()
+authStore.init()
+
 app.use(router)
 app.use(VueApexCharts)
 
 app.component('AppHeader', AppHeader)
-
-// Restaure la session depuis localStorage au démarrage
-const authStore = useAuthStore()
-authStore.init()
 
 app.mount('#app')

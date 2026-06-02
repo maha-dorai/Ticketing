@@ -1,662 +1,619 @@
 <template>
-  <AppLayout>
-    <div class="ticket-details-page">
-      <div v-if="loading" class="ds-loading-state">Chargement du ticket...</div>
+  <AppLayout fixed>
 
-      <div v-else-if="ticket" class="space-y-6 max-w-5xl mx-auto pb-12">
-
-        <div class="flex items-center justify-between mb-2">
-          <button @click="$router.push({ name: 'Tickets', params: { projectId: route.params.projectId } })" class="text-blue-500 hover:text-blue-700 font-bold text-sm flex items-center gap-2 transition">
-            <ChevronLeft :size="16" :stroke-width="2.5" aria-hidden="true" />
-            Retour aux tickets
+      <div class="page-header">
+        <div>
+          <button @click="goBack" class="back-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+            Retour
           </button>
-          <div class="flex gap-2">
-            <span :class="prioriteClass(ticket.priorite)" class="px-3 py-1 text-xs font-bold rounded-full border bg-white shadow-sm">{{ ticket.priorite }}</span>
-          </div>
+          <h1 class="page-title">{{ projectName || 'Chargement…' }}</h1>
+          <p class="page-sub">{{ tickets.length }} ticket{{ tickets.length !== 1 ? 's' : '' }}</p>
         </div>
-
-        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight leading-tight flex items-center gap-3">
-          <Ticket class="text-blue-600 flex-shrink-0" :size="28" aria-hidden="true" />
-          {{ ticket.titre }}
-        </h1>
-
-        <div v-if="confirmDialog.show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-          <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-sm w-full transform scale-100 transition-all">
-            <p class="text-slate-800 font-bold mb-6 text-center text-lg">{{ confirmDialog.message }}</p>
-            <div class="flex justify-center gap-3">
-              <button @click="confirmDialog.show = false" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition">Annuler</button>
-              <button @click="confirmDialog.onConfirm(); confirmDialog.show = false" :class="confirmDialog.danger ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'" class="px-5 py-2.5 rounded-xl font-bold text-white transition shadow-md">Confirmer</button>
-            </div>
-          </div>
+        <div class="flex items-center gap-3">
+          <button @click="$router.push({ name: 'ProjectDetail', params: { id: projectId } })" class="btn-info">
+            Infos du projet
+          </button>
+          <button v-if="currentUser?.role === 'testeur'" @click="showCreateModal = true" class="btn-new">
+            + Nouveau ticket
+          </button>
         </div>
+      </div>
 
-        <div v-if="reclamationModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-          <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full">
-            <div class="flex items-center gap-3 mb-4">
-              <AlertTriangle class="text-amber-500 flex-shrink-0" :size="24" aria-hidden="true" />
-              <h3 class="text-lg font-extrabold text-slate-800">Raison de la réclamation</h3>
+      <div v-if="globalMsg" class="toast" :class="globalOk ? 'toast-ok' : 'toast-err'">
+        {{ globalMsg }}
+      </div>
+
+      <div v-if="loading" class="loading-state">
+        <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="20" height="20">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/>
+          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/>
+        </svg>
+        Chargement…
+      </div>
+
+      <div v-else class="kanban-scroll">
+        <div class="kanban-board">
+          <div
+            v-for="col in columns"
+            :key="col.etat"
+            class="kanban-col"
+            :class="'col-' + col.key"
+            @dragover.prevent="onDragOver(col.etat)"
+            @drop.prevent="onDrop(col.etat)"
+            :data-dragover="dragTarget === col.etat"
+          >
+            <div class="col-header">
+              <div class="col-label">
+                <span class="col-dot" :class="'dot-' + col.key"></span>
+                <span class="col-name">{{ col.label }}</span>
+              </div>
+              <span class="col-count">{{ ticketsByEtat(col.etat).length }}</span>
             </div>
-            <p class="text-sm text-slate-500 mb-4">Décrivez ce qui ne va pas avec la résolution proposée. Le développeur recevra ce message.</p>
-            <textarea
-              v-model="reclamationModal.raison"
-              rows="4"
-              placeholder="Ex: Le bug est toujours présent sur la page de connexion, le formulaire ne valide pas..."
-              class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm resize-none outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 text-slate-800 placeholder-slate-400"
-              autofocus
-            ></textarea>
-            <p v-if="reclamationModal.error" class="text-xs text-red-500 mt-2 font-medium">{{ reclamationModal.error }}</p>
-            <div class="flex justify-end gap-3 mt-5">
-              <button @click="reclamationModal.show = false; reclamationModal.raison = ''; reclamationModal.error = ''" class="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition">Annuler</button>
-              <button @click="submitReclamation" class="px-5 py-2.5 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 transition shadow-md">
-                Envoyer la réclamation
-              </button>
-            </div>
-          </div>
-        </div>
 
-        <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-sm font-extrabold text-slate-700 uppercase tracking-widest flex items-center gap-2">
-              <File :size="16" :stroke-width="2" class="text-blue-500" aria-hidden="true" />
-              Pipeline d'état
-            </h3>
-            <span v-if="stateUpdating" class="text-xs text-blue-500 font-bold animate-pulse">Synchronisation...</span>
-          </div>
-
-          <div class="flex flex-col md:flex-row items-stretch gap-3 h-auto md:h-28">
-            <div
-              v-for="col in columns"
-              :key="col.etat"
-              class="flex-1 rounded-xl border-2 transition-all relative overflow-hidden flex flex-col justify-center items-center p-3"
-              :class="[
-                dragTarget === col.etat ? 'border-blue-400 bg-blue-50 scale-[1.02] shadow-inner' : 'border-slate-100 bg-slate-50',
-                ticket.etat === col.etat ? 'border-blue-200 bg-blue-50/50' : ''
-              ]"
-              @dragover.prevent="onDragOver(col.etat)"
-              @drop.prevent="onDrop(col.etat)"
-            >
-              <span class="text-[11px] font-extrabold text-slate-500 mb-3 uppercase tracking-wider text-center">{{ col.label }}</span>
-              
+            <div class="col-cards">
               <div
-                v-if="ticket.etat === col.etat"
-                class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-5 py-2.5 rounded-full shadow-lg shadow-blue-600/30 transition-transform flex items-center gap-2"
-                :class="canDragTicket ? 'cursor-grab active:cursor-grabbing hover:scale-105' : 'opacity-70 cursor-not-allowed'"
-                :draggable="canDragTicket"
-                @dragstart="onDragStart"
+                v-for="ticket in ticketsByEtat(col.etat)"
+                :key="ticket.id"
+                class="ticket-card"
+                :class="['prio-' + ticket.priorite.toLowerCase(), { 'is-dragging': dragging?.id === ticket.id }]"
+                :draggable="canDrag(ticket)"
+                @dragstart="onDragStart(ticket)"
                 @dragend="onDragEnd"
+                @click="goToTicket(ticket)"
               >
-                <template v-if="canDragTicket">
-                  <GripVertical :size="14" aria-hidden="true" />
-                  Glissez-moi
-                </template>
-                <template v-else>
-                  <Lock :size="14" aria-hidden="true" />
-                  Actuel
-                </template>
+                <div class="prio-strip" :class="'strip-' + ticket.priorite.toLowerCase()"></div>
+                <div class="card-body">
+                  <div class="card-top">
+                    <span class="prio-badge" :class="'pb-' + ticket.priorite.toLowerCase()">{{ ticket.priorite }}</span>
+                    <div class="flex items-center gap-1">
+                      <span v-if="ticket.categorie_ia" class="ia-badge-flat">IA: {{ categorieLabel(ticket.categorie_ia) }}</span>
+                      <span class="card-id">#{{ ticket.id }}</span>
+                    </div>
+                  </div>
+                  <h3 class="card-title">{{ ticket.titre }}</h3>
+                  <div class="card-footer">
+                    <div class="dev-info" v-if="ticket.assignment_status === 'approved' && ticket.developpeur">
+                      <div class="dev-av">{{ initials(ticket.developpeur) }}</div>
+                      <span class="dev-name">{{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}</span>
+                    </div>
+                    <div class="dev-info" v-else-if="ticket.assignment_status === 'pending' && ticket.proposed_developpeur">
+                      <span class="dev-name dev-name--pending">
+                        <Clock :size="12" aria-hidden="true" />
+                        {{ ticket.proposed_developpeur.prenom }}
+                      </span>
+                    </div>
+                    <span v-else class="unassigned">Non assigné</span>
+                    <span class="card-date">{{ formatDate(ticket.created_at) }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="dragTarget === col.etat && dragging" class="drop-ghost">Déposer ici</div>
+              <div v-if="!ticketsByEtat(col.etat).length && dragTarget !== col.etat" class="col-empty">Aucun ticket</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <div v-if="showCreateModal" class="overlay" @click.self="closeModal">
+      <div class="modal">
+
+        <template v-if="assignResult">
+          <div class="modal-header">
+            <h3 class="modal-title modal-title--icon">
+              <CheckCircle2 :size="20" aria-hidden="true" />
+              Ticket créé
+            </h3>
+            <ModalCloseBtn class="close-btn" @click="closeModal" />
+          </div>
+          <div class="modal-body">
+
+            <div class="confirm-ai-block">
+              <div class="confirm-ai-title">
+                <Bot :size="16" aria-hidden="true" />
+                Analyse automatique
+              </div>
+              <div class="confirm-ai-row">
+                <div class="confirm-ai-item">
+                  <span class="confirm-ai-label">Priorité</span>
+                  <span class="confirm-prio-badge" :class="'cpb-' + (ticketResult?.priorite || 'basse').toLowerCase()">
+                    {{ ticketResult?.priorite || '—' }}
+                  </span>
+                </div>
+                <div class="confirm-ai-item">
+                  <span class="confirm-ai-label">Catégorie</span>
+                  <span class="confirm-cat-badge">
+                    {{ ticketResult?.categorie_ia ? categorieLabel(ticketResult.categorie_ia) : '—' }}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-          <p v-if="!canDragTicket" class="text-xs text-center text-slate-400 mt-4 font-medium italic">
-            {{ isManager ? 'En tant que manager, vous êtes en lecture seule sur le flux Kanban.' : 'Vous n\'avez pas les droits de modifier cet état ou le ticket ne vous est pas assigné.' }}
-          </p>
-        </div>
 
-        <div v-if="ticket.categorie_ia || ticket.priorite_ia || ticket.solution_ia" class="bg-white border border-slate-200 border-l-4 border-l-indigo-500 rounded-2xl shadow-sm p-6">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="text-indigo-600 flex-shrink-0">
-              <Bot :size="20" :stroke-width="2" aria-hidden="true" />
+            <div class="confirm-assign-block">
+              <div v-if="assignResult.success" class="confirm-assign-row">
+                <div class="confirm-assign-icon-wrap" :class="assignResult.is_retour ? 'confirm-assign-icon-wrap--success' : ''">
+                  <RotateCcw v-if="assignResult.is_retour" :size="18" aria-hidden="true" />
+                  <Clock v-else :size="18" aria-hidden="true" />
+                </div>
+                <div>
+                  <p class="confirm-assign-title">
+                    {{ assignResult.is_retour ? 'Assigné d\'office (Retour)' : 'Assignation proposée' }}
+                  </p>
+                  <p class="confirm-assign-sub">
+                    {{ assignResult.dev_prenom }} {{ assignResult.dev_nom }} —
+                    {{ assignResult.is_retour ? 'développeur du ticket parent.' : 'en attente de validation admin.' }}
+                  </p>
+                </div>
+              </div>
+              <div v-else class="confirm-assign-row">
+                <div class="confirm-assign-icon-wrap confirm-assign-icon-wrap--warning">
+                  <AlertTriangle :size="18" aria-hidden="true" />
+                </div>
+                <div>
+                  <p class="confirm-assign-title" style="color:#dc2626;">Aucun développeur disponible</p>
+                  <p class="confirm-assign-sub">{{ assignResult.message }}</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h3 class="text-sm font-extrabold text-slate-800 tracking-tight">Analyse par Intelligence Artificielle</h3>
-              <p class="text-[10px] text-slate-400 font-medium">Générée automatiquement à la création du ticket</p>
+
+          </div>
+          <div class="modal-footer">
+            <button @click="closeModal" class="btn-cancel">Fermer</button>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="modal-header">
+            <h3 class="modal-title">Nouveau ticket</h3>
+            <ModalCloseBtn class="close-btn" @click="closeModal" />
+          </div>
+
+          <div class="modal-body">
+
+            <div class="field">
+              <label class="label">Type</label>
+              <div class="radio-group">
+                <label class="radio-option btn-with-icon" :class="{ active: form.type === 'NOUVEAU' }">
+                  <input type="radio" v-model="form.type" value="NOUVEAU" hidden />
+                  <Sparkles :size="14" aria-hidden="true" />
+                  Nouveau
+                </label>
+                <label class="radio-option btn-with-icon" :class="{ active: form.type === 'RETOUR' }">
+                  <input type="radio" v-model="form.type" value="RETOUR" hidden />
+                  <RotateCcw :size="14" aria-hidden="true" />
+                  Retour
+                </label>
+              </div>
             </div>
-            <button @click="reanalyzeAI" :disabled="aiLoading" class="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold text-slate-600 border border-slate-200 bg-white hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition disabled:opacity-50" title="Relancer l'analyse IA">
-              <RefreshCw v-if="!aiLoading" :size="12" :stroke-width="2.5" class="text-slate-500" aria-hidden="true" />
-              <span>{{ aiLoading ? 'Mise à jour...' : 'Relancer' }}</span>
+
+            <div v-if="form.type === 'RETOUR'" class="field">
+              <label class="label">Ticket concerné *</label>
+              <select v-model="form.parent_ticket_id" class="input">
+                <option :value="null" disabled>-- Sélectionner --</option>
+                <option v-for="t in validParentTickets" :key="t.id" :value="t.id">
+                  #{{ t.id }} — {{ t.titre }}
+                </option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="label">Titre *</label>
+              <input v-model="form.titre" type="text" class="input" placeholder="Décrivez le problème en une phrase" />
+            </div>
+
+            <div class="field">
+              <label class="label">Description</label>
+              <textarea v-model="form.description" rows="3" class="input ta" placeholder="Étapes pour reproduire, résultat attendu vs obtenu, contexte…"></textarea>
+            </div>
+
+            <div class="field">
+              <label class="label">Estimation (h) *</label>
+              <input v-model="form.temps_estime" type="number" step="0.5" min="0.5" class="input" placeholder="Ex: 2.5" />
+            </div>
+
+            <div class="field">
+              <label class="label">Pièces jointes</label>
+              <label class="file-upload">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                {{ attachments.length ? attachments.length + ' fichier(s) sélectionné(s)' : 'Choisir des fichiers' }}
+                <input type="file" multiple @change="handleFileUpload" hidden />
+              </label>
+            </div>
+
+            <div v-if="formError" class="alert-err">{{ formError }}</div>
+          </div>
+
+          <div class="modal-footer">
+            <button @click="closeModal" class="btn-cancel">Annuler</button>
+            <button @click="submitTicket" :disabled="submitting" class="btn-primary">
+              <svg v-if="submitting" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="14" height="14">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/>
+                <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/>
+              </svg>
+              <span>{{ submitting ? 'Création en cours…' : 'Créer' }}</span>
             </button>
           </div>
-
-          <div class="flex flex-wrap items-center gap-3">
-            <div v-if="ticket.categorie_ia" class="flex items-center gap-2 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-lg">
-              <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Catégorie :</span>
-              <span class="text-xs font-bold text-indigo-700">{{ categorieLabel(ticket.categorie_ia) }}</span>
-            </div>
-
-            <div v-if="ticket.priorite_ia" class="flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-100 rounded-lg">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Priorité suggérée :</span>
-              <span :class="prioriteClass(ticket.priorite_ia)" class="px-2 py-0.5 text-xs font-extrabold rounded border shadow-sm">{{ ticket.priorite_ia }}</span>
-              <span v-if="ticket.priorite_ia !== ticket.priorite" class="text-[10px] text-slate-400 italic font-normal">(actuelle : {{ ticket.priorite }})</span>
-            </div>
-          </div>
-
-          <div v-if="ticket.solution_ia && currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser?.id" class="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-100">
-            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Solution suggérée</p>
-            <p class="text-sm text-slate-700 leading-relaxed">{{ ticket.solution_ia }}</p>
-          </div>
-        </div>
-
-        <div class="flex flex-col lg:flex-row gap-6">
-          
-          <div class="flex-1 space-y-6">
-            
-            <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-8 border border-slate-100">
-              <div class="prose prose-slate max-w-none text-sm leading-relaxed">
-                <div v-if="ticket.description && ticket.description.trim()" v-html="formatDescription(ticket.description)"></div>
-                <p v-else class="text-slate-400 italic text-sm flex items-center gap-2">
-                  <FileText :size="16" aria-hidden="true" />
-                  Aucune description fournie.
-                </p>
-              </div>
-              
-              <div v-if="ticket.attachments?.length" class="mt-8 pt-6 border-t border-slate-100">
-                <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Paperclip :size="14" aria-hidden="true" />
-                  Pièces jointes ({{ ticket.attachments.length }})
-                </h4>
-                <div class="flex flex-wrap gap-3">
-                  <a v-for="att in ticket.attachments" :key="att.id" :href="storageAssetUrl(att.file_path)" target="_blank" class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 hover:shadow-md rounded-xl text-sm font-medium text-blue-700 transition-all group">
-                    <File class="group-hover:scale-110 transition-transform flex-shrink-0" :size="20" aria-hidden="true" />
-                    <span class="truncate max-w-[200px]">{{ att.file_name }}</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 overflow-hidden border border-slate-100 flex flex-col">
-              <div class="px-8 py-5 border-b border-slate-100 bg-slate-50/50">
-                <h2 class="text-sm font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                  <MessageSquare :size="16" aria-hidden="true" />
-                  Commentaires ({{ ticket.comments?.length || 0 }})
-                </h2>
-              </div>
-
-              <div class="p-8 overflow-y-auto space-y-6 max-h-[500px]" ref="chatBox">
-                <div v-if="!ticket.comments?.length" class="text-center text-sm text-slate-400 py-10 font-medium italic">Aucun commentaire pour le moment.</div>
-
-                <div
-                  v-for="comment in ticket.comments"
-                  :key="comment.id"
-                  class="flex flex-col max-w-[85%]"
-                  :class="comment.user_id === currentUser.id ? 'ml-auto items-end' : 'mr-auto items-start'"
-                >
-                  <div class="flex items-center gap-2 mb-1.5" :class="comment.user_id === currentUser.id ? 'flex-row-reverse' : ''">
-                    <span class="text-xs font-bold text-slate-700">{{ comment.user?.prenom }} {{ comment.user?.nom }}</span>
-                    <span class="text-[10px] font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{{ formatTime(comment.created_at) }}</span>
-                    <span v-if="comment.user_id === currentUser.id" class="flex gap-1 ml-1 opacity-0 group-hover:opacity-100 transition">
-                      <button @click="startEdit(comment)" type="button" class="text-slate-400 hover:text-blue-500 p-0.5 transition" aria-label="Modifier le commentaire">
-                        <Pencil :size="14" aria-hidden="true" />
-                      </button>
-                      <button @click="ask('Supprimer ce commentaire ?', () => deleteComment(comment), true)" type="button" class="text-slate-400 hover:text-red-500 p-0.5 transition" aria-label="Supprimer le commentaire">
-                        <Trash2 :size="14" aria-hidden="true" />
-                      </button>
-                    </span>
-                  </div>
-
-                  <div
-                    v-if="editingCommentId !== comment.id"
-                    class="px-5 py-3.5 rounded-2xl text-sm shadow-sm group relative"
-                    :class="comment.user_id === currentUser.id ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-none shadow-blue-600/20' : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-bl-none'"
-                  >
-                    {{ comment.contenu }}
-                  </div>
-
-                  <div v-else class="flex flex-col gap-2 w-full mt-1">
-                    <textarea v-model="editContent" rows="2" class="w-full px-4 py-3 border border-blue-200 rounded-xl text-sm resize-none outline-none focus:ring-4 focus:ring-blue-500/20 text-slate-800 bg-blue-50" @keydown.esc="cancelEdit"></textarea>
-                    <div class="flex gap-2 justify-end">
-                      <button @click="cancelEdit" class="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 transition">Annuler</button>
-                      <button @click="saveEdit(comment)" :disabled="!editContent.trim() || savingEdit" class="px-4 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-md hover:bg-blue-700 transition">{{ savingEdit ? '...' : 'Enregistrer' }}</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="p-5 border-t border-slate-100 bg-slate-50">
-                <div class="flex items-end gap-3">
-                  <textarea v-model="newComment" rows="2" placeholder="Ajouter un commentaire..." class="flex-1 px-4 py-3 border-slate-200 rounded-xl text-sm resize-none outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 shadow-sm" @keydown.enter.prevent="submitComment"></textarea>
-                  <button @click="submitComment" :disabled="!newComment.trim() || submittingComment" class="px-6 py-3 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold rounded-xl shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed">Envoyer</button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          <div class="w-full lg:w-80 space-y-6 flex-shrink-0">
-            
-            <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100 space-y-4">
-              <h3 class="text-xs font-extrabold text-slate-700 uppercase tracking-widest border-b border-slate-100 pb-3">Informations</h3>
-              
-              <div class="space-y-3 text-sm">
-                <div class="flex justify-between items-center">
-                  <span class="text-slate-500 font-medium">Projet</span>
-                  <span class="font-bold text-slate-800 truncate max-w-[140px]">{{ ticket.project?.nom }}</span>
-                </div>
-                <div class="flex justify-between items-center">
-                  <span class="text-slate-500 font-medium">Testeur</span>
-                  <span class="font-bold text-slate-800">{{ ticket.testeur?.prenom }} {{ ticket.testeur?.nom }}</span>
-                </div>
-                
-                <div class="pt-3 border-t border-slate-100 flex flex-col gap-1">
-                  <span class="text-slate-500 font-medium">Assignation</span>
-                  <span v-if="ticket.assignment_status === 'approved' && ticket.developpeur" class="font-bold text-blue-700 bg-blue-50 py-1.5 px-3 rounded-lg border border-blue-100 flex items-center gap-2 mt-1">
-                    <Code2 :size="14" aria-hidden="true" />
-                    {{ ticket.developpeur.prenom }} {{ ticket.developpeur.nom }}
-                  </span>
-                  <span v-else-if="ticket.assignment_status === 'pending' && ticket.proposed_developpeur" class="font-bold text-amber-700 bg-amber-50 py-1.5 px-3 rounded-lg border border-amber-100 flex items-center gap-2 mt-1 text-xs">
-                    <Clock :size="14" aria-hidden="true" />
-                    Prop: {{ ticket.proposed_developpeur.prenom }}
-                  </span>
-                  <span v-else class="italic text-slate-400 mt-1">Non assigné</span>
-                </div>
-
-                <div v-if="ticket.etat === 'RECLAMATION' && ticket.raison_reclamation" class="pt-3 border-t border-slate-100">
-                  <p class="text-[10px] font-bold text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
-                    <AlertTriangle :size="12" aria-hidden="true" />
-                    Raison de la réclamation
-                  </p>
-                  <div class="bg-orange-50 border border-orange-200 rounded-xl p-3">
-                    <p class="text-sm text-orange-900 leading-relaxed">{{ ticket.raison_reclamation }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div v-if="ticket.temps_estime" class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-200 p-6 text-slate-800 relative overflow-hidden">
-              <div class="absolute -right-6 -top-6 w-24 h-24 bg-white/40 rounded-full blur-2xl"></div>
-              <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-widest mb-4">Suivi du temps</h3>
-              
-              <div class="flex justify-between items-end mb-2">
-                <span class="text-3xl font-black text-slate-800">{{ ticket.temps_passe || 0 }}<span class="text-lg text-slate-400 font-bold">h</span></span>
-                <span class="text-sm font-bold text-slate-400 mb-1">/ {{ ticket.temps_estime }}h</span>
-              </div>
-              
-              <div class="w-full bg-slate-200/70 rounded-full h-3 border border-slate-300/50">
-                <div class="h-3 rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(59,130,246,0.4)]" :class="ticket.temps_passe > ticket.temps_estime ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-blue-400 to-indigo-500'" :style="{ width: Math.min(100, ((ticket.temps_passe || 0) / ticket.temps_estime) * 100) + '%' }"></div>
-              </div>
-
-              <div v-if="currentUser?.role === 'developpeur' && ticket.assignment_status === 'approved' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME'" class="mt-5 pt-5 border-t border-slate-200">
-                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ajouter des heures</label>
-                <div class="flex gap-2">
-                  <input v-model="timeToAdd" type="number" step="0.5" min="0.5" class="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-slate-800 placeholder-slate-400 transition-all" placeholder="Ex: 1.5">
-                  <button @click="logTime" :disabled="!timeToAdd || stateUpdating" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed">OK</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-xl shadow-blue-900/5 p-6 border border-slate-100 space-y-4">
-              <h3 class="text-xs font-extrabold text-slate-700 uppercase tracking-widest border-b border-slate-100 pb-3">Actions requises</h3>
-
-              <div v-if="isManager && ticket.assignment_status === 'pending' && ticket.etat === 'OUVERT'" class="space-y-3">
-                <div class="bg-amber-50 border border-amber-200 p-3 rounded-xl">
-                  <p class="text-[10px] font-bold text-amber-700 uppercase mb-1">Développeur proposé</p>
-                  <p class="text-sm font-bold text-amber-900">{{ ticket.proposed_developpeur?.prenom }} {{ ticket.proposed_developpeur?.nom }}</p>
-                </div>
-                <button @click="ask('Valider cette assignation et notifier le développeur ?', acceptTicket)" class="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl shadow-md transition btn-with-icon justify-center">
-                  <CheckCircle2 :size="16" aria-hidden="true" />
-                  Valider
-                </button>
-                <button @click="ask('Refuser cette assignation ?', rejectTicket, true)" class="w-full py-2.5 bg-white border-2 border-slate-200 hover:border-red-500 hover:text-red-600 text-slate-600 text-sm font-bold rounded-xl transition btn-with-icon justify-center">
-                  <XCircle :size="16" aria-hidden="true" />
-                  Refuser
-                </button>
-              </div>
-
-              <div v-if="isManager && ticket.assignment_status !== 'approved' && ticket.etat === 'OUVERT'" class="space-y-3 mt-2">
-                <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Assigner manuellement</h4>
-                <div v-if="workloads.length === 0" class="text-xs text-slate-400 italic text-center py-2">Aucun développeur disponible</div>
-                <div v-else class="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
-                  <div v-for="dev in workloads" :key="dev.id" class="flex items-center justify-between p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-100 transition group">
-                    <div>
-                      <div class="text-xs font-bold text-slate-800">{{ dev.prenom }} {{ dev.nom }}</div>
-                      <div class="text-[10px] font-medium text-slate-500 mt-0.5"><span class="w-2 h-2 inline-block rounded-full bg-blue-500 mr-1"></span>{{ dev.active_tickets_count }} actifs</div>
-                    </div>
-                    <button @click="ask(`Assigner ce ticket à ${dev.prenom} ${dev.nom} ?`, () => reassignTicket(dev.id))" class="px-3 py-1.5 bg-white border border-slate-300 hover:border-blue-500 hover:text-blue-600 text-slate-600 text-[10px] font-bold uppercase rounded-lg shadow-sm transition opacity-0 group-hover:opacity-100">Go</button>
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="!isManager && !canDragTicket && !(currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME') && !(currentUser?.role === 'testeur' && ticket.testeur_id === currentUser.id)" class="text-center py-6">
-                <span class="text-4xl block mb-2">☕</span>
-                <p class="text-xs font-medium text-slate-400">Aucune action requise de votre part on ce ticket.</p>
-              </div>
-
-              <div v-if="stateUpdating" class="text-xs text-blue-500 font-bold text-center py-2 animate-pulse">Synchronisation...</div>
-            </div>
-
-          </div>
-        </div>
-
+        </template>
       </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../../stores/authStore';
+import { useRouter, useRoute } from 'vue-router';
 import api from '../../services/api';
-import { storageAssetUrl } from '../../utils/storageUrl';
 import {
   AlertTriangle,
   Bot,
-  ChevronLeft,
   CheckCircle2,
   Clock,
-  Code2,
-  File,
-  FileText,
-  GripVertical,
-  Lock,
-  MessageSquare,
-  Paperclip,
-  Pencil,
-  RefreshCw,
-  Ticket,
-  Trash2,
-  XCircle,
+  RotateCcw,
+  Sparkles,
 } from 'lucide-vue-next';
 import AppLayout from '../../components/layout/AppLayout.vue';
+import ModalCloseBtn from '../../components/ui/ModalCloseBtn.vue';
 
-const route       = useRoute();
-const router      = useRouter();
 const authStore   = useAuthStore();
+const router      = useRouter();
+const route       = useRoute();
+
+const projectId   = route.params.projectId;
 const currentUser = authStore.currentUser;
-const isManager   = computed(() => ['chef_de_projet', 'admin'].includes(currentUser?.role));
+const isManager   = authStore.isManager();
 
-const ticket        = ref(null);
-const loading       = ref(true);
-const stateUpdating = ref(false);
-const chatBox       = ref(null);
-const workloads     = ref([]);
-const timeToAdd     = ref(null);
-const aiLoading     = ref(false);
+const tickets     = ref([]);
+const projectName = ref('');
+const loading     = ref(false);
 
-const newComment        = ref('');
-const submittingComment = ref(false);
-const editingCommentId  = ref(null);
-const editContent       = ref('');
-const savingEdit        = ref(false);
+const dragging    = ref(null);
+const dragTarget  = ref(null);
 
-// Drag & Drop Timeline State
-const columns = [
-  { etat: 'OUVERT',      label: 'À traiter'   },
-  { etat: 'EN_COURS',    label: 'En cours'    },
-  { etat: 'A_TESTER',    label: 'À tester'    },
-  { etat: 'RECLAMATION', label: 'Réclamation' },
-  { etat: 'VALIDE',      label: 'Validé'      },
-];
-const dragTarget = ref(null);
+const showCreateModal = ref(false);
+const submitting      = ref(false);
+const formError       = ref('');
+const assignResult    = ref(null);
+const ticketResult    = ref(null);
+const attachments     = ref([]);
+
+const form = ref({
+  titre: '',
+  description: '',
+  temps_estime: null,
+  type: 'NOUVEAU',
+  parent_ticket_id: null,
+});
 
 const globalMsg = ref('');
-const globalOk = ref(true);
+const globalOk  = ref(true);
 const msg = (m, ok = true) => {
   globalMsg.value = m; globalOk.value = ok;
   setTimeout(() => globalMsg.value = '', 4000);
 };
 
-// Confirm dialog state
-const confirmDialog = ref({ show: false, message: '', danger: false, onConfirm: () => {} });
-const ask = (message, onConfirm, danger = false) => {
-  confirmDialog.value = { show: true, message, onConfirm, danger };
-};
+const validParentTickets = computed(() =>
+  tickets.value.filter(t => t.developpeur_id && ['VALIDE', 'A_TESTER', 'RECLAMATION'].includes(t.etat))
+);
 
-// Modal réclamation
-const reclamationModal = ref({ show: false, raison: '', error: '', pendingEtat: null });
+const handleFileUpload = (e) => { attachments.value = Array.from(e.target.files); };
 
-const submitReclamation = async () => {
-  if (!reclamationModal.value.raison.trim()) {
-    reclamationModal.value.error = 'Veuillez décrire la raison de la réclamation.';
-    return;
-  }
-  reclamationModal.value.show = false;
-  await changeStatus('RECLAMATION', reclamationModal.value.raison.trim());
-  reclamationModal.value.raison = '';
-  reclamationModal.value.error = '';
-};
+const columns = [
+  { etat: 'OUVERT',      key: 'open', label: 'À traiter'   },
+  { etat: 'EN_COURS',    key: 'prog', label: 'En cours'    },
+  { etat: 'A_TESTER',    key: 'test', label: 'À tester'    },
+  { etat: 'RECLAMATION', key: 'recl', label: 'Réclamation' },
+  { etat: 'VALIDE',      key: 'done', label: 'Validé'      },
+];
 
-const fetchTicket = async () => {
+const ticketsByEtat = (etat) =>
+  tickets.value
+    .filter(t => t.etat === etat)
+    .sort((a, b) => {
+      const o = { CRITIQUE: 0, HAUTE: 1, MOYENNE: 2, BASSE: 3 };
+      return (o[a.priorite] ?? 9) - (o[b.priorite] ?? 9);
+    });
+
+const onDragStart = (t) => { dragging.value = t; };
+const onDragEnd   = () => { dragging.value = null; dragTarget.value = null; };
+const onDragOver  = (etat) => { if (!isManager) dragTarget.value = etat; };
+
+const onDrop = async (etat) => {
+  if (isManager) return;
+  dragTarget.value = null;
+  if (!dragging.value || dragging.value.etat === etat) return;
+  const ticket = dragging.value;
+  dragging.value = null;
+  if (!canTransition(ticket, etat)) { msg('Transition non autorisée.', false); return; }
+  ticket.etat = etat;
   try {
-    const res = await api.get(`/tickets/${route.params.id}`);
-    ticket.value = res.data;
-    if (isManager.value && ticket.value.assignment_status !== 'approved') {
-      fetchWorkloads();
-    }
+    await api.put(`/tickets/${ticket.id}/status`, { etat });
+    msg('Statut mis à jour', true);
   } catch (e) {
-    console.error(e);
-    router.push({ name: 'Tickets', params: { projectId: route.params.projectId } });
-  } finally {
-    loading.value = false;
+    msg(e.response?.data?.message || 'Erreur lors du déplacement.', false);
+    await fetchTickets();
   }
 };
 
-const fetchWorkloads = async () => {
-  try {
-    const res = await api.get(`/projects/${ticket.value.project_id}/developers/workload`);
-    workloads.value = res.data;
-  } catch (e) { console.error('Erreur workloads', e); }
-};
-
-const acceptTicket = async () => {
-  stateUpdating.value = true;
-  try {
-    await api.patch(`/tickets/${ticket.value.id}/accept`);
-    msg("Ticket accepté avec succès !", true);
-    await fetchTicket();
-  }
-  catch (e) { msg(e.response?.data?.message || "Erreur lors de l'acceptation", false); }
-  finally { stateUpdating.value = false; }
-};
-
-const rejectTicket = async () => {
-  stateUpdating.value = true;
-  try {
-    await api.patch(`/tickets/${ticket.value.id}/reject`);
-    msg("Assignation refusée. Le ticket est réinitialisé.", true);
-    await fetchTicket();
-    if (isManager.value) fetchWorkloads();
-  }
-  catch { msg("Erreur lors du refus", false); }
-  finally { stateUpdating.value = false; }
-};
-
-const reassignTicket = async (devId) => {
-  stateUpdating.value = true;
-  try {
-    await api.patch(`/tickets/${ticket.value.id}/reassign`, { developpeur_id: devId });
-    msg("Ticket réassigné avec succès !", true);
-    await fetchTicket();
-    fetchWorkloads();
-  }
-  catch { msg("Erreur lors de la réassignation", false); }
-  finally { stateUpdating.value = false; }
-};
-
-const logTime = async () => {
-  if (!timeToAdd.value || timeToAdd.value <= 0) return;
-  stateUpdating.value = true;
-  try {
-    await api.post(`/tickets/${ticket.value.id}/log-time`, { temps_ajoute: timeToAdd.value });
-    msg('Temps ajouté avec succès', true);
-    timeToAdd.value = null;
-    await fetchTicket();
-  } catch (e) {
-    msg(e.response?.data?.message || 'Erreur lors de l\'ajout de temps', false);
-  } finally {
-    stateUpdating.value = false;
-  }
-};
-
-// Timeline Drag & Drop Handlers
-const canDragTicket = computed(() => {
-  if (!ticket.value) return false;
+const canDrag = (ticket) => {
   const role = currentUser?.role;
-  if (isManager.value) return false;
-  if (role === 'developpeur') {
-    return ticket.value.developpeur_id === currentUser?.id && ticket.value.assignment_status === 'approved';
-  }
-  if (role === 'testeur') {
-    return ticket.value.testeur_id === currentUser?.id && ticket.value.etat === 'A_TESTER';
-  }
+  if (isManager) return false;
+  if (role === 'developpeur') return ticket.developpeur_id === currentUser?.id && ticket.assignment_status === 'approved';
+  if (role === 'testeur') return ticket.testeur_id === currentUser?.id && ticket.etat === 'A_TESTER';
   return false;
-});
+};
 
 const canTransition = (ticket, toEtat) => {
   const role = currentUser?.role;
-  if (isManager.value) return false;
-  if (role === 'developpeur') {
-    return ['OUVERT', 'EN_COURS', 'A_TESTER'].includes(toEtat);
-  }
-  if (role === 'testeur') {
-    return ['RECLAMATION', 'VALIDE'].includes(toEtat);
-  }
+  if (isManager) return false;
+  if (role === 'developpeur') return ticket.developpeur_id === currentUser?.id && ticket.assignment_status === 'approved' && ['OUVERT', 'EN_COURS', 'A_TESTER'].includes(toEtat);
+  if (role === 'testeur') return ticket.testeur_id === currentUser?.id && ticket.etat === 'A_TESTER' && ['RECLAMATION', 'VALIDE'].includes(toEtat);
   return false;
 };
 
-const onDragStart = () => {};
-const onDragEnd = () => { dragTarget.value = null; };
-const onDragOver = (etat) => {
-  if (!isManager.value) dragTarget.value = etat;
+const goBack = () => {
+  if (isManager) router.push({ name: 'ProjectManagement' });
+  else router.push({ name: 'Projects' });
+};
+const goToTicket = (ticket) => {
+  if (dragging.value) return;
+  router.push({ name: 'TicketDetails', params: { projectId, id: ticket.id } });
 };
 
-const onDrop = async (etat) => {
-  dragTarget.value = null;
-  if (!ticket.value || ticket.value.etat === etat) return;
-
-  if (!canTransition(ticket.value, etat)) {
-    msg(`Vous n'êtes pas autorisé à glisser le ticket vers l'état "${etat}".`, false);
-    return;
-  }
-
-  if (etat === 'RECLAMATION') {
-    reclamationModal.value.show = true;
-    reclamationModal.value.raison = '';
-    reclamationModal.value.error = '';
-    return;
-  }
-
-  await changeStatus(etat);
-};
-
-const changeStatus = async (etat, raisonReclamation = null) => {
-  const oldEtat = ticket.value.etat;
-  ticket.value.etat = etat;
-  stateUpdating.value = true;
+const fetchProjectInfo = async () => {
   try {
-    const payload = { etat };
-    if (raisonReclamation) payload.raison_reclamation = raisonReclamation;
-    await api.put(`/tickets/${ticket.value.id}/status`, payload);
-    msg("Statut du ticket mis à jour", true);
-    await fetchTicket();
+    const res = await api.get(`/projects/${projectId}`);
+    projectName.value = res.data.nom;
+  } catch {
+    try {
+      const res = await api.get('/projects');
+      const all = res.data.data || res.data;
+      const cur = all.find(p => p.id == projectId);
+      if (cur) projectName.value = cur.nom;
+    } catch {}
+  }
+};
+
+const fetchTickets = async () => {
+  loading.value = true;
+  try {
+    const res = await api.get(`/projects/${projectId}/tickets`);
+    tickets.value = res.data;
+  } catch (e) { console.error(e); }
+  finally { loading.value = false; }
+};
+
+const submitTicket = async () => {
+  if (!form.value.titre) { formError.value = 'Le titre est requis.'; return; }
+  if (!form.value.temps_estime || form.value.temps_estime <= 0) { formError.value = 'Une estimation de temps valide est requise.'; return; }
+  submitting.value = true; formError.value = '';
+  try {
+    const formData = new FormData();
+    formData.append('titre', form.value.titre);
+
+    const desc = form.value.description?.trim();
+    if (desc) {
+      formData.append('description', desc);
+    }
+
+    formData.append('temps_estime', form.value.temps_estime);
+    formData.append('type', form.value.type);
+    if (form.value.type === 'RETOUR' && form.value.parent_ticket_id) {
+      formData.append('parent_ticket_id', form.value.parent_ticket_id);
+    }
+    attachments.value.forEach((file, i) => formData.append(`attachments[${i}]`, file));
+
+    const res = await api.post(`/projects/${projectId}/tickets`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    await fetchTickets();
+    ticketResult.value  = res.data.ticket;
+    assignResult.value  = res.data.auto_assign;
   } catch (e) {
-    ticket.value.etat = oldEtat;
-    msg(e.response?.data?.message || 'Erreur lors du déplacement.', false);
-  } finally {
-    stateUpdating.value = false;
-  }
+    formError.value = e.response?.data?.message || 'Erreur lors de la création.';
+  } finally { submitting.value = false; }
 };
 
-const submitComment = async () => {
-  if (!newComment.value.trim()) return;
-  submittingComment.value = true;
-  try {
-    const res = await api.post('/comments', { ticket_id: ticket.value.id, contenu: newComment.value.trim() });
-    if (!ticket.value.comments) ticket.value.comments = [];
-    ticket.value.comments.push(res.data);
-    newComment.value = '';
-    msg("Commentaire ajouté", true);
-    await fetchTicket();
-    nextTick(() => { if (chatBox.value) chatBox.value.scrollTop = chatBox.value.scrollHeight; });
-  } catch {
-    msg('Erreur lors de l\'envoi', false);
-  } finally {
-    submittingComment.value = false;
-  }
+const closeModal = () => {
+  showCreateModal.value = false;
+  form.value = { titre: '', description: '', temps_estime: null, type: 'NOUVEAU', parent_ticket_id: null };
+  attachments.value = [];
+  formError.value = '';
+  assignResult.value = null;
+  ticketResult.value = null;
 };
 
-const startEdit = (comment) => {
-  editingCommentId.value = comment.id;
-  editContent.value = comment.contenu;
-};
+onMounted(() => { fetchProjectInfo(); fetchTickets(); });
 
-const cancelEdit = () => {
-  editingCommentId.value = null;
-  editContent.value = '';
-};
-
-const saveEdit = async (comment) => {
-  if (!editContent.value.trim() || editContent.value === comment.contenu) {
-    cancelEdit();
-    return;
-  }
-  savingEdit.value = true;
-  try {
-    const res = await api.put(`/comments/${comment.id}`, { contenu: editContent.value });
-    comment.contenu = res.data.contenu;
-    editingCommentId.value = null;
-    msg("Commentaire modifié", true);
-    await fetchTicket();
-  } catch {
-    msg('Erreur de modification', false);
-  } finally {
-    savingEdit.value = false;
-  }
-};
-
-const deleteComment = async (comment) => {
-  try {
-    await api.delete(`/comments/${comment.id}`);
-    ticket.value.comments = ticket.value.comments.filter(c => c.id !== comment.id);
-  } catch {
-    alert('Erreur de suppression');
-  }
-};
-
-const formatDescription = (text) => {
-  if (!text) return '';
-  return text.replace(/\n/g, '<br>')
-             .replace(/\*\*(.*?)\*\"/g, '<strong>$1</strong>')
-             .replace(/_(.*?)_/g, '<em>$1</em>')
-             .replace(/- (.*)/g, '<li>$1</li>');
-};
-
+const initials   = (u) => ((u?.prenom?.[0] || '') + (u?.nom?.[0] || '')).toUpperCase();
 const categorieLabel = (cat) => {
-  const map = {
-    BUG: 'Bug', PERFORMANCE: 'Performance', SECURITE: 'Sécurité',
-    UI_UX: 'UI/UX', BASE_DE_DONNEES: 'Base de données', API: 'API',
-    CONFIGURATION: 'Configuration', AUTRE: 'Autre', NON_CLASSE: 'Non classé'
-  };
+  const map = { BUG: 'Bug', PERFORMANCE: 'Perf', SECURITE: 'Sécu', UI_UX: 'UI/UX', BASE_DE_DONNEES: 'BDD', API: 'API', CONFIGURATION: 'Config', AUTRE: 'Autre', NON_CLASSE: '?' };
   return map[cat] || cat;
 };
-
-const reanalyzeAI = async () => {
-  aiLoading.value = true;
-  try {
-    await api.post(`/tickets/${ticket.value.id}/analyze-ai`);
-    await fetchTicket();
-    msg('Analyse IA mise à jour !', true);
-  } catch (e) {
-    msg("Erreur lors de l'analyse IA", false);
-  } finally {
-    aiLoading.value = false;
-  }
-};
-
-const prioriteClass = (prio) => {
-  const map = { CRITIQUE: 'border-red-200 text-red-700 bg-red-50', HAUTE: 'border-orange-200 text-orange-700 bg-orange-50', MOYENNE: 'border-blue-200 text-blue-700 bg-blue-50', BASSE: 'border-emerald-200 text-emerald-700 bg-emerald-50' };
-  return map[prio] || 'border-gray-200 text-gray-700 bg-gray-50';
-};
-
-const formatTime = (iso) => {
-  const d = new Date(iso);
-  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
-
-onMounted(fetchTicket);
+const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '';
 </script>
 
 <style scoped>
-.ticket-details-page { flex: 1; padding: 2.5rem; overflow-y: auto; }
-.custom-scrollbar::-webkit-scrollbar { width: 4px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 1.75rem 2rem 1.25rem; background: white;
+  border-bottom: 1px solid #e2e8f0; gap: 1rem; flex-shrink: 0;
+}
+.back-btn {
+  display: inline-flex; align-items: center; gap: .375rem;
+  color: #3b82f6; font-size: .8rem; font-weight: 600;
+  background: none; border: none; cursor: pointer; padding: 0; margin-bottom: .375rem;
+}
+.back-btn:hover { color: #1d4ed8; }
+.page-title { font-size: 1.375rem; font-weight: 800; color: #0f172a; margin: 0; }
+.page-sub   { font-size: .8125rem; color: #94a3b8; margin: .2rem 0 0; }
+.btn-info {
+  padding: .5rem 1rem; background: #f1f5f9; color: #475569;
+  border: 1px solid #e2e8f0; border-radius: 8px; font-size: .8125rem;
+  font-weight: 600; cursor: pointer; transition: background .15s;
+}
+.btn-info:hover { background: #e2e8f0; }
+.btn-new {
+  padding: .5rem 1.125rem; background: #1e293b; color: white;
+  border: none; border-radius: 8px; font-size: .8125rem; font-weight: 700;
+  cursor: pointer; transition: background .15s;
+}
+.btn-new:hover { background: #0f172a; }
+
+.toast {
+  position: fixed; top: 5.5rem; left: 50%; transform: translateX(-50%);
+  padding: .6rem 1.5rem; border-radius: 999px; font-size: .8125rem;
+  font-weight: 600; z-index: 999; box-shadow: 0 4px 16px rgba(0,0,0,.1);
+}
+.toast-ok  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.toast-err { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+.loading-state { display: flex; align-items: center; gap: .5rem; color: #94a3b8; font-size: .875rem; padding: 4rem 2rem; }
+.spin { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.kanban-scroll { flex: 1; overflow-x: auto; overflow-y: hidden; padding: 1.5rem 1.75rem 1.75rem; }
+.kanban-board  { display: flex; gap: 1rem; align-items: flex-start; min-height: calc(100vh - 130px); min-width: max-content; }
+.kanban-col {
+  width: 260px; flex-shrink: 0; background: #fff; border-radius: 14px;
+  border: 1px solid #e2e8f0; display: flex; flex-direction: column;
+  max-height: calc(100vh - 150px); transition: border-color .2s, box-shadow .2s;
+}
+.kanban-col[data-dragover="true"] { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
+.col-open { border-top: 3px solid #22c55e; }
+.col-prog { border-top: 3px solid #3b82f6; }
+.col-test { border-top: 3px solid #f59e0b; }
+.col-recl { border-top: 3px solid #ef4444; }
+.col-done { border-top: 3px solid #8b5cf6; }
+.col-header { display: flex; align-items: center; justify-content: space-between; padding: .875rem 1rem .75rem; flex-shrink: 0; }
+.col-label  { display: flex; align-items: center; gap: .5rem; }
+.col-dot    { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-open  { background: #22c55e; }
+.dot-prog  { background: #3b82f6; }
+.dot-test  { background: #f59e0b; }
+.dot-recl  { background: #ef4444; }
+.dot-done  { background: #8b5cf6; }
+.col-name  { font-size: .8125rem; font-weight: 700; color: #1e293b; }
+.col-count { font-size: .6875rem; font-weight: 700; color: #94a3b8; background: #f1f5f9; border-radius: 20px; padding: 2px 8px; }
+.col-cards { flex: 1; overflow-y: auto; padding: .25rem .625rem .75rem; display: flex; flex-direction: column; gap: .5rem; }
+.col-cards::-webkit-scrollbar { width: 4px; }
+.col-cards::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+.col-empty { text-align: center; font-size: .75rem; color: #cbd5e1; padding: 1.5rem .5rem; font-style: italic; }
+
+.ticket-card {
+  background: white; border: 1px solid #e2e8f0; border-radius: 10px;
+  cursor: pointer; display: flex; overflow: hidden;
+  transition: all .18s; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.ticket-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,.08); transform: translateY(-1px); }
+.ticket-card.is-dragging { opacity: .4; transform: scale(.97); }
+.prio-strip { width: 4px; flex-shrink: 0; }
+.strip-basse    { background: #22c55e; }
+.strip-moyenne  { background: #3b82f6; }
+.strip-haute    { background: #f59e0b; }
+.strip-critique { background: #ef4444; }
+.card-body   { padding: .75rem .875rem; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .5rem; }
+.card-top    { display: flex; align-items: center; justify-content: space-between; }
+.prio-badge  { font-size: .5625rem; font-weight: 800; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: .05em; }
+.pb-basse    { background: #f0fdf4; color: #16a34a; }
+.pb-moyenne  { background: #eff6ff; color: #1d4ed8; }
+.pb-haute    { background: #fff7ed; color: #ea580c; }
+.pb-critique { background: #fef2f2; color: #dc2626; }
+.card-id     { font-size: .625rem; color: #cbd5e1; font-weight: 600; }
+
+.ia-badge-flat {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  padding: 0.15rem 0.4rem;
+  background-color: #e0e7ff;
+  color: #4338ca;
+  border-radius: 4px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+.card-title  { font-size: .8125rem; font-weight: 700; color: #1e293b; margin: 0; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: .375rem; border-top: 1px solid #f8fafc; }
+.dev-info    { display: flex; align-items: center; gap: .35rem; }
+.dev-av      { width: 18px; height: 18px; border-radius: 5px; background: #dbeafe; color: #1d4ed8; font-size: .5rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.dev-name    { font-size: .6875rem; font-weight: 600; color: #475569; }
+.unassigned  { font-size: .6875rem; color: #e2e8f0; font-style: italic; }
+.card-date   { font-size: .625rem; color: #cbd5e1; }
+.drop-ghost  { border: 2px dashed #3b82f6; border-radius: 10px; padding: 1rem; text-align: center; font-size: .75rem; font-weight: 600; color: #3b82f6; background: rgba(59,130,246,.04); min-height: 60px; display: flex; align-items: center; justify-content: center; }
+
+.overlay { position: fixed; inset: 0; background: rgba(15,23,42,.55); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 1rem; }
+.modal   { background: white; border-radius: 16px; width: 100%; max-width: 460px; box-shadow: 0 24px 48px rgba(0,0,0,.2); overflow: hidden; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid #f1f5f9; position: sticky; top: 0; background: white; z-index: 1; }
+.modal-title  { font-size: .9375rem; font-weight: 800; color: #0f172a; margin: 0; }
+.close-btn    { background: none; border: none; font-size: 1rem; color: #94a3b8; cursor: pointer; border-radius: 6px; padding: 4px; }
+.close-btn:hover { color: #1e293b; }
+.modal-body   { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: .875rem; }
+.modal-footer { display: flex; gap: .625rem; justify-content: flex-end; padding: 1rem 1.5rem; border-top: 1px solid #f1f5f9; position: sticky; bottom: 0; background: white; }
+
+.field { display: flex; flex-direction: column; gap: .3rem; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.label { font-size: .7rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; }
+.input { width: 100%; padding: .625rem .875rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; color: #1e293b; font-size: .875rem; font-family: inherit; outline: none; transition: border-color .2s; }
+.input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.1); background: white; }
+.ta { resize: vertical; min-height: 80px; }
+
+.radio-group  { display: flex; gap: .5rem; }
+.radio-option {
+  flex: 1; text-align: center; padding: .5rem; border-radius: 8px;
+  border: 1.5px solid #e2e8f0; font-size: .8125rem; font-weight: 600;
+  color: #64748b; cursor: pointer; transition: all .15s;
+}
+.radio-option.active { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+
+.file-upload {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .6rem .875rem; background: #f8fafc; border: 1.5px dashed #cbd5e1;
+  border-radius: 8px; font-size: .8125rem; color: #64748b;
+  cursor: pointer; transition: border-color .2s;
+}
+.file-upload:hover { border-color: #3b82f6; color: #3b82f6; }
+
+.confirm-ai-block {
+  background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 1rem 1.125rem;
+}
+.confirm-ai-title { display: flex; align-items: center; gap: .5rem; font-size: .75rem; font-weight: 800; color: #6d28d9; margin-bottom: .75rem; }
+.modal-title--icon { display: flex; align-items: center; gap: .5rem; }
+.dev-name--pending { display: inline-flex; align-items: center; gap: .25rem; }
+.confirm-ai-row   { display: flex; gap: .75rem; margin-bottom: .625rem; }
+.confirm-ai-item  { flex: 1; display: flex; flex-direction: column; gap: .3rem; }
+.confirm-ai-label { font-size: .65rem; font-weight: 700; color: #7c3aed; text-transform: uppercase; letter-spacing: .05em; }
+.confirm-prio-badge {
+  display: inline-block; font-size: .75rem; font-weight: 800; padding: .3rem .75rem;
+  border-radius: 6px; text-align: center;
+}
+.cpb-basse    { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.cpb-moyenne  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.cpb-haute    { background: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; }
+.cpb-critique { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.confirm-cat-badge {
+  display: inline-block; font-size: .75rem; font-weight: 700; padding: .3rem .75rem;
+  border-radius: 6px; background: #ede9fe; color: #5b21b6; border: 1px solid #c4b5fd; text-align: center;
+}
+.confirm-solution      { margin-top: .5rem; padding-top: .625rem; border-top: 1px solid #ddd6fe; }
+.confirm-solution-text { margin: .3rem 0 0; font-size: .8125rem; color: #4c1d95; line-height: 1.5; }
+
+.confirm-assign-block {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.125rem;
+}
+.confirm-assign-row   { display: flex; align-items: flex-start; gap: .875rem; }
+.confirm-assign-icon  { font-size: 1.5rem; flex-shrink: 0; margin-top: .1rem; }
+.confirm-assign-title { font-size: .875rem; font-weight: 700; color: #1e293b; margin: 0 0 .2rem; }
+.confirm-assign-sub   { font-size: .8125rem; color: #64748b; margin: 0; }
+
+.alert-err { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; padding: .625rem .875rem; font-size: .8125rem; }
+
+.btn-cancel { padding: .5rem 1rem; background: white; color: #64748b; border: 1px solid #e2e8f0; border-radius: 8px; font-size: .8125rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.btn-cancel:hover { background: #f8fafc; }
+.btn-primary { padding: .5rem 1.25rem; background: #1e293b; color: white; border: none; border-radius: 8px; font-size: .8125rem; font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: .375rem; }
+.btn-primary:hover:not(:disabled) { background: #0f172a; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
 </style>

@@ -1,207 +1,120 @@
 <template>
-  <AppLayout>
-      <div class="page-header">
-        <h1 class="page-title">
-          <User class="page-title-icon" aria-hidden="true" />
-          Mes Statistiques Personnelles
-        </h1>
-        <p class="page-subtitle">Aperçu de votre activité et de vos performances</p>
-      </div>
-
-      <!-- Time Filter -->
-      <div class="time-filters">
-        <button @click="setPeriod('today')" :class="['time-btn', period === 'today' ? 'active' : '']">Aujourd'hui</button>
-        <button @click="setPeriod('week')" :class="['time-btn', period === 'week' ? 'active' : '']">Cette Semaine</button>
-        <button @click="setPeriod('month')" :class="['time-btn', period === 'month' ? 'active' : '']">Ce Mois</button>
-        <button @click="setPeriod('all')" :class="['time-btn', period === 'all' ? 'active' : '']">Global</button>
-      </div>
-
-      <div v-if="loading" class="loading-state">
-        <div class="spinner"></div>
-        <p>Chargement de vos statistiques...</p>
-      </div>
-      
-      <div v-else class="page-content fade-in">
-
-        <!-- KPIs -->
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-title">Total de mes tickets</div>
-            <div class="kpi-value">{{ stats.my_kpi?.total || 0 }}</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-title">Tickets Actifs (Ouverts/En cours)</div>
-            <div class="kpi-value">{{ activeTicketsCount }}</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-title">Tickets Résolus</div>
-            <div class="kpi-value" style="color: #10b981;">{{ resolvedTicketsCount }}</div>
-          </div>
+  <AuthLayout wide>
+      <AuthBrand title="Sécurité requise" />
+      <div class="card">
+        <div class="warn-box">
+          <AlertTriangle class="warn-icon" aria-hidden="true" />
+          <p>Votre compte a été créé par un administrateur. Vous devez définir votre propre mot de passe avant de continuer.</p>
         </div>
 
-        <div class="charts-grid">
-          <!-- Mon activité (Courbe) -->
-          <div class="chart-card full-width">
-            <h3>Mon Activité d'Assignation</h3>
-            <apexchart type="area" height="350" :options="activityOptions" :series="activitySeries"></apexchart>
-          </div>
+        <AlertBanner v-if="message" :variant="ok ? 'success' : 'error'" class="alert" :class="ok ? 'alert-ok' : 'alert-err'">{{ message }}</AlertBanner>
 
-          <!-- Répartition de ma charge (Donut) -->
-          <div class="chart-card">
-            <h3>Répartition de ma charge par Projet</h3>
-            <apexchart type="donut" height="300" :options="projectOptions" :series="projectSeries"></apexchart>
+        <form @submit.prevent="submit" class="form">
+          <div class="field">
+            <label class="label">Mot de passe temporaire (reçu par email)</label>
+            <div class="iw"><input v-model="f.ancien" :type="s1?'text':'password'" required placeholder="••••••••" class="input ipr"/><button type="button" class="eye" @click="s1=!s1" tabindex="-1"><Eye :o="s1"/></button></div>
           </div>
-
-          <!-- Mes tickets par statut (Barres) -->
-          <div class="chart-card">
-            <h3>Mes tickets par statut</h3>
-            <apexchart type="bar" height="300" :options="statusOptions" :series="statusSeries"></apexchart>
+          <div class="field">
+            <label class="label">Nouveau mot de passe</label>
+            <div class="iw"><input v-model="f.nouveau" :type="s2?'text':'password'" required placeholder="Min 8 car., MAJ, chiffre, symbole" class="input ipr"/><button type="button" class="eye" @click="s2=!s2" tabindex="-1"><Eye :o="s2"/></button></div>
+            <div class="sbar"><div v-for="i in 4" :key="i" class="seg" :class="sc(i)"></div></div>
           </div>
-        </div>
-
+          <div class="field">
+            <label class="label">Confirmer le nouveau mot de passe</label>
+            <div class="iw"><input v-model="f.confirm" :type="s3?'text':'password'" required placeholder="••••••••" class="input ipr" :class="{mm:f.confirm&&f.nouveau!==f.confirm}"/><button type="button" class="eye" @click="s3=!s3" tabindex="-1"><Eye :o="s3"/></button></div>
+            <p v-if="f.confirm&&f.nouveau!==f.confirm" class="mm-txt">Les mots de passe ne correspondent pas</p>
+          </div>
+          <button type="submit" :disabled="loading||(f.confirm&&f.nouveau!==f.confirm)" class="btn-primary">
+            <svg v-if="loading" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/></svg>
+            <span v-else>Définir mon mot de passe →</span>
+          </button>
+        </form>
       </div>
-  </AppLayout>
+  </AuthLayout>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { User } from 'lucide-vue-next';
-import api from '../../services/api';
-import AppLayout from '../../components/layout/AppLayout.vue';
+import { ref, computed, defineComponent, h } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/authStore';
+import api from '../services/api';
+import { AlertTriangle } from 'lucide-vue-next';
+import AuthLayout from '../components/layout/AuthLayout.vue';
+import AuthBrand from '../components/auth/AuthBrand.vue';
+import AlertBanner from '../components/ui/AlertBanner.vue';
 
-const loading = ref(true);
-const stats = ref({});
-const period = ref('month');
+const router = useRouter();
+const authStore = useAuthStore();
+const f = ref({ ancien: '', nouveau: '', confirm: '' });
+const message = ref(''); const ok = ref(true); const loading = ref(false);
+const s1 = ref(false); const s2 = ref(false); const s3 = ref(false);
 
-const setPeriod = (p) => {
-  period.value = p;
-  fetchStats();
-};
+const str = computed(() => {
+  const p = f.value.nouveau; let s = 0;
+  if (p.length >= 8) s++; if (/[A-Z]/.test(p)) s++; if (/[0-9]/.test(p)) s++; if (/[\W_]/.test(p)) s++;
+  return s;
+});
+const sc = (i) => { if (str.value < i) return 'seg-e'; return ['','seg-w','seg-f','seg-g','seg-s'][str.value] || 'seg-s'; };
 
-const fetchStats = async () => {
-  loading.value = true;
+const Eye = defineComponent({ props: ['o'], setup: (p) => () => p.o
+  ? h('svg', { xmlns:'http://www.w3.org/2000/svg', width:17, height:17, fill:'none', viewBox:'0 0 24 24', 'stroke-width':'1.8', stroke:'currentColor' }, [
+      h('path', { 'stroke-linecap':'round','stroke-linejoin':'round', d:'M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z' }),
+      h('path', { 'stroke-linecap':'round','stroke-linejoin':'round', d:'M15 12a3 3 0 11-6 0 3 3 0 016 0z' })])
+  : h('svg', { xmlns:'http://www.w3.org/2000/svg', width:17, height:17, fill:'none', viewBox:'0 0 24 24', 'stroke-width':'1.8', stroke:'currentColor' }, [
+      h('path', { 'stroke-linecap':'round','stroke-linejoin':'round', d:'M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88' })])
+});
+
+const submit = async () => {
+  if (f.value.nouveau !== f.value.confirm) { message.value = 'Les mots de passe ne correspondent pas.'; ok.value = false; return; }
+  loading.value = true; message.value = '';
   try {
-    const res = await api.get(`/stats/me?period=${period.value}`);
-    stats.value = res.data;
-  } catch (e) {
-    console.error("Erreur chargement stats", e);
-  } finally {
-    loading.value = false;
+    await api.put('/users/change-password', { ancien_mot_de_passe: f.value.ancien, nouveau_mot_de_passe: f.value.nouveau });
+    authStore.clearForcePasswordChange();
+    ok.value = true; message.value = 'Mot de passe défini. Redirection...';
+    
+    const role = authStore.currentUser?.role;
+    setTimeout(() => {
+      if (['admin', 'chef_de_projet'].includes(role)) {
+        router.push({ name: 'Dashboard' });
+      } else {
+        router.push({ name: 'Projects' });
+      }
+    }, 1500);
+  } catch (e) { 
+    ok.value = false; 
+    message.value = e.response?.data?.message || 'Erreur.'; 
+  } finally { 
+    loading.value = false; 
   }
 };
-
-onMounted(() => {
-  fetchStats();
-});
-
-// === ANIMATION & COLORS ===
-const defaultAnim = { enabled: true, easing: 'easeinout', speed: 800 };
-const colors = {
-  blue: '#3b82f6', green: '#10b981', red: '#ef4444', amber: '#f59e0b', slate: '#64748b', purple: '#8b5cf6'
-};
-
-// === COMPUTED KPI ===
-const activeTicketsCount = computed(() => {
-  if (!stats.value.my_kpi?.by_status) return 0;
-  return stats.value.my_kpi.by_status
-    .filter(i => ['OUVERT', 'EN_COURS', 'A_TESTER', 'RECLAMATION'].includes(i.etat))
-    .reduce((sum, item) => sum + item.count, 0);
-});
-
-const resolvedTicketsCount = computed(() => {
-  if (!stats.value.my_kpi?.by_status) return 0;
-  return stats.value.my_kpi.by_status
-    .filter(i => ['VALIDE', 'RESOLU', 'FERME'].includes(i.etat))
-    .reduce((sum, item) => sum + item.count, 0);
-});
-
-// === COMPUTED CHARTS ===
-
-// Mon activité (Courbe Area)
-const activitySeries = computed(() => [
-  { name: 'Nouveaux tickets assignés/créés', data: stats.value.my_activity?.map(i => i.count) || [] }
-]);
-const activityOptions = computed(() => {
-  const categories = stats.value.my_activity?.map(i => i.date) || [];
-  return {
-    chart: { type: 'area', animations: defaultAnim, toolbar: { show: false } },
-    colors: [colors.blue],
-    dataLabels: { enabled: false },
-    stroke: { curve: 'smooth' },
-    xaxis: { categories, type: 'datetime' },
-  };
-});
-
-// Répartition par Projet (Donut)
-const projectSeries = computed(() => stats.value.my_tickets_by_project?.map(i => i.count) || []);
-const projectOptions = computed(() => ({
-  chart: { animations: defaultAnim },
-  labels: stats.value.my_tickets_by_project?.map(i => i.project.nom) || [],
-  plotOptions: { pie: { donut: { size: '65%' } } }
-}));
-
-// Mes tickets par statut (Barres)
-const statusSeries = computed(() => [{
-  name: 'Tickets',
-  data: stats.value.my_kpi?.by_status?.map(i => i.count) || []
-}]);
-const statusOptions = computed(() => ({
-  chart: { type: 'bar', animations: defaultAnim, toolbar: { show: false } },
-  xaxis: { categories: stats.value.my_kpi?.by_status?.map(i => i.etat) || [] },
-  plotOptions: { bar: { borderRadius: 4, distributed: true } },
-  legend: { show: false }
-}));
-
 </script>
 
 <style scoped>
-.page-header{padding:2rem 2.5rem 1rem;background:white;border-bottom:1px solid #e2e8f0;}
-.page-title{display:flex;align-items:center;gap:.625rem;font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;}
-.page-title-icon{width:1.375rem;height:1.375rem;color:var(--color-brand);flex-shrink:0;}
-.page-subtitle{font-size:.875rem;color:#64748b;margin-top:4px;}
-
-.time-filters {
-  padding: 1rem 2.5rem;
-  background: white;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  gap: 0.5rem;
-}
-.time-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 99px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.time-btn:hover { background: #e2e8f0; }
-.time-btn.active { background: #0f172a; color: white; border-color: #0f172a; }
-
-.page-content{padding:2rem 2.5rem;display:flex;flex-direction:column;gap:1.5rem;}
-
-.loading-state { padding: 4rem; text-align: center; color: #64748b; font-weight: 600; }
-.spinner {
-  width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: #3b82f6;
-  border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.fade-in { animation: fadeIn 0.5s ease-out; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-/* KPIs */
-.kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
-.kpi-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-.kpi-title { font-size: 0.875rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
-.kpi-value { font-size: 2.5rem; font-weight: 800; color: #0f172a; margin-top: 0.5rem; }
-
-/* Charts */
-.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-.chart-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-.chart-card.full-width { grid-column: span 2; }
-.chart-card h3 { font-size: 1rem; font-weight: 800; color: #1e293b; margin-top: 0; margin-bottom: 1.5rem; }
+.card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:2rem;box-shadow:0 25px 50px rgba(0,0,0,.4);}
+.warn-box{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:.875rem 1rem;display:flex;align-items:flex-start;gap:.75rem;margin-bottom:1.5rem;}
+.warn-icon{width:1.125rem;height:1.125rem;flex-shrink:0;margin-top:.125rem;color:#fbbf24;}
+.warn-box p{font-size:.8125rem;color:#fcd34d;margin:0;line-height:1.6;}
+.alert{padding:.75rem 1rem;border-radius:8px;font-size:.875rem;font-weight:500;margin-bottom:1.25rem;}
+.alert-ok{background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.2);}
+.alert-err{background:rgba(239,68,68,.1);color:#fca5a5;border:1px solid rgba(239,68,68,.2);}
+.form{display:flex;flex-direction:column;gap:1.1rem;}
+.field{display:flex;flex-direction:column;gap:.35rem;}
+.label{font-size:.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;}
+.iw{position:relative;}
+.input{width:100%;padding:.625rem .875rem;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f1f5f9;font-size:.9375rem;font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s;}
+.input::placeholder{color:#475569;}
+.input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.15);}
+.ipr{padding-right:2.75rem;}
+.mm{border-color:#ef4444!important;}
+.mm-txt{font-size:.75rem;color:#f87171;}
+.eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#475569;padding:4px;display:flex;align-items:center;transition:color .15s;}
+.eye:hover{color:#94a3b8;}
+.sbar{display:flex;gap:4px;margin-top:6px;}
+.seg{height:3px;flex:1;border-radius:2px;transition:background .3s;}
+.seg-e{background:#1e293b;border:1px solid #334155;}
+.seg-w{background:#ef4444;}.seg-f{background:#f59e0b;}.seg-g{background:#3b82f6;}.seg-s{background:#22c55e;}
+.btn-primary{padding:.75rem;background:#3b82f6;color:white;border:none;border-radius:8px;font-size:.9375rem;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:background .2s;margin-top:.25rem;}
+.btn-primary:hover:not(:disabled){background:#2563eb;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.spin{animation:spin .8s linear infinite;}@keyframes spin{to{transform:rotate(360deg);}}
 </style>

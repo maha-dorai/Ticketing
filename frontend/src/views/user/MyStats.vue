@@ -1,12 +1,12 @@
 <template>
   <AppLayout>
-      <PageHeader stacked>
-        <template #title>
-          <User aria-hidden="true" />
+      <div class="page-header">
+        <h1 class="page-title">
+          <User class="page-title-icon" aria-hidden="true" />
           Mes Statistiques Personnelles
-        </template>
-        <template #subtitle>Aperçu de votre activité et de vos performances</template>
-      </PageHeader>
+        </h1>
+        <p class="page-subtitle">Aperçu de votre activité et de vos performances</p>
+      </div>
 
       <!-- Time Filter -->
       <div class="time-filters">
@@ -68,7 +68,6 @@ import { ref, computed, onMounted } from 'vue';
 import { User } from 'lucide-vue-next';
 import api from '../../services/api';
 import AppLayout from '../../components/layout/AppLayout.vue';
-import PageHeader from '../../components/ui/PageHeader.vue';
 
 const loading = ref(true);
 const stats = ref({});
@@ -156,6 +155,11 @@ const statusOptions = computed(() => ({
 </script>
 
 <style scoped>
+.page-header{padding:2rem 2.5rem 1rem;background:white;border-bottom:1px solid #e2e8f0;}
+.page-title{display:flex;align-items:center;gap:.625rem;font-size:1.5rem;font-weight:800;color:#0f172a;margin:0;}
+.page-title-icon{width:1.375rem;height:1.375rem;color:var(--color-brand);flex-shrink:0;}
+.page-subtitle{font-size:.875rem;color:#64748b;margin-top:4px;}
+
 .time-filters {
   padding: 1rem 2.5rem;
   background: white;

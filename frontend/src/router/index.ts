@@ -23,15 +23,15 @@ const routes = [
   { path: '/notifications', name: 'Notifications', component: () => import('../views/user/Notifications.vue'), meta: { requiresAuth: true } },
 
   {
-    path: '/projects/:id',
-    name: 'ProjectDetail',
-    component: () => import('../views/user/ProjectDetail.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
     path: '/projects/:projectId/tickets',
     name: 'Tickets',
     component: () => import('../views/user/Tickets.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/projects/:id',
+    name: 'ProjectDetail',
+    component: () => import('../views/user/ProjectDetail.vue'),
     meta: { requiresAuth: true },
   },
   {
