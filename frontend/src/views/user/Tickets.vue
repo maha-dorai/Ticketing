@@ -4,7 +4,7 @@
       <div class="page-header">
         <div>
           <button @click="goBack" class="back-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+            <ArrowLeft :size="14" :stroke-width="2.5" aria-hidden="true" />
             Retour
           </button>
           <h1 class="page-title">{{ projectName || 'Chargement…' }}</h1>
@@ -25,10 +25,7 @@
       </div>
 
       <div v-if="loading" class="loading-state">
-        <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="20" height="20">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/>
-          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/>
-        </svg>
+        <Loader2 class="spin" :size="20" aria-hidden="true" />
         Chargement…
       </div>
 
@@ -215,7 +212,7 @@
             <div class="field">
               <label class="label">Pièces jointes</label>
               <label class="file-upload">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                <Paperclip :size="15" :stroke-width="2" aria-hidden="true" />
                 {{ attachments.length ? attachments.length + ' fichier(s) sélectionné(s)' : 'Choisir des fichiers' }}
                 <input type="file" multiple @change="handleFileUpload" hidden />
               </label>
@@ -227,10 +224,7 @@
           <div class="modal-footer">
             <button @click="closeModal" class="btn-cancel">Annuler</button>
             <button @click="submitTicket" :disabled="submitting" class="btn-primary">
-              <svg v-if="submitting" class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="14" height="14">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.25"/>
-                <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.75"/>
-              </svg>
+              <Loader2 v-if="submitting" class="spin" :size="14" aria-hidden="true" />
               <span>{{ submitting ? 'Création en cours…' : 'Créer' }}</span>
             </button>
           </div>
@@ -250,9 +244,12 @@ import {
   Bot,
   CheckCircle2,
   Clock,
+  Loader2,
+  ArrowLeft,
+  Paperclip,
   RotateCcw,
   Sparkles,
-} from 'lucide-vue-next';
+} from "lucide-vue-next";
 import AppLayout from '../../components/layout/AppLayout.vue';
 import ModalCloseBtn from '../../components/ui/ModalCloseBtn.vue';
 

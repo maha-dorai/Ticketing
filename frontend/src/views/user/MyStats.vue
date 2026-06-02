@@ -65,7 +65,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { User } from 'lucide-vue-next';
+import { User } from "lucide-vue-next";
 import api from '../../services/api';
 import AppLayout from '../../components/layout/AppLayout.vue';
 

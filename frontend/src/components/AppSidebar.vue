@@ -50,12 +50,6 @@
           Mes Statistiques
         </router-link>
       </template>
-
-      <p class="nav-section">Compte</p>
-      <router-link to="/notifications" class="nav-item" active-class="nav-active">
-        <Bell class="nav-icon" aria-hidden="true" />
-        Notifications
-      </router-link>
     </nav>
   </div>
 </template>
@@ -69,8 +63,7 @@ import {
   Users,
   FolderKanban,
   TrendingUp,
-  Bell,
-} from 'lucide-vue-next';
+} from "lucide-vue-next";
 import { useAuthStore } from '../stores/authStore';
 
 const authStore = useAuthStore();

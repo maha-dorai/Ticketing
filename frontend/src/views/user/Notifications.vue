@@ -101,7 +101,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../../services/api';
-import { CheckCheck, CheckCircle2, Inbox, XCircle } from 'lucide-vue-next';
+import { CheckCheck, CheckCircle2, Inbox, XCircle } from "lucide-vue-next";
 import AppLayout from '../../components/layout/AppLayout.vue';
 import PageHeader from '../../components/ui/PageHeader.vue';
 import BaseButton from '../../components/ui/BaseButton.vue';

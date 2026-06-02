@@ -1,36 +1,57 @@
 <template>
   <AuthLayout>
     <AuthBrand subtitle="Réinitialisation du mot de passe" />
-    <div class="card">
-      <h2 class="card-title">Nouveau mot de passe</h2>
-      <p class="card-sub">Saisissez et confirmez votre nouveau mot de passe.</p>
+    <div class="ds-card ds-card--auth auth-card">
+      <h2 class="auth-title">Nouveau mot de passe</h2>
+      <p class="auth-sub">Saisissez et confirmez votre nouveau mot de passe.</p>
 
-      <AlertBanner v-if="successMessage" variant="success" class="alert alert-success">{{ successMessage }}</AlertBanner>
-      <AlertBanner v-if="errorMessage" variant="error" class="alert alert-error">{{ errorMessage }}</AlertBanner>
+      <BaseAlert v-if="successMessage" variant="success" :icon="CheckCircle2" class="auth-alert">{{ successMessage }}</BaseAlert>
+      <BaseAlert v-if="errorMessage" variant="error" :icon="XCircle" class="auth-alert">{{ errorMessage }}</BaseAlert>
 
-      <form @submit.prevent="onSubmit" class="form">
-        <div class="field">
-          <label class="label">Nouveau mot de passe</label>
-          <input
-            v-model="mot_de_passe"
-            type="password"
-            required
-            class="input"
-            placeholder="Min 8 car., majuscule, chiffre, symbole"
-          />
-        </div>
-        <div class="field">
-          <label class="label">Confirmer le mot de passe</label>
-          <input v-model="confirmation" type="password" required class="input" />
-        </div>
-        <button type="submit" :disabled="loading" class="btn-primary">
-          <Loader2 v-if="loading" :size="18" class="spin" aria-hidden="true" />
-          <span v-else>Réinitialiser</span>
-        </button>
+      <form @submit.prevent="onSubmit" class="ds-form auth-form">
+        <BaseInput
+          v-model="mot_de_passe"
+          label="Nouveau mot de passe"
+          :type="showPassword ? 'text' : 'password'"
+          required
+          placeholder="Min 8 car., majuscule, chiffre, symbole"
+          auth
+        >
+          <template #suffix>
+            <BaseButton type="button" variant="ghost" size="sm" icon class="eye-btn" @click="showPassword = !showPassword">
+              <EyeOff v-if="showPassword" :size="18" aria-hidden="true" />
+              <Eye v-else :size="18" aria-hidden="true" />
+            </BaseButton>
+          </template>
+        </BaseInput>
+
+        <BaseInput
+          v-model="confirmation"
+          label="Confirmer le mot de passe"
+          :type="showConfirmation ? 'text' : 'password'"
+          required
+          placeholder="••••••••"
+          auth
+        >
+          <template #suffix>
+            <BaseButton type="button" variant="ghost" size="sm" icon class="eye-btn" @click="showConfirmation = !showConfirmation">
+              <EyeOff v-if="showConfirmation" :size="18" aria-hidden="true" />
+              <Eye v-else :size="18" aria-hidden="true" />
+            </BaseButton>
+          </template>
+        </BaseInput>
+
+        <BaseButton type="submit" variant="primary" block :loading="loading">
+          <KeyRound :size="18" aria-hidden="true" />
+          Réinitialiser
+        </BaseButton>
       </form>
 
-      <div class="card-footer">
-        <router-link to="/login" class="back-link">← Retour à la connexion</router-link>
+      <div class="auth-footer">
+        <BaseButton tag="router-link" :to="{ name: 'Login' }" variant="ghost" size="sm">
+          <ArrowLeft :size="16" aria-hidden="true" />
+          Retour à la connexion
+        </BaseButton>
       </div>
     </div>
   </AuthLayout>
@@ -39,11 +60,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { Loader2 } from 'lucide-vue-next';
 import api from '../services/api';
+import { ArrowLeft, CheckCircle2, Eye, EyeOff, KeyRound, XCircle } from "lucide-vue-next";
 import AuthLayout from '../components/layout/AuthLayout.vue';
 import AuthBrand from '../components/auth/AuthBrand.vue';
-import AlertBanner from '../components/ui/AlertBanner.vue';
+import BaseAlert from '../components/ui/BaseAlert.vue';
+import BaseButton from '../components/ui/BaseButton.vue';
+import BaseInput from '../components/ui/BaseInput.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -53,6 +76,8 @@ const confirmation = ref('');
 const loading = ref(false);
 const successMessage = ref('');
 const errorMessage = ref('');
+const showPassword = ref(false);
+const showConfirmation = ref(false);
 
 const onSubmit = async () => {
   errorMessage.value = '';
@@ -81,24 +106,16 @@ const onSubmit = async () => {
 </script>
 
 <style scoped>
-.card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2rem; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
-.card-title { font-size: 1.25rem; font-weight: 700; color: #f1f5f9; margin: 0 0 0.5rem; }
-.card-sub { font-size: 0.875rem; color: #64748b; margin: 0 0 1.5rem; line-height: 1.5; }
-.alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; margin-bottom: 1.25rem; }
-.alert-error { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
-.alert-success { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
-.form { display: flex; flex-direction: column; gap: 1.25rem; }
-.field { display: flex; flex-direction: column; gap: 0.4rem; }
-.label { font-size: 0.8125rem; font-weight: 600; color: #94a3b8; }
-.input { width: 100%; padding: 0.6875rem 0.875rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #f1f5f9; font-size: 0.9375rem; font-family: inherit; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
-.input::placeholder { color: #475569; }
-.input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-.btn-primary { width: 100%; padding: 0.75rem; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 0.9375rem; font-weight: 600; font-family: inherit; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-.btn-primary:hover:not(:disabled) { background: #2563eb; }
-.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-.card-footer { text-align: center; margin-top: 1.5rem; }
-.back-link { font-size: 0.875rem; color: #64748b; text-decoration: none; transition: color 0.15s; }
-.back-link:hover { color: #94a3b8; }
-.spin { animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.auth-card { border-radius: 16px; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
+.auth-title { font-size: 1.25rem; font-weight: 700; color: #f1f5f9; margin: 0 0 0.5rem; }
+.auth-sub { font-size: 0.875rem; color: #64748b; margin: 0 0 1.5rem; line-height: 1.5; }
+.auth-form { gap: 1.25rem; }
+.auth-form :deep(.ds-field) { gap: 0.4rem; }
+.auth-form :deep(.ds-field__label) { font-size: 0.8125rem; font-weight: 600; color: #94a3b8; letter-spacing: 0.02em; }
+.auth-alert { border-radius: 8px; margin-bottom: 1.25rem; }
+.auth-alert.ds-alert--error { background: rgba(239,68,68,0.1); color: #fca5a5; border-color: rgba(239,68,68,0.2); }
+.auth-alert.ds-alert--success { background: rgba(34,197,94,0.1); color: #86efac; border-color: rgba(34,197,94,0.2); }
+.auth-footer { text-align: center; margin-top: 1.5rem; }
+.eye-btn { color: #475569; }
+.eye-btn:hover { color: #94a3b8; }
 </style>

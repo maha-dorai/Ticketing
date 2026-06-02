@@ -23,7 +23,7 @@
         :required="required"
         :aria-invalid="error ? true : undefined"
         :aria-describedby="describedBy"
-        class="inputClasses"
+        :class="inputClasses"
         @input="onInput"
       />
       <span v-if="$slots.suffix" class="ds-input-wrap__action">
@@ -40,7 +40,7 @@
       :required="required"
       :aria-invalid="error ? true : undefined"
       :aria-describedby="describedBy"
-      class="inputClasses"
+      :class="inputClasses"
       @input="onInput"
     />
     <p v-if="hint && !error" :id="hintId" class="ds-field__hint">{{ hint }}</p>

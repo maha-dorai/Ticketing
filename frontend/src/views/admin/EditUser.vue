@@ -64,7 +64,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowLeft, Loader2, UserPen } from 'lucide-vue-next';
+import { ArrowLeft, Loader2, UserPen } from "lucide-vue-next";
 import api from '../../services/api';
 import AppLayout from '../../components/layout/AppLayout.vue';
 import AlertBanner from '../../components/ui/AlertBanner.vue';

@@ -315,7 +315,7 @@
               </div>
 
               <div v-if="!isManager && !canDragTicket && !(currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME') && !(currentUser?.role === 'testeur' && ticket.testeur_id === currentUser.id)" class="text-center py-6">
-                <span class="text-4xl block mb-2">☕</span>
+                <Coffee :size="40" class="mx-auto mb-2 text-slate-300" aria-hidden="true" />
                 <p class="text-xs font-medium text-slate-400">Aucune action requise de votre part on ce ticket.</p>
               </div>
 
@@ -341,6 +341,7 @@ import {
   Bot,
   ChevronLeft,
   CheckCircle2,
+  Coffee,
   Clock,
   Code2,
   File,
@@ -354,7 +355,7 @@ import {
   Ticket,
   Trash2,
   XCircle,
-} from 'lucide-vue-next';
+} from "lucide-vue-next";
 import AppLayout from '../../components/layout/AppLayout.vue';
 
 const route       = useRoute();

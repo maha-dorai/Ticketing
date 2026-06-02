@@ -7,8 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { withDefaults } from 'vue';
-import { Ticket } from 'lucide-vue-next';
+import { Ticket } from "lucide-vue-next";
 
 withDefaults(
   defineProps<{

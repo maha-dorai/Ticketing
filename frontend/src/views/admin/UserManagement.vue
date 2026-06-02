@@ -140,7 +140,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
-import { AlertTriangle, Ban, Check, CheckCircle2, FlaskConical, Loader2, Monitor, RotateCcw, Search, Users, X, XCircle } from 'lucide-vue-next';
+import { AlertTriangle, Ban, Check, CheckCircle2, FlaskConical, Loader2, Monitor, RotateCcw, Search, Users, X, XCircle } from "lucide-vue-next";
 import AppLayout from '../../components/layout/AppLayout.vue';
 import PageHeader from '../../components/ui/PageHeader.vue';
 import BaseAlert from '../../components/ui/BaseAlert.vue';

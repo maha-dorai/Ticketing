@@ -8,7 +8,7 @@
       <div class="page-header">
         <div class="header-left">
           <button @click="$router.push({ name: 'Projects' })" class="back-btn">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+            <ArrowLeft :size="16" aria-hidden="true" />
             Mes Projets
           </button>
           <div v-if="project" class="header-info">
@@ -27,16 +27,20 @@
 
       <!-- Tabs -->
       <div class="tabs">
-        <button @click="activeTab = 'info'" :class="['tab', activeTab === 'info' && 'tab-active']">📋 Informations</button>
+        <button @click="activeTab = 'info'" :class="['tab', activeTab === 'info' && 'tab-active']">
+          <ClipboardList :size="16" aria-hidden="true" />
+          Informations
+        </button>
         <button @click="activeTab = 'tickets'" :class="['tab', activeTab === 'tickets' && 'tab-active']">
-          🎟️ Tickets
+          <TicketIcon :size="16" aria-hidden="true" />
+          Tickets
           <span v-if="tickets.length" class="tab-count">{{ tickets.length }}</span>
         </button>
       </div>
 
       <!-- Loading -->
       <div v-if="loading" class="loading-wrap">
-        <svg class="spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:.2"/><path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:.7"/></svg>
+        <Loader2 :size="24" class="spin" aria-hidden="true" />
         Chargement...
       </div>
 
@@ -67,8 +71,14 @@
           <div class="members-filters" v-if="project.users?.length">
             <div class="filter-pills">
               <span class="filter-label-inline">Filtrer par rôle :</span>
-              <button @click="toggleRole('developpeur')" :class="['pill', filterRole.includes('developpeur') ? 'pill-dev-active' : '']">👨‍💻 Développeurs</button>
-              <button @click="toggleRole('testeur')" :class="['pill', filterRole.includes('testeur') ? 'pill-testeur-active' : '']">🕵️ Testeurs</button>
+              <button @click="toggleRole('developpeur')" :class="['pill', filterRole.includes('developpeur') ? 'pill-dev-active' : '']">
+                <Code2 :size="14" aria-hidden="true" />
+                Développeurs
+              </button>
+              <button @click="toggleRole('testeur')" :class="['pill', filterRole.includes('testeur') ? 'pill-testeur-active' : '']">
+                <Search :size="14" aria-hidden="true" />
+                Testeurs
+              </button>
             </div>
             <div class="filter-slider" v-if="filterRole.length === 0 || filterRole.includes('developpeur')">
               <label class="filter-label-inline">Charge Max. (Devs) : <span class="val-badge">{{ filterMaxTickets >= 10 ? 'Tous' : filterMaxTickets }}</span></label>
@@ -105,7 +115,7 @@
               <p class="text-xs text-blue-700 mt-1">Gérez vos tickets visuellement avec le glisser-déposer.</p>
             </div>
             <button @click="$router.push(`/projects/${projectId}/tickets`)" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow-md transition-all flex items-center gap-2">
-              <span class="text-lg">📊</span> Ouvrir le Tableau
+              <BarChart3 :size="18" aria-hidden="true" /> Ouvrir le Tableau
             </button>
           </div>
 
@@ -125,17 +135,17 @@
               <label class="filter-label">Priorité</label>
               <select v-model="filterPrio" class="filter-select">
                 <option value="">Toutes</option>
-                <option value="CRITIQUE">🔴 Critique</option>
-                <option value="HAUTE">🟠 Haute</option>
-                <option value="MOYENNE">🔵 Moyenne</option>
-                <option value="BASSE">⚪ Basse</option>
+                <option value="CRITIQUE">Critique</option>
+                <option value="HAUTE">Haute</option>
+                <option value="MOYENNE">Moyenne</option>
+                <option value="BASSE">Basse</option>
               </select>
             </div>
           </div>
 
           <!-- Empty -->
           <div v-if="filteredTickets.length === 0" class="empty-tickets">
-            <div class="empty-icon">🎫</div>
+            <TicketIcon :size="42" class="empty-icon" aria-hidden="true" />
             <div class="empty-title">Aucun ticket{{ filterEtat || filterPrio ? ' pour ces filtres' : '' }}</div>
             <div v-if="isTesteur" class="empty-sub">Créez votre premier ticket avec le bouton "Nouveau ticket"</div>
           </div>
@@ -158,26 +168,30 @@
                 <p v-if="t.description" class="ticket-desc">{{ t.description }}</p>
                 <div class="ticket-meta">
                   <span class="prio-badge" :class="prioBadgeClass(t.priorite)">
-                    {{ prioIcon(t.priorite) }} {{ t.priorite }}
+                    <Circle :size="10" class="prio-icon" :class="prioIconClass(t.priorite)" aria-hidden="true" />
+                    {{ t.priorite }}
                   </span>
                   <span class="meta-dot">·</span>
                   <span class="meta-info">
-                    🧑‍💻 Créé par {{ t.testeur?.prenom }} {{ t.testeur?.nom }}
+                    <UserRound :size="14" aria-hidden="true" />
+                    Créé par {{ t.testeur?.prenom }} {{ t.testeur?.nom }}
                   </span>
                   <span v-if="t.assignment_status === 'approved' && t.developpeur" class="meta-dot">·</span>
                   <span v-if="t.assignment_status === 'approved' && t.developpeur" class="meta-info">
-                    👨‍💻 {{ t.developpeur.prenom }} {{ t.developpeur.nom }}
+                    <Code2 :size="14" aria-hidden="true" />
+                    {{ t.developpeur.prenom }} {{ t.developpeur.nom }}
                   </span>
                   <span v-else-if="t.assignment_status === 'pending' && t.proposed_developpeur" class="meta-dot">·</span>
                   <span v-else-if="t.assignment_status === 'pending' && t.proposed_developpeur" class="meta-info">
-                    ⏳ Proposé : {{ t.proposed_developpeur.prenom }} {{ t.proposed_developpeur.nom }}
+                    <Clock :size="14" aria-hidden="true" />
+                    Proposé : {{ t.proposed_developpeur.prenom }} {{ t.proposed_developpeur.nom }}
                   </span>
                   <span class="meta-dot">·</span>
                   <span class="meta-info">{{ formatDate(t.created_at) }}</span>
                 </div>
               </div>
 
-              <svg class="ticket-arrow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+              <ArrowRight :size="16" class="ticket-arrow" aria-hidden="true" />
             </div>
           </div>
         </template>
@@ -192,29 +206,35 @@
         <!-- Confirmation auto-assign (post-creation) -->
         <template v-if="assignResult">
           <div class="modal-header">
-            <h3 class="modal-title">Ticket créé ! ✅</h3>
+            <h3 class="modal-title">
+              Ticket créé !
+              <CheckCircle2 :size="18" class="modal-title-icon modal-title-icon-success" aria-hidden="true" />
+            </h3>
             <button @click="closeModal" class="modal-close">&times;</button>
           </div>
           <div class="modal-body">
             <div v-if="assignResult.success" class="assign-success-box">
               <div v-if="assignResult.is_retour">
-                <div class="assign-icon">🔁</div>
+                <div class="assign-icon"><RefreshCw :size="24" aria-hidden="true" /></div>
                 <div class="assign-info">
                   <p class="assign-title">Assignation automatique (Retour)</p>
                   <p class="assign-hint">Assigné d'office à {{ assignResult.dev_prenom }} {{ assignResult.dev_nom }}.</p>
                 </div>
               </div>
               <div v-else>
-                <div class="assign-icon">⏳</div>
+                <div class="assign-icon"><Clock :size="24" aria-hidden="true" /></div>
                 <div class="assign-info">
                   <p class="assign-title">Assignation automatique en cours de validation</p>
-                  <p class="assign-dev">👨‍💻 Proposé à : <strong>{{ assignResult.dev_prenom }} {{ assignResult.dev_nom }}</strong></p>
+                  <p class="assign-dev">
+                    <Code2 :size="14" aria-hidden="true" />
+                    Proposé à : <strong>{{ assignResult.dev_prenom }} {{ assignResult.dev_nom }}</strong>
+                  </p>
                   <p class="assign-hint">L'administrateur va valider ou refuser cette assignation. Vous serez notifié(e) une fois confirmée.</p>
                 </div>
               </div>
             </div>
             <div v-else class="assign-warn-box">
-              <div class="assign-icon">⚠️</div>
+              <div class="assign-icon"><AlertTriangle :size="24" aria-hidden="true" /></div>
               <div class="assign-info">
                 <p class="assign-title">Aucun développeur disponible</p>
                 <p class="assign-hint">{{ assignResult.message }}</p>
@@ -291,9 +311,9 @@
                 <label class="form-label">Priorité</label>
                 <select v-model="form.priorite" class="form-input">
                   <option value="BASSE">Basse</option>
-                  <option value="MOYENNE">🔵 Moyenne</option>
-                  <option value="HAUTE">🟠 Haute</option>
-                  <option value="CRITIQUE">🔴 Critique</option>
+                  <option value="MOYENNE">Moyenne</option>
+                  <option value="HAUTE">Haute</option>
+                  <option value="CRITIQUE">Critique</option>
                 </select>
               </div>
             </form>
@@ -317,6 +337,22 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/authStore';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  Circle,
+  ClipboardList,
+  Clock,
+  Code2,
+  Loader2,
+  RefreshCw,
+  Search,
+  Ticket as TicketIcon,
+  UserRound,
+} from "lucide-vue-next";
 import api from '../../services/api';
 import AppSidebar from '../../components/AppSidebar.vue';
 
@@ -462,7 +498,7 @@ const roleBadgeClass = r => ({ testeur: 'rb-testeur', developpeur: 'rb-dev', adm
 const etatLabel = e => ({ OUVERT: 'Ouvert', EN_COURS: 'En cours', RESOLU: 'Résolu', FERME: 'Fermé' }[e] || e);
 const etatClass = e => ({ OUVERT: 'etat-open', EN_COURS: 'etat-inprogress', RESOLU: 'etat-resolved', FERME: 'etat-closed' }[e] || '');
 
-const prioIcon = p => ({ BASSE: '⚪', MOYENNE: '🔵', HAUTE: '🟠', CRITIQUE: '🔴' }[p] || '');
+const prioIconClass = p => ({ BASSE: 'prio-icon-basse', MOYENNE: 'prio-icon-moyenne', HAUTE: 'prio-icon-haute', CRITIQUE: 'prio-icon-critique' }[p] || '');
 const prioBarClass = p => ({ BASSE: 'prio-basse', MOYENNE: 'prio-moyenne', HAUTE: 'prio-haute', CRITIQUE: 'prio-critique' }[p] || '');
 const prioBadgeClass = p => ({ BASSE: 'pb-basse', MOYENNE: 'pb-moyenne', HAUTE: 'pb-haute', CRITIQUE: 'pb-critique' }[p] || '');
 </script>
@@ -508,7 +544,7 @@ const prioBadgeClass = p => ({ BASSE: 'pb-basse', MOYENNE: 'pb-moyenne', HAUTE: 
 .members-filters{display:flex;align-items:center;gap:2rem;background:white;border:1px solid #e2e8f0;border-radius:12px;padding:1rem 1.5rem;margin-bottom:1rem;flex-wrap:wrap;}
 .filter-label-inline{font-size:.75rem;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.05em;}
 .filter-pills{display:flex;align-items:center;gap:.75rem;}
-.pill{padding:.4rem 1rem;border-radius:99px;border:1px solid #e2e8f0;background:white;font-size:.8125rem;font-weight:700;color:#64748b;cursor:pointer;transition:all .2s;}
+.pill{padding:.4rem 1rem;border-radius:99px;border:1px solid #e2e8f0;background:white;font-size:.8125rem;font-weight:700;color:#64748b;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.375rem;}
 .pill:hover{border-color:#cbd5e1;background:#f8fafc;}
 .pill-dev-active{background:#dbeafe;border-color:#bfdbfe;color:#1d4ed8;}
 .pill-testeur-active{background:#dcfce7;border-color:#bbf7d0;color:#16a34a;}
@@ -551,7 +587,7 @@ const prioBadgeClass = p => ({ BASSE: 'pb-basse', MOYENNE: 'pb-moyenne', HAUTE: 
 
 /* Tickets list */
 .empty-tickets{text-align:center;padding:4rem 2rem;background:white;border:1px solid #e2e8f0;border-radius:14px;}
-.empty-icon{font-size:3rem;margin-bottom:.75rem;}
+.empty-icon{color:#94a3b8;margin:0 auto .75rem;}
 .empty-title{font-size:1rem;font-weight:700;color:#334155;margin-bottom:.25rem;}
 .empty-sub{font-size:.875rem;color:#94a3b8;}
 
@@ -570,7 +606,7 @@ const prioBadgeClass = p => ({ BASSE: 'pb-basse', MOYENNE: 'pb-moyenne', HAUTE: 
 .ticket-desc{font-size:.8125rem;color:#64748b;margin:0 0 .5rem;line-height:1.5;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
 .ticket-meta{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
 .meta-dot{color:#cbd5e1;font-size:.75rem;}
-.meta-info{font-size:.75rem;color:#64748b;}
+.meta-info{font-size:.75rem;color:#64748b;display:inline-flex;align-items:center;gap:.25rem;}
 .ticket-arrow{color:#cbd5e1;flex-shrink:0;}
 
 /* Etat badges */
@@ -581,7 +617,12 @@ const prioBadgeClass = p => ({ BASSE: 'pb-basse', MOYENNE: 'pb-moyenne', HAUTE: 
 .etat-closed{background:#f1f5f9;color:#64748b;}
 
 /* Priority badges */
-.prio-badge{font-size:.6875rem;font-weight:700;padding:2px 8px;border-radius:6px;}
+.prio-badge{font-size:.6875rem;font-weight:700;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:.25rem;}
+.prio-icon{fill:currentColor;stroke:currentColor;}
+.prio-icon-basse{color:#94a3b8;}
+.prio-icon-moyenne{color:#3b82f6;}
+.prio-icon-haute{color:#f97316;}
+.prio-icon-critique{color:#ef4444;}
 .pb-basse{background:#f1f5f9;color:#64748b;}
 .pb-moyenne{background:#dbeafe;color:#1d4ed8;}
 .pb-haute{background:#ffedd5;color:#ea580c;}
@@ -591,7 +632,9 @@ const prioBadgeClass = p => ({ BASSE: 'pb-basse', MOYENNE: 'pb-moyenne', HAUTE: 
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem;}
 .modal{background:white;border-radius:16px;width:100%;max-width:520px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,.15);}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #f1f5f9;background:#f8fafc;}
-.modal-title{font-size:1rem;font-weight:800;color:#0f172a;margin:0;}
+.modal-title{font-size:1rem;font-weight:800;color:#0f172a;margin:0;display:flex;align-items:center;gap:.375rem;}
+.modal-title-icon{flex-shrink:0;}
+.modal-title-icon-success{color:#22c55e;}
 .modal-close{background:none;border:none;font-size:1.5rem;color:#94a3b8;cursor:pointer;line-height:1;padding:0;}
 .modal-close:hover{color:#475569;}
 .modal-body{padding:1.5rem;display:flex;flex-direction:column;gap:1rem;}
@@ -602,6 +645,8 @@ const prioBadgeClass = p => ({ BASSE: 'pb-basse', MOYENNE: 'pb-moyenne', HAUTE: 
 .form-input{padding:.5625rem .875rem;border:1px solid #e2e8f0;border-radius:9px;font-size:.875rem;color:#1e293b;outline:none;font-family:inherit;transition:border-color .2s,box-shadow .2s;width:100%;}
 .form-input:focus{border-color:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.1);}
 .form-error{font-size:.8125rem;color:#dc2626;background:#fef2f2;padding:.625rem .875rem;border-radius:8px;}
+.assign-icon{display:flex;align-items:center;justify-content:center;}
+.assign-dev{display:flex;align-items:center;gap:.25rem;}
 .btn-cancel{padding:.5625rem 1.25rem;background:#f1f5f9;color:#475569;border:none;border-radius:9px;font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;}
 .btn-cancel:hover{background:#e2e8f0;}
 .btn-submit{padding:.5625rem 1.25rem;background:#2563eb;color:white;border:none;border-radius:9px;font-size:.875rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s;}

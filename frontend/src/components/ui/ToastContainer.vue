@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { CheckCircle2, AlertTriangle, XCircle, Info } from 'lucide-vue-next';
+import { CheckCircle2, AlertTriangle, XCircle, Info } from "lucide-vue-next";
 import type { Component } from 'vue';
 import BaseAlert from './BaseAlert.vue';
 import { useToast, type ToastVariant } from '../../composables/useToast';

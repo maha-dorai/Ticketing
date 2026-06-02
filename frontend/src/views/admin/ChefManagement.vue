@@ -155,7 +155,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import api from '../../services/api';
-import { AlertTriangle, Ban, CheckCircle2, Clock, Crown, Loader2, Plus, Search, Sparkles, XCircle } from 'lucide-vue-next';
+import { AlertTriangle, Ban, CheckCircle2, Clock, Crown, Loader2, Plus, Search, Sparkles, XCircle } from "lucide-vue-next";
 import AppLayout from '../../components/layout/AppLayout.vue';
 import PageHeader from '../../components/ui/PageHeader.vue';
 import BaseAlert from '../../components/ui/BaseAlert.vue';

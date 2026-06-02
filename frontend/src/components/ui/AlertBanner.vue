@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import { AlertTriangle, CheckCircle2, Clock, Sparkles, XCircle } from 'lucide-vue-next';
+import { AlertTriangle, CheckCircle2, Clock, Sparkles, XCircle } from "lucide-vue-next";
 import type { Component } from 'vue';
 
 const props = withDefaults(

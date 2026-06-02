@@ -287,7 +287,7 @@ import {
   Ticket,
   Users,
   XCircle,
-} from 'lucide-vue-next';
+} from "lucide-vue-next";
 import AppLayout from '../../components/layout/AppLayout.vue';
 import PageHeader from '../../components/ui/PageHeader.vue';
 import BaseAlert from '../../components/ui/BaseAlert.vue';
