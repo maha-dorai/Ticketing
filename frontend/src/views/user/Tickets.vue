@@ -124,51 +124,49 @@
             </h3>
             <ModalCloseBtn @click="closeModal" />
           </div>
-          <div class="ds-modal__body">
-            <div class="ds-confirm-block ds-confirm-block--brand">
-              <p class="ds-confirm-block__title">
-                <Bot :size="14" aria-hidden="true" />
-                Analyse automatique
-              </p>
-              <div class="ds-confirm-grid">
-                <div class="ds-confirm-grid__item">
-                  <span class="ds-filter-label">Priorité</span>
-                  <BaseBadge :variant="prioBadge(ticketResult?.priorite || 'BASSE')" pill>
-                    {{ ticketResult?.priorite || '—' }}
-                  </BaseBadge>
+          <div class="ds-modal__body confirm-body">
+
+            <!-- ── Résultats IA statiques ──────────────────────────────────── -->
+            <div v-if="ticketResult?.categorie_ia || ticketResult?.priorite_ia" class="confirm-ai-result">
+              <div class="confirm-ai-result__header">
+                <Bot :size="13" aria-hidden="true" />
+                Analyse IA
+              </div>
+              <div class="confirm-ai-result__chips">
+                <div class="confirm-ai-chip" :class="`confirm-ai-chip--${(ticketResult.priorite_ia || ticketResult.priorite || 'basse').toLowerCase()}`">
+                  <span class="confirm-ai-chip__label">Priorité</span>
+                  <span class="confirm-ai-chip__value">{{ priorityLabel(ticketResult.priorite_ia || ticketResult.priorite) }}</span>
                 </div>
-                <div class="ds-confirm-grid__item">
-                  <span class="ds-filter-label">Catégorie</span>
-                  <BaseBadge variant="neutral" pill>
-                    {{ ticketResult?.categorie_ia ? categorieLabel(ticketResult.categorie_ia) : '—' }}
-                  </BaseBadge>
+                <div class="confirm-ai-chip confirm-ai-chip--cat">
+                  <span class="confirm-ai-chip__label">Catégorie</span>
+                  <span class="confirm-ai-chip__value">{{ ticketResult.categorie_ia ? categorieLabel(ticketResult.categorie_ia) : '—' }}</span>
                 </div>
               </div>
             </div>
-            <div class="ds-confirm-block" style="margin-top: 1rem">
-              <div v-if="assignResult.success" class="ds-confirm-assign">
-                <div class="ds-confirm-assign__icon">
-                  <RotateCcw v-if="assignResult.is_retour" :size="18" aria-hidden="true" />
-                  <Clock v-else :size="18" aria-hidden="true" />
-                </div>
-                <div>
-                  <p class="ds-callout__title">
-                    {{ assignResult.is_retour ? "Assigné d'office (retour)" : 'Assignation proposée' }}
-                  </p>
-                  <p class="ds-callout__text">
-                    {{ assignResult.dev_prenom }} {{ assignResult.dev_nom }} —
-                    {{ assignResult.is_retour ? 'développeur du ticket parent.' : 'en attente de validation admin.' }}
-                  </p>
-                </div>
+
+            <!-- ── Assignation ──────────────────────────────────────────────── -->
+            <div class="assign-block" :class="assignResult.success ? 'assign-block--ok' : 'assign-block--warn'">
+              <div class="assign-block__icon">
+                <RotateCcw v-if="assignResult.is_retour" :size="16" aria-hidden="true" />
+                <Clock v-else-if="assignResult.success" :size="16" aria-hidden="true" />
+                <AlertTriangle v-else :size="16" aria-hidden="true" />
               </div>
-              <div v-else class="ds-alert ds-alert--warning">
-                <AlertTriangle class="ds-alert__icon" :size="18" aria-hidden="true" />
-                <div class="ds-alert__content">
-                  <p class="ds-alert__title">Aucun développeur disponible</p>
-                  <p>{{ assignResult.message }}</p>
-                </div>
+              <div class="assign-block__text">
+                <p class="assign-block__title">
+                  {{ assignResult.is_retour
+                    ? "Assigné d'office (retour)"
+                    : assignResult.success
+                      ? 'Assignation proposée'
+                      : 'Aucun développeur disponible' }}
+                </p>
+                <p class="assign-block__sub" v-if="assignResult.success">
+                  {{ assignResult.dev_prenom }} {{ assignResult.dev_nom }} —
+                  {{ assignResult.is_retour ? 'développeur du ticket parent.' : 'en attente de validation admin.' }}
+                </p>
+                <p class="assign-block__sub" v-else>{{ assignResult.message }}</p>
               </div>
             </div>
+
           </div>
           <div class="ds-modal__footer">
             <BaseButton variant="secondary" @click="closeModal">Fermer</BaseButton>
@@ -206,11 +204,31 @@
                   </option>
                 </select>
               </div>
-              <BaseInput v-model="form.titre" label="Titre" required placeholder="Décrivez le problème en une phrase" />
+              <BaseInput
+                v-model="form.titre"
+                label="Titre"
+                required
+                placeholder="Décrivez le problème en une phrase"
+                @input="onFormInputChange"
+              />
               <div class="ds-field">
                 <label class="ds-field__label">Description</label>
-                <textarea v-model="form.description" rows="3" class="ds-textarea" placeholder="Étapes pour reproduire, contexte…" />
+                <textarea
+                  v-model="form.description"
+                  rows="3"
+                  class="ds-textarea"
+                  placeholder="Étapes pour reproduire, contexte…"
+                  @input="onFormInputChange"
+                />
               </div>
+
+              <!-- ── AI Analysis Panel ───────────────────────────────────── -->
+              <AIAnalysisPanel
+                :result="aiPreviewResult"
+                :is-running="aiAnalyzing"
+                :triggered="aiTriggered"
+              />
+
               <BaseInput v-model="form.temps_estime" label="Estimation (h)" type="number" required placeholder="Ex: 2.5" step="0.5" min="0.5" />
               <div class="ds-field">
                 <label class="ds-field__label">Pièces jointes</label>
@@ -248,6 +266,7 @@ import BaseButton from '../../components/ui/BaseButton.vue';
 import BaseInput from '../../components/ui/BaseInput.vue';
 import BaseBadge from '../../components/ui/BaseBadge.vue';
 import ModalCloseBtn from '../../components/ui/ModalCloseBtn.vue';
+import AIAnalysisPanel from '../../components/ui/AIAnalysisPanel.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -268,6 +287,37 @@ const formError = ref('');
 const assignResult = ref(null);
 const ticketResult = ref(null);
 const attachments = ref([]);
+
+// ── AI preview state ──────────────────────────────────────────────────────────
+const aiPreviewResult = ref(null);
+const aiAnalyzing = ref(false);
+const aiTriggered = ref(false);
+let aiDebounceTimer = null;
+
+const onFormInputChange = () => {
+  const titre = form.value.titre?.trim() || '';
+  const desc  = form.value.description?.trim() || '';
+  if (!titre && !desc) return; // nothing to analyze yet
+  if (!aiTriggered.value) aiTriggered.value = true;
+
+  clearTimeout(aiDebounceTimer);
+  // Only fire if title has meaningful content (≥ 6 chars)
+  if (titre.length < 6) return;
+
+  aiDebounceTimer = setTimeout(async () => {
+    // Don't re-run if content hasn't changed meaningfully
+    aiAnalyzing.value = true;
+    aiPreviewResult.value = null;
+    try {
+      const res = await api.post('/ai/analyze', { titre, description: desc });
+      aiPreviewResult.value = res.data;
+    } catch {
+      // Silently fail — AI preview is non-blocking
+    } finally {
+      aiAnalyzing.value = false;
+    }
+  }, 900); // 900ms debounce after user stops typing
+};
 
 const form = ref({ titre: '', description: '', temps_estime: null, type: 'NOUVEAU', parent_ticket_id: null });
 
@@ -380,12 +430,18 @@ const closeModal = () => {
   showCreateModal.value = false;
   form.value = { titre: '', description: '', temps_estime: null, type: 'NOUVEAU', parent_ticket_id: null };
   attachments.value = []; formError.value = ''; assignResult.value = null; ticketResult.value = null;
+  // Reset AI state
+  clearTimeout(aiDebounceTimer);
+  aiPreviewResult.value = null;
+  aiAnalyzing.value = false;
+  aiTriggered.value = false;
 };
 
 onMounted(() => { fetchProjectInfo(); fetchTickets(); });
 
 const initials = (u) => ((u?.prenom?.[0] || '') + (u?.nom?.[0] || '')).toUpperCase();
 const categorieLabel = (cat) => ({ BUG: 'Bug', PERFORMANCE: 'Perf', SECURITE: 'Sécu', UI_UX: 'UI/UX', BASE_DE_DONNEES: 'BDD', API: 'API', CONFIGURATION: 'Config', AUTRE: 'Autre', NON_CLASSE: '?' }[cat] || cat);
+const priorityLabel  = (p) => ({ BASSE: 'Basse', MOYENNE: 'Moyenne', HAUTE: 'Haute', CRITIQUE: 'Critique' }[(p || '').toUpperCase()] || p || '—');
 const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '';
 </script>
 
@@ -482,4 +538,130 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .tickets-loading .spin { animation: spin 0.8s linear infinite; color: var(--color-brand); }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Post-creation confirmation ─────────────────────────────────────────── */
+.confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.confirm-ai-result {
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-subtle);
+}
+
+.confirm-ai-result__header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.625rem;
+}
+
+.confirm-ai-result__chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.confirm-ai-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  min-width: 80px;
+}
+
+.confirm-ai-chip__label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
+}
+
+.confirm-ai-chip__value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.confirm-ai-chip--critique { border-color: var(--color-error-100);   background: var(--color-error-50);   }
+.confirm-ai-chip--critique .confirm-ai-chip__value { color: var(--color-error-700); }
+.confirm-ai-chip--haute    { border-color: #fed7aa; background: #fff7ed; }
+.confirm-ai-chip--haute    .confirm-ai-chip__value { color: #c2410c; }
+.confirm-ai-chip--moyenne  { border-color: var(--color-warning-100); background: var(--color-warning-50); }
+.confirm-ai-chip--moyenne  .confirm-ai-chip__value { color: var(--color-warning-700); }
+.confirm-ai-chip--basse    { border-color: var(--color-border); background: var(--color-bg-subtle); }
+.confirm-ai-chip--basse    .confirm-ai-chip__value { color: var(--color-text-secondary); }
+.confirm-ai-chip--cat      { border-color: var(--color-brand-muted); background: var(--color-brand-subtle); }
+.confirm-ai-chip--cat      .confirm-ai-chip__value { color: var(--color-brand-700); }
+
+.assign-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid;
+}
+
+.assign-block--ok {
+  background: var(--color-brand-subtle);
+  border-color: var(--color-brand-muted);
+}
+
+.assign-block--warn {
+  background: var(--color-warning-50);
+  border-color: var(--color-warning-100);
+}
+
+.assign-block__icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+}
+
+.assign-block--ok .assign-block__icon {
+  background: var(--color-brand-100);
+  color: var(--color-brand-700);
+}
+
+.assign-block--warn .assign-block__icon {
+  background: var(--color-warning-100);
+  color: var(--color-warning-700);
+}
+
+.assign-block__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.assign-block__title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.assign-block__sub {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
 </style>
