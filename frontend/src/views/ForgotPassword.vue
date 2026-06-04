@@ -20,7 +20,6 @@
             v-model="email"
             type="email"
             required
-            placeholder="vous@exemple.com"
             class="auth-input"
           />
         </div>
