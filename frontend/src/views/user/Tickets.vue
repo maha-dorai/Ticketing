@@ -1,12 +1,13 @@
 <template>
   <AppLayout fixed>
-    <PageHeader variant="compact" back-inline>
-      <template #back>
-        <button type="button" class="ds-back-link" @click="goBack">
-          <ArrowLeft :size="14" aria-hidden="true" />
-          Retour
-        </button>
-      </template>
+    <div class="back-link-bar">
+      <button type="button" class="ds-back-link" @click="goBack">
+        <ArrowLeft :size="14" aria-hidden="true" />
+        Retour
+      </button>
+    </div>
+
+    <PageHeader variant="default" compact class="tickets-header">
       <template #title>{{ projectName || 'Chargement…' }}</template>
       <template #subtitle>{{ tickets.length }} ticket{{ tickets.length !== 1 ? 's' : '' }}</template>
       <template #actions>
@@ -389,6 +390,37 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 </script>
 
 <style scoped>
+.back-link-bar {
+  padding: 0.75rem 2rem 0.25rem;
+  background-color: var(--color-bg-app);
+}
+
+.tickets-header {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.back-link-bar .ds-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.back-link-bar .ds-back-link:hover {
+  color: var(--color-brand);
+  border-color: var(--color-brand-muted);
+  background-color: var(--color-brand-50);
+  transform: translateX(-2px);
+}
 /*
  * Kanban layout.
  * Global fixes applied in components.css:
@@ -410,7 +442,7 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
 .kanban-scroll {
   position: absolute;
   inset: 0;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
   padding: 1.5rem 2rem 0;
 }
@@ -420,8 +452,19 @@ const formatDate = (d) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-
   height: 100%;
 }
 
+.kanban-board.ds-kanban-board--horizontal {
+  min-width: 0;
+  width: 100%;
+}
+
 .kanban-column {
   height: 100%;
+}
+
+.kanban-column.ds-kanban-column--narrow {
+  width: 0;
+  flex: 1 1 0%;
+  min-width: 0;
 }
 
 /* Loading state */
