@@ -16,15 +16,6 @@ class DatabaseSeeder extends Seeder
     {
         // ── 1. Comptes fixes (toujours disponibles pour se connecter) ──────────
 
-        $admin = User::firstOrCreate(['email' => 'mehadorai3@gmail.com'], [
-            'nom'          => 'Dorai',
-            'prenom'       => 'Maha',
-            'mot_de_passe' => Hash::make('Maha@1234'),
-            'role'         => 'admin',
-            'statut'       => 'actif',
-        ]);
-
-
         $chefProjet1 = User::firstOrCreate(['email' => 'chef1@platform.com'], [
             'nom'          => 'Martin',
             'prenom'       => 'Lucas',
@@ -55,15 +46,6 @@ class DatabaseSeeder extends Seeder
             'mot_de_passe' => Hash::make('Test@1234'),
             'role'         => 'testeur',
             'statut'       => 'actif',
-        ]);
-
-        $dev1 = User::firstOrCreate(['email' => 'mahadoraiii@gmail.com'], [
-            'nom'          => 'Dorai',
-            'prenom'       => 'May',
-            'mot_de_passe' => Hash::make('May@1234'),
-            'role'         => 'developpeur',
-            'statut'       => 'actif',
-            'github_link'  => 'https://github.com/maydorai',
         ]);
 
         $dev2 = User::firstOrCreate(['email' => 'dev2@platform.com'], [

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Illuminate\Validation\ValidationException;
+use App\Models\Membre;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -25,7 +25,7 @@ class AuthController extends Controller
                     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/'
                 ],
                 'role'        => 'required|in:testeur,developpeur',
-                'github_link' => 'required_if:role,developpeur|required_if:role,testeur|nullable|url',
+                'github_link' => 'nullable|url',
             ], [
                 'nom.required'            => 'Le nom est obligatoire.',
                 'prenom.required'         => 'Le prénom est obligatoire.',
@@ -36,18 +36,23 @@ class AuthController extends Controller
                 'mot_de_passe.min'        => 'Le mot de passe doit contenir au moins 8 caractères.',
                 'mot_de_passe.regex'      => 'Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial.',
                 'role.required'           => 'Le rôle est obligatoire.',
-                'github_link.required_if' => 'Le lien GitHub est obligatoire.',
                 'github_link.url'         => 'Le lien GitHub doit être une URL valide.',
             ]);
 
-            User::create([
+            // 1. Créer le User de base
+            $user = User::create([
                 'nom'          => $request->nom,
                 'prenom'       => $request->prenom,
                 'email'        => $request->email,
                 'mot_de_passe' => Hash::make($request->mot_de_passe),
-                'role'         => $request->role,
-                'statut'       => 'en_attente',
-                'github_link'  => in_array($request->role, ['developpeur', 'testeur']) ? $request->github_link : null,
+            ]);
+
+            // 2. Créer le Membre associé
+            Membre::create([
+                'user_id'     => $user->id,
+                'role'        => $request->role,
+                'statut'      => 'en_attente',
+                'github_link' => $request->github_link,
             ]);
 
             return response()->json(['message' => "Compte créé. En attente de validation."], 201);
@@ -63,17 +68,21 @@ class AuthController extends Controller
         try {
             $request->validate(['email' => 'required|email', 'mot_de_passe' => 'required']);
 
-            $user = User::where('email', $request->email)->first();
+            $user = User::with(['membre', 'chefDeProjet.admin'])->where('email', $request->email)->first();
 
             if (!$user || !Hash::check($request->mot_de_passe, $user->mot_de_passe))
                 return response()->json(['message' => 'Email ou mot de passe incorrect.'], 401);
 
-            if ($user->statut === 'en_attente')
-                return response()->json(['message' => 'Votre compte est en attente de validation.'], 403);
-            if ($user->statut === 'rejete')
-                return response()->json(['message' => "Compte rejeté, contactez l'administrateur."], 403);
-            if ($user->statut === 'desactive')
-                return response()->json(['message' => "Votre compte a été désactivé."], 403);
+            // Vérification statut pour les membres uniquement
+            if ($user->membre) {
+                $statut = $user->membre->statut;
+                if ($statut === 'en_attente')
+                    return response()->json(['message' => 'Votre compte est en attente de validation.'], 403);
+                if ($statut === 'rejete')
+                    return response()->json(['message' => "Compte rejeté, contactez l'administrateur."], 403);
+                if ($statut === 'desactive')
+                    return response()->json(['message' => "Votre compte a été désactivé."], 403);
+            }
 
             $token = JWTAuth::fromUser($user);
 
@@ -114,9 +123,7 @@ class AuthController extends Controller
                 Mail::raw("Cliquez ici pour réinitialiser votre mot de passe (valide 1h) :\n{$link}", function($m) use ($user) {
                     $m->to($user->email)->subject('Réinitialisation du mot de passe');
                 });
-            } catch (\Exception $mailEx) {
-                // Ignore pour ne pas bloquer si le mail plante
-            }
+            } catch (\Exception $mailEx) {}
 
             return response()->json(['message' => 'Lien envoyé par email.']);
         } catch (\Exception $e) {

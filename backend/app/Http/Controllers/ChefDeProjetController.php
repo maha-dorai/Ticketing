@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\ChefDeProjet;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -12,9 +14,6 @@ class ChefDeProjetController extends Controller
 {
     /**
      * Créer un compte chef_de_projet.
-     * L'admin saisit : nom, prénom, email.
-     * Le système génère un mot de passe temporaire envoyé par email.
-     * Le chef de projet devra le changer à sa première connexion.
      */
     public function create(Request $request)
     {
@@ -29,14 +28,18 @@ class ChefDeProjetController extends Controller
 
             $tempPassword = $this->generateSecurePassword();
 
+            // 1. Créer le User de base
             $chef = User::create([
                 'nom'                   => $request->nom,
                 'prenom'                => $request->prenom,
                 'email'                 => $request->email,
                 'mot_de_passe'          => Hash::make($tempPassword),
-                'role'                  => 'chef_de_projet',
-                'statut'                => 'actif',
                 'force_password_change' => true,
+            ]);
+
+            // 2. Créer le ChefDeProjet associé
+            ChefDeProjet::create([
+                'user_id' => $chef->id,
             ]);
 
             try {
@@ -49,9 +52,7 @@ class ChefDeProjetController extends Controller
                       . "— L'équipe Ticketing";
 
                 Mail::raw($body, fn($m) => $m->to($chef->email)->subject('🔐 Votre compte Chef de projet — Ticketing'));
-            } catch (\Exception $mailEx) {
-                // Ne bloque pas la création si l'email échoue
-            }
+            } catch (\Exception $mailEx) {}
 
             return response()->json([
                 'message'        => "Compte chef de projet créé. Les identifiants ont été envoyés à {$chef->email}.",
@@ -74,9 +75,20 @@ class ChefDeProjetController extends Controller
     public function list()
     {
         try {
-            $chefs = User::where('role', 'chef_de_projet')
-                         ->select('id', 'nom', 'prenom', 'email', 'statut', 'force_password_change', 'created_at')
-                         ->get();
+            $chefs = User::with(['chefDeProjet.admin'])
+                ->whereHas('chefDeProjet')
+                ->get()
+                ->map(function ($user) {
+                    return [
+                        'id'                    => $user->id,
+                        'nom'                   => $user->nom,
+                        'prenom'                => $user->prenom,
+                        'email'                 => $user->email,
+                        'statut'                => 'actif',
+                        'force_password_change' => $user->force_password_change,
+                        'created_at'            => $user->created_at,
+                    ];
+                });
 
             return response()->json($chefs);
         } catch (\Exception $e) {
@@ -85,13 +97,19 @@ class ChefDeProjetController extends Controller
     }
 
     /**
-     * Révoquer un chef de projet (désactiver son compte).
+     * Révoquer un chef de projet (supprimer son enregistrement ChefDeProjet).
      */
     public function revoke($id)
     {
         try {
-            $chef = User::where('id', $id)->where('role', 'chef_de_projet')->firstOrFail();
-            $chef->update(['statut' => 'desactive']);
+            $user = User::with('chefDeProjet')->findOrFail($id);
+
+            if (!$user->chefDeProjet) {
+                return response()->json(['message' => 'Cet utilisateur n\'est pas un chef de projet.'], 400);
+            }
+
+            // Supprimer le record ChefDeProjet (et Admin en cascade)
+            $user->chefDeProjet->delete();
 
             return response()->json(['message' => 'Compte chef de projet désactivé.']);
         } catch (\Exception $e) {
@@ -100,7 +118,7 @@ class ChefDeProjetController extends Controller
     }
 
     /**
-     * Génère un mot de passe sécurisé : majuscule + minuscules + chiffres + caractère spécial.
+     * Génère un mot de passe sécurisé.
      */
     private function generateSecurePassword(): string
     {

@@ -17,10 +17,7 @@ class User extends Authenticatable implements JWTSubject
         'prenom',
         'email',
         'mot_de_passe',
-        'role',                   // 'admin' | 'chef_de_projet' | 'testeur' | 'developpeur'
-        'statut',                 // 'en_attente' | 'actif' | 'rejete' | 'desactive'
-        'github_link',
-        'force_password_change',  // true = obligé de changer le mdp à la prochaine connexion
+        'force_password_change',
         'reset_token',
         'reset_token_expires',
     ];
@@ -30,6 +27,8 @@ class User extends Authenticatable implements JWTSubject
     protected $casts = [
         'force_password_change' => 'boolean',
     ];
+
+    // ─── JWT ──────────────────────────────────────────────────────────────────
 
     public function getJWTIdentifier()
     {
@@ -50,25 +49,23 @@ class User extends Authenticatable implements JWTSubject
         return $this->mot_de_passe;
     }
 
-    // Vérifie si l'utilisateur a des droits de gestion (chef_de_projet ou admin)
-    public function isManager(): bool
+    // ─── RELATIONS ────────────────────────────────────────────────────────────
+
+    public function membre()
     {
-        return in_array($this->role, ['chef_de_projet', 'admin']);
+        return $this->hasOne(Membre::class);
     }
 
-    // Vérifie si l'utilisateur est administrateur (rôle admin uniquement)
-    public function isAdmin(): bool
+    public function chefDeProjet()
     {
-        return $this->role === 'admin';
+        return $this->hasOne(ChefDeProjet::class);
     }
 
-    // Relation Many-to-Many avec les Projets
     public function projects()
     {
         return $this->belongsToMany(Project::class);
     }
 
-    // Projets créés par cet utilisateur
     public function createdProjects()
     {
         return $this->hasMany(Project::class, 'created_by');
@@ -76,7 +73,7 @@ class User extends Authenticatable implements JWTSubject
 
     public function createdTickets()
     {
-        return $this->hasMany(Ticket::class, 'testeur_id');
+        return $this->hasMany(Ticket::class, 'created_by');
     }
 
     public function assignedTickets()
@@ -92,5 +89,53 @@ class User extends Authenticatable implements JWTSubject
     public function notifications()
     {
         return $this->hasMany(Notification::class);
+    }
+
+    // ─── ACCESSORS ────────────────────────────────────────────────────────────
+
+    public function getRoleAttribute(): ?string
+    {
+        // Check admin (via chefDeProjet -> admin)
+        if ($this->chefDeProjet && $this->chefDeProjet->admin) {
+            return 'admin';
+        }
+        // Check chef_de_projet
+        if ($this->chefDeProjet) {
+            return 'chef_de_projet';
+        }
+        // Check membre
+        if ($this->membre) {
+            return $this->membre->role; // 'testeur' ou 'developpeur'
+        }
+        return null;
+    }
+
+    public function getStatutAttribute(): ?string
+    {
+        if ($this->membre) {
+            return $this->membre->statut;
+        }
+        // admin et chef_de_projet sont toujours actifs
+        if ($this->chefDeProjet) {
+            return 'actif';
+        }
+        return null;
+    }
+
+    public function getGithubLinkAttribute(): ?string
+    {
+        return $this->membre?->github_link;
+    }
+
+    // ─── HELPERS ──────────────────────────────────────────────────────────────
+
+    public function isManager(): bool
+    {
+        return in_array($this->role, ['chef_de_projet', 'admin']);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 }

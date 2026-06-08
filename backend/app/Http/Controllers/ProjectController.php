@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Models\Ticket;
 use App\Mail\ProjectAssigned;
 use Illuminate\Http\Request;
-use App\Http\Requests\AssignMembersRequest;
 use Illuminate\Support\Facades\Mail;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -16,12 +15,9 @@ class ProjectController extends Controller
     public function index(Request $request)
     {
         try {
-            $user  = JWTAuth::parseToken()->authenticate();
-            
-            // Logique de visibilité :
-            // Admin -> Tous les projets
-            // Chef de projet -> Ses propres projets créés
-            // Membres -> Projets auxquels ils sont assignés
+            $user = JWTAuth::parseToken()->authenticate();
+            $user->load(['membre', 'chefDeProjet.admin']);
+
             if ($user->isAdmin()) {
                 $query = Project::query();
             } elseif ($user->role === 'chef_de_projet') {
@@ -34,15 +30,14 @@ class ProjectController extends Controller
                 $query->where('nom', 'like', '%' . $request->search . '%');
             }
 
-            // Pour les filtres éventuels de statut
             if ($request->filled('statut')) {
                 $query->where('statut', $request->statut);
             }
 
             $projects = $query->with([
-                'users:id,nom,prenom,role',
+                'users:id,nom,prenom',
                 'creator:id,nom,prenom',
-            ])->withCount('tickets')->orderBy('created_at', 'desc')->paginate(50); // Mieux pour le Kanban
+            ])->withCount('tickets')->orderBy('created_at', 'desc')->paginate(50);
 
             return response()->json($projects);
         } catch (\Exception $e) {
@@ -54,12 +49,13 @@ class ProjectController extends Controller
     {
         try {
             $user    = JWTAuth::parseToken()->authenticate();
+            $user->load(['membre', 'chefDeProjet.admin']);
+
             $project = Project::with([
-                'users:id,nom,prenom,role,email',
+                'users:id,nom,prenom,email',
                 'creator:id,nom,prenom',
             ])->findOrFail($id);
 
-            // Admin: tout voir. Chef: seulement les siens. Membres: seulement assignés
             if ($user->isAdmin()) {
                 // ok
             } elseif ($user->role === 'chef_de_projet') {
@@ -73,7 +69,6 @@ class ProjectController extends Controller
                 }
             }
 
-            // Ajouter le workload de chaque membre manuellement
             $project->users->each(function ($member) {
                 $member->active_tickets_count = \App\Models\Ticket::where('developpeur_id', $member->id)
                     ->where('assignment_status', 'approved')
@@ -93,6 +88,7 @@ class ProjectController extends Controller
     {
         try {
             $creator = JWTAuth::parseToken()->authenticate();
+            $creator->load(['membre', 'chefDeProjet.admin']);
 
             if (!$creator->isManager()) {
                 return response()->json(['message' => 'Non autorisé'], 403);
@@ -112,10 +108,12 @@ class ProjectController extends Controller
                 'user_ids.min'      => 'Vous devez assigner au moins un membre au projet.',
             ]);
 
-            // Vérifier que tous les membres sont actifs
-            $inactiveUsers = User::whereIn('id', $request->user_ids)
-                                 ->where('statut', '!=', 'actif')
-                                 ->pluck('email');
+            // Vérifier que tous les membres sont actifs (via membre->statut)
+            $inactiveUsers = User::with('membre')
+                ->whereIn('id', $request->user_ids)
+                ->get()
+                ->filter(fn($u) => $u->statut !== 'actif')
+                ->pluck('email');
 
             if ($inactiveUsers->isNotEmpty()) {
                 return response()->json([
@@ -133,7 +131,6 @@ class ProjectController extends Controller
                 'created_by'  => $creator->id,
             ]);
 
-            // Assigner les membres et envoyer les emails
             $project->users()->sync($request->user_ids);
 
             $newUsers = User::whereIn('id', $request->user_ids)->get();
@@ -160,47 +157,35 @@ class ProjectController extends Controller
             $user = JWTAuth::parseToken()->authenticate();
             $project = Project::findOrFail($id);
 
-            // Seul le créateur peut modifier
             if ($project->created_by !== $user->id) {
                 return response()->json(['message' => "Non autorisé. Seul le créateur du projet peut le modifier."], 403);
             }
 
             $request->validate([
                 'nom'    => 'required|string|max:255',
-                'statut' => 'required|in:ouvert,en_cours,archive',
+                'statut' => 'required|in:ouvert,en_cours,ferme',
             ], [
-                'nom.required'    => 'Le nom du projet est obligatoire.',
-                'statut.in'       => 'Le statut doit être : ouvert, en_cours ou archive.',
+                'nom.required' => 'Le nom du projet est obligatoire.',
+                'statut.in'    => 'Le statut doit être : ouvert, en_cours ou ferme.',
             ]);
 
-            // Empêcher de revenir à 'ouvert' si le projet est déjà commencé
-            if ($request->statut === 'ouvert' && in_array($project->statut, ['en_cours', 'archive'])) {
+            if ($request->statut === 'ouvert' && in_array($project->statut, ['en_cours', 'ferme'])) {
                 return response()->json(['message' => "Un projet déjà en cours ne peut pas repasser à l'état Ouvert."], 422);
             }
 
-            // Bloquer le passage manuel ouvert → en_cours (automatique via premier ticket)
             if ($request->statut === 'en_cours' && $project->statut === 'ouvert') {
                 return response()->json(['message' => "Le projet passe en cours automatiquement lors de la création du premier ticket."], 422);
             }
 
-            // Vérification avant de fermer
-            if ($request->statut === 'archive' && $project->statut !== 'archive') {
+            if ($request->statut === 'ferme' && $project->statut !== 'ferme') {
                 $nonValideTickets = $project->tickets()->where('etat', '!=', 'VALIDE')->count();
                 if ($nonValideTickets > 0) {
                     return response()->json(['message' => "Impossible de fermer le projet. $nonValideTickets ticket(s) ne sont pas validés."], 422);
                 }
             }
 
-            $updateData = $request->only('nom', 'statut', 'description', 'date_debut', 'date_fin');
+            $project->update($request->only('nom', 'statut', 'description', 'date_debut', 'date_fin'));
 
-            // date_cloture automatique quand le projet passe à "archive"
-            if ($request->statut === 'archive' && $project->statut !== 'archive') {
-                $updateData['date_cloture'] = now()->toDateString();
-            }
-
-            $project->update($updateData);
-
-            // Notifier les membres du projet du changement
             $members = $project->users()->pluck('users.id')->toArray();
             foreach ($members as $memberId) {
                 \App\Http\Controllers\NotificationController::createAndBroadcast(
@@ -231,9 +216,9 @@ class ProjectController extends Controller
                 return response()->json(['message' => "Impossible de fermer le projet. $nonValideTickets ticket(s) ne sont pas validés."], 422);
             }
 
-            $project->update(['statut' => 'archive']);
+            $project->update(['statut' => 'ferme']);
 
-            return response()->json(['message' => 'Projet fermé (archivé) avec succès.']);
+            return response()->json(['message' => 'Projet fermé avec succès.']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur lors de la fermeture.', 'error' => $e->getMessage()], 500);
         }
@@ -254,13 +239,15 @@ class ProjectController extends Controller
                 'user_ids.*' => 'exists:users,id',
             ]);
 
-            $inactiveUsers = User::whereIn('id', $request->user_ids)
-                                 ->where('statut', '!=', 'actif')
-                                 ->pluck('email');
+            $inactiveUsers = User::with('membre')
+                ->whereIn('id', $request->user_ids)
+                ->get()
+                ->filter(fn($u) => $u->statut !== 'actif')
+                ->pluck('email');
 
             if ($inactiveUsers->isNotEmpty()) {
                 return response()->json([
-                    'message'        => 'Certains membres ne sont pas actifs et ne peuvent pas être affectés.',
+                    'message'         => 'Certains membres ne sont pas actifs et ne peuvent pas être affectés.',
                     'comptes_bloqués' => $inactiveUsers,
                 ], 422);
             }
@@ -271,7 +258,6 @@ class ProjectController extends Controller
             $project->users()->sync($request->user_ids);
 
             $newUsers = User::whereIn('id', $newUserIds)->get();
-
             foreach ($newUsers as $u) {
                 \App\Http\Controllers\NotificationController::createAndBroadcast(
                     $u->id,
@@ -293,27 +279,31 @@ class ProjectController extends Controller
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
-            
+
             if (!$user->isManager()) {
                 return response()->json(['message' => 'Non autorisé'], 403);
             }
 
             $project = Project::findOrFail($projectId);
-            
-            $developers = $project->users()->where('role', 'developpeur')->get()->map(function ($dev) {
-                $activeCount = \App\Models\Ticket::where('developpeur_id', $dev->id)
-                    ->where('assignment_status', 'approved')
-                    ->whereIn('etat', ['OUVERT', 'EN_COURS'])
-                    ->count();
-                
-                return [
-                    'id' => $dev->id,
-                    'nom' => $dev->nom,
-                    'prenom' => $dev->prenom,
-                    'statut' => $dev->statut,
-                    'active_tickets_count' => $activeCount,
-                ];
-            });
+
+            $developers = $project->users()
+                ->whereHas('membre', fn($q) => $q->where('role', 'developpeur'))
+                ->with('membre')
+                ->get()
+                ->map(function ($dev) {
+                    $activeCount = \App\Models\Ticket::where('developpeur_id', $dev->id)
+                        ->where('assignment_status', 'approved')
+                        ->whereIn('etat', ['OUVERT', 'EN_COURS'])
+                        ->count();
+
+                    return [
+                        'id'                  => $dev->id,
+                        'nom'                 => $dev->nom,
+                        'prenom'              => $dev->prenom,
+                        'statut'              => $dev->statut,
+                        'active_tickets_count' => $activeCount,
+                    ];
+                });
 
             return response()->json($developers, 200);
         } catch (\Exception $e) {

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Membre;
+use App\Models\ChefDeProjet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -16,6 +18,7 @@ class UserController extends Controller
     {
         try {
             $user = JWTAuth::parseToken()->authenticate();
+            $user->load(['membre', 'chefDeProjet.admin']);
             return response()->json([
                 'id'          => $user->id,
                 'nom'         => $user->nom,
@@ -63,7 +66,7 @@ class UserController extends Controller
 
             $user->update([
                 'mot_de_passe'          => Hash::make($request->nouveau_mot_de_passe),
-                'force_password_change' => false, // Réinitialise le flag après le changement obligatoire
+                'force_password_change' => false,
             ]);
             return response()->json(['message' => 'Mot de passe modifié avec succès.']);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -101,9 +104,17 @@ class UserController extends Controller
     public function getUser($id)
     {
         try {
-            $user = User::select('id', 'nom', 'prenom', 'email', 'role', 'statut', 'github_link', 'created_at')
-                        ->findOrFail($id);
-            return response()->json($user);
+            $user = User::with(['membre', 'chefDeProjet.admin'])->findOrFail($id);
+            return response()->json([
+                'id'          => $user->id,
+                'nom'         => $user->nom,
+                'prenom'      => $user->prenom,
+                'email'       => $user->email,
+                'role'        => $user->role,
+                'statut'      => $user->statut,
+                'github_link' => $user->github_link,
+                'created_at'  => $user->created_at,
+            ]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Utilisateur introuvable.'], 404);
         }
@@ -112,7 +123,18 @@ class UserController extends Controller
     public function getAllUsers()
     {
         try {
-            $users = User::select('id', 'nom', 'prenom', 'email', 'role', 'statut', 'github_link', 'created_at')->get();
+            $users = User::with(['membre', 'chefDeProjet.admin'])->get()->map(function ($user) {
+                return [
+                    'id'          => $user->id,
+                    'nom'         => $user->nom,
+                    'prenom'      => $user->prenom,
+                    'email'       => $user->email,
+                    'role'        => $user->role,
+                    'statut'      => $user->statut,
+                    'github_link' => $user->github_link,
+                    'created_at'  => $user->created_at,
+                ];
+            });
             return response()->json($users);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
@@ -123,15 +145,19 @@ class UserController extends Controller
     {
         try {
             $request->validate(['action' => 'required|in:accepter,rejeter']);
-            $user = User::findOrFail($id);
+            $user = User::with('membre')->findOrFail($id);
+
+            if (!$user->membre) {
+                return response()->json(['message' => 'Cet utilisateur n\'est pas un membre.'], 400);
+            }
 
             if ($request->action === 'accepter') {
-                $user->update(['statut' => 'actif']);
+                $user->membre->update(['statut' => 'actif']);
                 $msg       = 'Compte activé.';
                 $emailBody = "Bonjour {$user->prenom},\n\nVotre demande d'accès a été acceptée.\nBienvenue !\n— L'équipe Ticketing";
                 $emailSubj = "✅ Votre compte a été activé";
             } else {
-                $user->update(['statut' => 'rejete']);
+                $user->membre->update(['statut' => 'rejete']);
                 $msg       = 'Compte rejeté.';
                 $emailBody = "Bonjour {$user->prenom},\n\nVotre demande d'accès a été refusée.\n— L'équipe Ticketing";
                 $emailSubj = "❌ Demande d'accès refusée";
@@ -139,9 +165,7 @@ class UserController extends Controller
 
             try {
                 Mail::raw($emailBody, fn($m) => $m->to($user->email)->subject($emailSubj));
-            } catch (\Exception $mEx) {
-                // Ignore email failure
-            }
+            } catch (\Exception $mEx) {}
 
             return response()->json(['message' => $msg]);
         } catch (\Exception $e) {
@@ -153,21 +177,22 @@ class UserController extends Controller
     {
         try {
             $requester = auth()->user();
-            $user      = User::findOrFail($id);
+            $user      = User::with(['membre', 'chefDeProjet.admin'])->findOrFail($id);
 
-            // Un utilisateur ne peut pas désactiver son propre compte
             if ($id == $requester->id)
                 return response()->json(['message' => 'Vous ne pouvez pas désactiver votre propre compte.'], 403);
 
-            // L'admin ne peut jamais être désactivé
             if ($user->role === 'admin')
                 return response()->json(['message' => 'Impossible de désactiver un administrateur.'], 403);
 
-            // Seul l'admin peut désactiver un chef_de_projet
             if ($user->role === 'chef_de_projet' && $requester->role !== 'admin')
                 return response()->json(['message' => 'Seul l\'administrateur peut désactiver un chef de projet.'], 403);
 
-            $user->update(['statut' => 'desactive']);
+            // Désactiver via membre
+            if ($user->membre) {
+                $user->membre->update(['statut' => 'desactive']);
+            }
+
             return response()->json(['message' => 'Utilisateur désactivé avec succès.']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
@@ -177,12 +202,12 @@ class UserController extends Controller
     public function reactivateUser($id)
     {
         try {
-            $user = User::findOrFail($id);
+            $user = User::with('membre')->findOrFail($id);
 
-            if ($user->statut !== 'desactive')
+            if (!$user->membre || $user->membre->statut !== 'desactive')
                 return response()->json(['message' => 'Ce compte n\'est pas désactivé.'], 400);
 
-            $user->update(['statut' => 'actif']);
+            $user->membre->update(['statut' => 'actif']);
             return response()->json(['message' => 'Compte réactivé avec succès.']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
@@ -193,16 +218,13 @@ class UserController extends Controller
     {
         try {
             $requester = auth()->user();
-            $user      = User::findOrFail($id);
+            $user      = User::with('membre')->findOrFail($id);
 
-            // Seul un admin peut modifier un autre admin ou promouvoir en admin
             if (
                 ($user->role === 'admin' || $request->role === 'admin')
                 && $requester->role !== 'admin'
             ) {
-                return response()->json([
-                    'message' => 'Seul un administrateur peut modifier le rôle admin.',
-                ], 403);
+                return response()->json(['message' => 'Seul un administrateur peut modifier le rôle admin.'], 403);
             }
 
             $validated = $request->validate([
@@ -211,14 +233,24 @@ class UserController extends Controller
                 'email'  => 'required|email|unique:users,email,' . $id,
                 'role'   => 'required|in:testeur,developpeur,chef_de_projet,admin',
             ]);
-            $user->update($validated);
+
+            $user->update([
+                'nom'    => $validated['nom'],
+                'prenom' => $validated['prenom'],
+                'email'  => $validated['email'],
+            ]);
+
+            // Mettre à jour le role dans membre si c'est un membre
+            if ($user->membre && in_array($validated['role'], ['testeur', 'developpeur'])) {
+                $user->membre->update(['role' => $validated['role']]);
+            }
+
             return response()->json(['message' => 'Utilisateur mis à jour.']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Erreur serveur.', 'error' => $e->getMessage()], 500);
         }
     }
 
-    // ⚠️ Suppression définitive INTERDITE — traçabilité obligatoire (spec Sprint 1)
     public function deleteUser($id)
     {
         return response()->json([
