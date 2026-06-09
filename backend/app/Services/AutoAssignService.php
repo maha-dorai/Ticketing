@@ -18,8 +18,8 @@ class AutoAssignService
         $testeur = $ticket->testeur;
 
         $developers = $project->users()
-            ->where('role', 'developpeur')
-            ->where('statut', 'actif')
+            ->whereHas('membre', fn($q) => $q->where('role', 'developpeur')->where('statut', 'actif'))
+            ->with('membre')
             ->get();
 
         if ($developers->isEmpty()) {
@@ -85,12 +85,14 @@ class AutoAssignService
         ?User $proposedDev,
         ?string $failureReason = null
     ): void {
-        $admins = User::where('role', 'admin')->where('statut', 'actif')->get();
+        // Admins = users avec chefDeProjet + admin
+        $admins = User::whereHas('chefDeProjet', fn($q) => $q->whereHas('admin'))->get();
+
+        // Chef de projet créateur du projet (non admin)
         $chef = User::where('id', $ticket->project->created_by)
-                    ->where('role', 'chef_de_projet')
-                    ->where('statut', 'actif')
-                    ->first();
-        
+            ->whereHas('chefDeProjet', fn($q) => $q->whereDoesntHave('admin'))
+            ->first();
+
         $managersToNotify = $admins;
         if ($chef) {
             $managersToNotify->push($chef);
@@ -112,8 +114,8 @@ class AutoAssignService
                 . "Assignation automatique impossible. {$failureReason}";
         }
 
-        foreach ($managersToNotify as $admin) {
-            NotificationController::createAndBroadcast($admin->id, $message, $ticket->id);
+        foreach ($managersToNotify as $manager) {
+            NotificationController::createAndBroadcast($manager->id, $message, $ticket->id);
         }
     }
 }

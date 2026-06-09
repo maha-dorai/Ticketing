@@ -248,7 +248,38 @@
         </template>
       </div>
     </div>
-  </AppLayout>
+  </AppLayout>    <!-- ── Modal réclamation ──────────────────────────────────────────────── -->
+    <div v-if="showReclModal" class="ds-modal-backdrop" @click.self="cancelRecl">
+      <div class="ds-modal ds-modal--sm" role="dialog" aria-labelledby="recl-title">
+        <div class="ds-modal__header">
+          <h3 id="recl-title" class="ds-modal__title">
+            <AlertTriangle :size="18" aria-hidden="true" />
+            Soumettre une réclamation
+          </h3>
+          <ModalCloseBtn @click="cancelRecl" />
+        </div>
+        <div class="ds-modal__body">
+          <p class="ds-caption" style="margin-bottom: 0.75rem">
+            Expliquez pourquoi ce ticket nécessite une réclamation.
+          </p>
+          <textarea
+            v-model="reclRaison"
+            class="ds-input"
+            rows="4"
+            placeholder="Ex : Le bug…"
+            style="width:100%; resize:vertical"
+            autofocus
+          />
+        </div>
+        <div class="ds-modal__footer">
+          <BaseButton variant="secondary" @click="cancelRecl">Annuler</BaseButton>
+          <BaseButton variant="primary" :disabled="!reclRaison.trim()" @click="confirmRecl">
+            Confirmer la réclamation
+          </BaseButton>
+        </div>
+      </div>
+    </div>
+
 </template>
 
 <script setup>
@@ -281,7 +312,32 @@ const projectName = ref('');
 const loading = ref(false);
 const dragging = ref(null);
 const dragTarget = ref(null);
-const showCreateModal = ref(false);
+const showReclModal  = ref(false);
+const reclRaison     = ref('');
+const pendingRecl    = ref(null);
+
+const cancelRecl = () => {
+  showReclModal.value = false;
+  reclRaison.value    = '';
+  pendingRecl.value   = null;
+  fetchTickets();
+};
+
+const confirmRecl = async () => {
+  if (!pendingRecl.value || !reclRaison.value.trim()) return;
+  const { ticket, etat } = pendingRecl.value;
+  showReclModal.value = false;
+  ticket.etat = etat;
+  try {
+    await api.put(`/tickets/${ticket.id}/status`, { etat, raison_reclamation: reclRaison.value.trim() });
+    msg('Réclamation soumise', true);
+  } catch (e) {
+    msg(e.response?.data?.message || 'Erreur lors du déplacement.', false);
+    await fetchTickets();
+  }
+  reclRaison.value  = '';
+  pendingRecl.value = null;
+};
 const submitting = ref(false);
 const formError = ref('');
 const assignResult = ref(null);
@@ -355,9 +411,17 @@ const onDrop = async (etat) => {
   const ticket = dragging.value;
   dragging.value = null;
   if (!canTransition(ticket, etat)) { msg('Transition non autorisée.', false); return; }
+
+  if (etat === 'RECLAMATION') {
+    pendingRecl.value   = { ticket, etat };
+    reclRaison.value    = '';
+    showReclModal.value = true;
+    return;
+  }
+
   ticket.etat = etat;
   try {
-    await api.put(`/tickets/${ticket.id}/status`, { etat });
+    await api.put(`/tickets/${ticket.id}/status`, { etat, raison_reclamation: null });
     msg('Statut mis à jour', true);
   } catch (e) {
     msg(e.response?.data?.message || 'Erreur lors du déplacement.', false);
@@ -369,7 +433,7 @@ const canDrag = (ticket) => {
   const role = currentUser?.role;
   if (isManager) return false;
   if (role === 'developpeur') return ticket.developpeur_id === currentUser?.id && ticket.assignment_status === 'approved';
-  if (role === 'testeur') return ticket.testeur_id === currentUser?.id && ticket.etat === 'A_TESTER';
+  if (role === 'testeur') return ticket.created_by === currentUser?.id && ticket.etat === 'A_TESTER';
   return false;
 };
 
@@ -377,7 +441,7 @@ const canTransition = (ticket, toEtat) => {
   const role = currentUser?.role;
   if (isManager) return false;
   if (role === 'developpeur') return ticket.developpeur_id === currentUser?.id && ticket.assignment_status === 'approved' && ['OUVERT', 'EN_COURS', 'A_TESTER'].includes(toEtat);
-  if (role === 'testeur') return ticket.testeur_id === currentUser?.id && ticket.etat === 'A_TESTER' && ['RECLAMATION', 'VALIDE'].includes(toEtat);
+  if (role === 'testeur') return ticket.created_by === currentUser?.id && ticket.etat === 'A_TESTER' && ['RECLAMATION', 'VALIDE'].includes(toEtat);
   return false;
 };
 

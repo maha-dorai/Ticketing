@@ -72,6 +72,10 @@
             <div class="ds-info-item__label">Date de fin</div>
             <div class="ds-info-item__value">{{ fmt(project.date_fin) }}</div>
           </div>
+          <div v-if="deadlineBadge" class="ds-info-item">
+            <div class="ds-info-item__label">Temps restant</div>
+            <span class="deadline-badge" :class="deadlineBadge.color">{{ deadlineBadge.label }}</span>
+          </div>
         </div>
 
         <div v-if="project.users?.length" class="ds-filter-panel">
@@ -539,6 +543,16 @@ const ini = (u) => (u.prenom?.[0] || '') + (u.nom?.[0] || '');
 const statusLabel = (s) => ({ ouvert: 'Ouvert', en_cours: 'En cours', archive: 'Archivé' }[s] || s);
 const statusBadge = (s) => ({ ouvert: 'open', en_cours: 'progress', archive: 'closed' }[s] || 'neutral');
 
+const deadlineBadge = computed(() => {
+  if (!project.value?.date_fin || project.value?.statut === 'archive') return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const fin = new Date(project.value.date_fin);
+  const diff = Math.ceil((fin - today) / 86400000);
+  if (diff < 0)  return { label: `En retard de ${Math.abs(diff)}j`, color: 'badge-red' };
+  if (diff <= 14) return { label: `${diff}j restants`, color: 'badge-yellow' };
+  return { label: `${diff}j restants`, color: 'badge-green' };
+});
+
 const roleLabel = (r) => ({ testeur: 'Testeur', developpeur: 'Développeur', admin: 'Admin' }[r] || r);
 const roleBadge = (r) => ({ testeur: 'success', developpeur: 'brand', admin: 'neutral' }[r] || 'neutral');
 
@@ -555,3 +569,16 @@ const prioBadge = (p) =>
     CRITIQUE: 'priority-critical',
   }[p] || 'neutral');
 </script>
+
+<style scoped>
+.deadline-badge {
+  display: inline-block;
+  padding: .25rem .65rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 600;
+}
+.badge-green  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.badge-yellow { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.badge-red    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+</style>

@@ -2,11 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Models\ChefDeProjet;
 use App\Models\Comment;
+use App\Models\Membre;
 use App\Models\Notification;
 use App\Models\Project;
 use App\Models\Ticket;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -14,95 +17,114 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // ── 1. Comptes fixes (toujours disponibles pour se connecter) ──────────
+        Model::unguard();
 
+        // ── 1. Chefs de projet ─────────────────────────────────────────────────
         $chefProjet1 = User::firstOrCreate(['email' => 'chef1@platform.com'], [
             'nom'          => 'Martin',
             'prenom'       => 'Lucas',
             'mot_de_passe' => Hash::make('Chef@1234'),
-            'role'         => 'chef_de_projet',
-            'statut'       => 'actif',
         ]);
+        ChefDeProjet::firstOrCreate(['user_id' => $chefProjet1->id]);
+        $admin = $chefProjet1; // utilisé pour les notifications
 
         $chefProjet2 = User::firstOrCreate(['email' => 'chef2@platform.com'], [
             'nom'          => 'Benali',
             'prenom'       => 'Sara',
             'mot_de_passe' => Hash::make('Chef@1234'),
-            'role'         => 'chef_de_projet',
-            'statut'       => 'actif',
         ]);
+        ChefDeProjet::firstOrCreate(['user_id' => $chefProjet2->id]);
 
+        // ── 2. Testeurs ────────────────────────────────────────────────────────
         $testeur1 = User::firstOrCreate(['email' => 'chaimazaoui14@gmail.com'], [
             'nom'          => 'Zaoui',
             'prenom'       => 'Chaima',
             'mot_de_passe' => Hash::make('Chaima@1234'),
-            'role'         => 'testeur',
-            'statut'       => 'actif',
+        ]);
+        Membre::firstOrCreate(['user_id' => $testeur1->id], [
+            'role' => 'testeur', 'statut' => 'actif',
         ]);
 
         $testeur2 = User::firstOrCreate(['email' => 'testeur2@platform.com'], [
             'nom'          => 'Dupont',
             'prenom'       => 'Julie',
             'mot_de_passe' => Hash::make('Test@1234'),
-            'role'         => 'testeur',
-            'statut'       => 'actif',
+        ]);
+        Membre::firstOrCreate(['user_id' => $testeur2->id], [
+            'role' => 'testeur', 'statut' => 'actif',
+        ]);
+
+        // ── 3. Développeurs ────────────────────────────────────────────────────
+        $dev1 = User::firstOrCreate(['email' => 'dev1@platform.com'], [
+            'nom'          => 'Laurent',
+            'prenom'       => 'Nicolas',
+            'mot_de_passe' => Hash::make('Dev@1234'),
+        ]);
+        Membre::firstOrCreate(['user_id' => $dev1->id], [
+            'role' => 'developpeur', 'statut' => 'actif',
+            'github_link' => 'https://github.com/nlaurent',
         ]);
 
         $dev2 = User::firstOrCreate(['email' => 'dev2@platform.com'], [
             'nom'          => 'Rousseau',
             'prenom'       => 'Thomas',
             'mot_de_passe' => Hash::make('Dev@1234'),
-            'role'         => 'developpeur',
-            'statut'       => 'actif',
-            'github_link'  => 'https://github.com/trouseau',
+        ]);
+        Membre::firstOrCreate(['user_id' => $dev2->id], [
+            'role' => 'developpeur', 'statut' => 'actif',
+            'github_link' => 'https://github.com/trouseau',
         ]);
 
         $dev3 = User::firstOrCreate(['email' => 'dev3@platform.com'], [
             'nom'          => 'Khelifi',
             'prenom'       => 'Amine',
             'mot_de_passe' => Hash::make('Dev@1234'),
-            'role'         => 'developpeur',
-            'statut'       => 'actif',
-            'github_link'  => 'https://github.com/akhelifi',
+        ]);
+        Membre::firstOrCreate(['user_id' => $dev3->id], [
+            'role' => 'developpeur', 'statut' => 'actif',
+            'github_link' => 'https://github.com/akhelifi',
         ]);
 
         $dev4 = User::firstOrCreate(['email' => 'dev4@platform.com'], [
             'nom'          => 'Petit',
             'prenom'       => 'Emma',
             'mot_de_passe' => Hash::make('Dev@1234'),
-            'role'         => 'developpeur',
-            'statut'       => 'actif',
-            'github_link'  => 'https://github.com/epetit',
+        ]);
+        Membre::firstOrCreate(['user_id' => $dev4->id], [
+            'role' => 'developpeur', 'statut' => 'actif',
+            'github_link' => 'https://github.com/epetit',
         ]);
 
-        // Comptes en attente de validation (pour tester la gestion des membres)
-        User::firstOrCreate(['email' => 'pending1@platform.com'], [
+        // ── 4. Comptes en attente / rejeté ─────────────────────────────────────
+        $pending1 = User::firstOrCreate(['email' => 'pending1@platform.com'], [
             'nom'          => 'Bernard',
             'prenom'       => 'Alex',
             'mot_de_passe' => Hash::make('Pending@1234'),
-            'role'         => 'developpeur',
-            'statut'       => 'en_attente',
-            'github_link'  => 'https://github.com/abernard',
+        ]);
+        Membre::firstOrCreate(['user_id' => $pending1->id], [
+            'role' => 'developpeur', 'statut' => 'en_attente',
+            'github_link' => 'https://github.com/abernard',
         ]);
 
-        User::firstOrCreate(['email' => 'pending2@platform.com'], [
+        $pending2 = User::firstOrCreate(['email' => 'pending2@platform.com'], [
             'nom'          => 'Moreau',
             'prenom'       => 'Léa',
             'mot_de_passe' => Hash::make('Pending@1234'),
-            'role'         => 'testeur',
-            'statut'       => 'en_attente',
+        ]);
+        Membre::firstOrCreate(['user_id' => $pending2->id], [
+            'role' => 'testeur', 'statut' => 'en_attente',
         ]);
 
-        User::firstOrCreate(['email' => 'rejected@platform.com'], [
+        $rejected = User::firstOrCreate(['email' => 'rejected@platform.com'], [
             'nom'          => 'Garnier',
             'prenom'       => 'Paul',
             'mot_de_passe' => Hash::make('Rejected@1234'),
-            'role'         => 'developpeur',
-            'statut'       => 'rejete',
-            'github_link'  => 'https://github.com/pgarnier',
+        ]);
+        Membre::firstOrCreate(['user_id' => $rejected->id], [
+            'role' => 'developpeur', 'statut' => 'rejete',
+            'github_link' => 'https://github.com/pgarnier',
         ]);
 
-        // ── 2. Projets réalistes ───────────────────────────────────────────────
 
         $project1 = Project::firstOrCreate(['nom' => 'Refonte du site e-commerce'], [
             'description' => 'Refonte complète de la plateforme de vente en ligne : nouvelle UX, paiement sécurisé, intégration des stocks en temps réel.',
@@ -137,20 +159,17 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $project5 = Project::firstOrCreate(['nom' => 'Portail client self-service'], [
-            'description' => 'Portail en ligne permettant aux clients de gérer leurs abonnements, factures et tickets de support.',
-            'statut'      => 'archive',
-            'date_debut'  => now()->subMonths(8),
-            'date_fin'    => now()->subMonths(1),
-            'created_by' => $chefProjet1->id,
+            'description'   => 'Portail en ligne permettant aux clients de gérer leurs abonnements, factures et tickets de support.',
+            'statut'        => 'archive',
+            'date_debut'    => now()->subMonths(8),
+            'date_fin'      => now()->subMonths(1),
+            'date_cloture'  => now()->subMonths(1),
+            'created_by'    => $chefProjet1->id,
         ]);
 
         $projects = [$project1, $project2, $project3, $project4, $project5];
 
         // ── 3. Membres des projets ─────────────────────────────────────────────
-
-        $devs    = [$dev1, $dev2, $dev3, $dev4];
-        $testeurs = [$testeur1, $testeur2];
-        $chefs   = [$chefProjet1, $chefProjet2];
 
         // Projet 1 — refonte e-commerce
         $project1->users()->syncWithoutDetaching([$dev1->id, $dev2->id, $dev3->id, $testeur1->id, $chefProjet1->id]);
@@ -169,6 +188,8 @@ class DatabaseSeeder extends Seeder
         $this->seedProject2Tickets($project2, $dev2, $dev4, $testeur2, $admin);
         $this->seedProject3Tickets($project3, $dev1, $dev3, $dev4, $testeur1, $testeur2, $admin);
         $this->seedProject4Tickets($project4, $dev1, $dev2, $testeur1, $admin);
+
+        Model::reguard();
     }
 
     // ── Projet 1 : Refonte e-commerce ─────────────────────────────────────────
@@ -294,7 +315,7 @@ class DatabaseSeeder extends Seeder
         foreach ($tickets as $data) {
             $ticket = Ticket::create(array_merge($data, [
                 'project_id' => $project->id,
-                'testeur_id' => $testeur->id,
+                'created_by' => $testeur->id,
             ]));
 
             $this->addComments($ticket, $project);
@@ -403,7 +424,7 @@ class DatabaseSeeder extends Seeder
         foreach ($tickets as $data) {
             $ticket = Ticket::create(array_merge($data, [
                 'project_id' => $project->id,
-                'testeur_id' => $testeur->id,
+                'created_by' => $testeur->id,
             ]));
 
             $this->addComments($ticket, $project);
@@ -436,7 +457,7 @@ class DatabaseSeeder extends Seeder
                 'temps_estime'      => 3,
                 'temps_passe'       => 1,
                 'type'              => 'NOUVEAU',
-                'testeur_id_override' => $testeur1->id,
+                'created_by_override' => $testeur1->id,
             ],
             [
                 'titre'             => 'Le dashboard met plus de 10 secondes à se charger',
@@ -452,7 +473,7 @@ class DatabaseSeeder extends Seeder
                 'temps_estime'      => 8,
                 'temps_passe'       => 0,
                 'type'              => 'NOUVEAU',
-                'testeur_id_override' => $testeur1->id,
+                'created_by_override' => $testeur1->id,
             ],
             [
                 'titre'             => 'Export Excel corrompu pour les rapports > 10 000 lignes',
@@ -467,7 +488,7 @@ class DatabaseSeeder extends Seeder
                 'temps_estime'      => 5,
                 'temps_passe'       => 5,
                 'type'              => 'NOUVEAU',
-                'testeur_id_override' => $testeur2->id,
+                'created_by_override' => $testeur2->id,
             ],
             [
                 'titre'             => 'Ajouter un filtre par période personnalisée',
@@ -482,7 +503,7 @@ class DatabaseSeeder extends Seeder
                 'temps_estime'      => 6,
                 'temps_passe'       => 0,
                 'type'              => 'NOUVEAU',
-                'testeur_id_override' => $testeur2->id,
+                'created_by_override' => $testeur2->id,
             ],
             [
                 'titre'             => 'Les alertes email ne partent pas la nuit',
@@ -497,17 +518,17 @@ class DatabaseSeeder extends Seeder
                 'temps_estime'      => 2,
                 'temps_passe'       => 2,
                 'type'              => 'NOUVEAU',
-                'testeur_id_override' => $testeur1->id,
+                'created_by_override' => $testeur1->id,
             ],
         ];
 
         foreach ($tickets as $data) {
-            $testeurId = $data['testeur_id_override'] ?? $testeur1->id;
-            unset($data['testeur_id_override']);
+            $testeurId = $data['created_by_override'] ?? $testeur1->id;
+            unset($data['created_by_override']);
 
             $ticket = Ticket::create(array_merge($data, [
                 'project_id' => $project->id,
-                'testeur_id' => $testeurId,
+                'created_by' => $testeurId,
             ]));
 
             $this->addComments($ticket, $project);
@@ -589,7 +610,7 @@ class DatabaseSeeder extends Seeder
         foreach ($tickets as $data) {
             $ticket = Ticket::create(array_merge($data, [
                 'project_id' => $project->id,
-                'testeur_id' => $testeur->id,
+                'created_by' => $testeur->id,
             ]));
 
             $this->addComments($ticket, $project);

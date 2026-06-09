@@ -1,104 +1,140 @@
 <template>
-  <div class="ds-field">
-    <label v-if="label" :for="inputId" class="ds-field__label" :class="{ 'ds-field__label--required': required }">
-      {{ label }}
-    </label>
-    <div
-      v-if="$slots.prefix || $slots.suffix"
-      class="ds-input-wrap"
-      :class="{
-        'ds-input-wrap--icon-left': $slots.prefix,
-        'ds-input-wrap--icon-right': $slots.suffix,
-      }"
-    >
-      <span v-if="$slots.prefix" class="ds-input-wrap__icon ds-input-wrap__icon--left">
-        <slot name="prefix" />
-      </span>
-      <input
-        :id="inputId"
-        v-bind="$attrs"
-        :value="modelValue"
-        :type="type"
-        :disabled="disabled"
-        :required="required"
-        :aria-invalid="error ? true : undefined"
-        :aria-describedby="describedBy"
-        class="inputClasses"
-        @input="onInput"
-      />
-      <span v-if="$slots.suffix" class="ds-input-wrap__action">
-        <slot name="suffix" />
-      </span>
-    </div>
-    <input
-      v-else
-      :id="inputId"
-      v-bind="$attrs"
-      :value="modelValue"
-      :type="type"
-      :disabled="disabled"
-      :required="required"
-      :aria-invalid="error ? true : undefined"
-      :aria-describedby="describedBy"
-      class="inputClasses"
-      @input="onInput"
-    />
-    <p v-if="hint && !error" :id="hintId" class="ds-field__hint">{{ hint }}</p>
-    <p v-if="error" :id="errorId" class="ds-field__error" role="alert">{{ error }}</p>
-  </div>
+  <Teleport to="body">
+    <Transition name="modal">
+      <div v-if="modelValue" class="bm-backdrop" @click.self="close" role="dialog" aria-modal="true">
+        <div class="bm-panel" :class="`bm-panel--${size}`">
+
+          <!-- Header -->
+          <div class="bm-header">
+            <h2 class="bm-title">{{ title }}</h2>
+            <button class="bm-close" @click="close" aria-label="Fermer">
+              <X :size="18" />
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="bm-body">
+            <slot />
+          </div>
+
+          <!-- Footer -->
+          <div v-if="$slots.footer" class="bm-footer">
+            <slot name="footer" />
+          </div>
+
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue';
+import { onMounted, onUnmounted } from 'vue';
+import { X } from 'lucide-vue-next';
 
-defineOptions({ inheritAttrs: false });
-
-const props = withDefaults(
-  defineProps<{
-    modelValue?: string | number;
-    label?: string;
-    hint?: string;
-    error?: string;
-    type?: string;
-    size?: 'sm' | 'md' | 'lg';
-    auth?: boolean;
-    disabled?: boolean;
-    required?: boolean;
-  }>(),
-  {
-    modelValue: '',
-    type: 'text',
-    size: 'md',
-    auth: false,
-    disabled: false,
-    required: false,
-  },
-);
-
-const emit = defineEmits<{
-  'update:modelValue': [value: string];
-}>();
-
-const uid = useId();
-const inputId = computed(() => `ds-input-${uid}`);
-const hintId = computed(() => `ds-hint-${uid}`);
-const errorId = computed(() => `ds-error-${uid}`);
-
-const describedBy = computed(() => {
-  if (props.error) return errorId.value;
-  if (props.hint) return hintId.value;
-  return undefined;
+const props = withDefaults(defineProps<{
+  modelValue: boolean;
+  title?: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+}>(), {
+  title: '',
+  size: 'md',
 });
 
-const inputClasses = computed(() => [
-  'ds-input',
-  props.size !== 'md' && `ds-input--${props.size}`,
-  props.auth && 'ds-input--auth',
-  props.error && 'ds-input--error',
-]);
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean];
+}>();
 
-function onInput(event: Event) {
-  const target = event.target as HTMLInputElement;
-  emit('update:modelValue', target.value);
-}
+const close = () => emit('update:modelValue', false);
+
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && props.modelValue) close();
+};
+
+onMounted(() => window.addEventListener('keydown', onKeydown));
+onUnmounted(() => window.removeEventListener('keydown', onKeydown));
 </script>
+
+<style scoped>
+.bm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.bm-panel {
+  background: var(--ds-bg, #fff);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  width: 100%;
+}
+
+.bm-panel--sm  { max-width: 400px; }
+.bm-panel--md  { max-width: 560px; }
+.bm-panel--lg  { max-width: 720px; }
+.bm-panel--xl  { max-width: 960px; }
+
+.bm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--ds-border, #e5e7eb);
+  flex-shrink: 0;
+}
+
+.bm-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ds-text, #111827);
+  margin: 0;
+}
+
+.bm-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--ds-text-muted, #6b7280);
+  cursor: pointer;
+  transition: background .15s;
+}
+.bm-close:hover { background: var(--ds-surface, #f3f4f6); }
+
+.bm-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.bm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: .75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--ds-border, #e5e7eb);
+  flex-shrink: 0;
+}
+
+/* Transition */
+.modal-enter-active,
+.modal-leave-active { transition: opacity .2s ease; }
+.modal-enter-active .bm-panel,
+.modal-leave-active .bm-panel { transition: transform .2s ease, opacity .2s ease; }
+.modal-enter-from,
+.modal-leave-to { opacity: 0; }
+.modal-enter-from .bm-panel,
+.modal-leave-to .bm-panel { transform: scale(.96); opacity: 0; }
+</style>

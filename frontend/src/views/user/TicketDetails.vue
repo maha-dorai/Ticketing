@@ -539,7 +539,7 @@
                   !isManager &&
                   !canDragTicket &&
                   !(currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME') &&
-                  !(currentUser?.role === 'testeur' && ticket.testeur_id === currentUser.id)
+                  !(currentUser?.role === 'testeur' && ticket.created_by === currentUser.id)
                 "
                 class="ds-empty-state"
                 style="padding: 2rem 0"
@@ -756,7 +756,7 @@ const canDragTicket = computed(() => {
     return ticket.value.developpeur_id === currentUser?.id && ticket.value.assignment_status === 'approved';
   }
   if (role === 'testeur') {
-    return ticket.value.testeur_id === currentUser?.id && ticket.value.etat === 'A_TESTER';
+    return ticket.value.created_by === currentUser?.id && ticket.value.etat === 'A_TESTER';
   }
   return false;
 });
