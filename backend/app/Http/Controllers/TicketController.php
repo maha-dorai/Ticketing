@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Mail;
 
 class TicketController extends Controller
 {
-    // Fonction helper pour centraliser les appels de notifications (Pusher/BDD)
     private function notify(int $userId, string $message, int $ticketId): void
     {
         if ($userId) {
@@ -21,15 +20,18 @@ class TicketController extends Controller
         }
     }
 
-    /**
-     * [Sprint 3] Liste des tickets pour remplir le Kanban
-     */
+    private function notifyMany(array $userIds, string $message, int $ticketId): void
+    {
+        foreach (array_unique(array_filter($userIds)) as $userId) {
+            $this->notify($userId, $message, $ticketId);
+        }
+    }
+
     public function index($projectId)
     {
         $user    = Auth::user();
         $project = \App\Models\Project::findOrFail($projectId);
 
-        // Seuls les membres autorisés voient les tickets
         if (!$user->isManager() && !$project->users->contains($user->id)) {
             return response()->json(['message' => 'Accès refusé à ce projet'], 403);
         }
@@ -37,16 +39,13 @@ class TicketController extends Controller
         $query = Ticket::with(['testeur', 'developpeur', 'proposedDeveloppeur', 'attachments'])
             ->where('project_id', $projectId);
 
-        // Règles de visibilité du Kanban :
-        // Un testeur ne voit que les siens
         if ($user->role === 'testeur') {
-            $query->where('testeur_id', $user->id);
+            $query->where('created_by', $user->id);
         }
 
-        // Un dev ne voit que ceux qui lui sont officiellement assignés
         if ($user->role === 'developpeur') {
             $query->where('developpeur_id', $user->id)
-                ->where('assignment_status', 'approved');
+                  ->where('assignment_status', 'approved');
         }
 
         return response()->json($query->get(), 200);
@@ -66,15 +65,11 @@ class TicketController extends Controller
         return response()->json($ticket, 200);
     }
 
-    /**
-     * [Sprint 3] Création d'un Ticket (Remplissage form, IA, et Auto-assignation)
-     */
     public function store(Request $request, $projectId)
     {
         $user    = Auth::user();
         $project = \App\Models\Project::findOrFail($projectId);
 
-        // Règle métier : seul un testeur peut créer un ticket de base
         if ($user->role !== 'testeur') {
             return response()->json(['message' => 'Seuls les testeurs peuvent créer des tickets'], 403);
         }
@@ -96,7 +91,7 @@ class TicketController extends Controller
             'attachments.*'    => 'file|mimes:jpg,jpeg,png,pdf,doc,docx,mp4,mov|max:10240',
         ]);
 
-        // Construction du markdown depuis le formulaire avancé
+        // Build description depuis les champs structurés
         $descriptionStructuree = '';
         if (!empty($validated['etapes'])) {
             $descriptionStructuree .= "**Étapes pour reproduire :**\n" . $validated['etapes'] . "\n\n";
@@ -108,22 +103,21 @@ class TicketController extends Controller
             $descriptionStructuree .= "**Notes supplémentaires :**\n" . $validated['notes'] . "\n\n";
         }
 
-        $descriptionLibre = trim($validated['description'] ?? '');
+        $descriptionLibre      = trim($validated['description'] ?? '');
         $descriptionStructuree = trim($descriptionStructuree);
-        $finalDescription = $descriptionStructuree ?: ($descriptionLibre ?: null);
+        $finalDescription      = $descriptionStructuree ?: ($descriptionLibre ?: null);
 
-        $type = $validated['type'] ?? 'NOUVEAU';
+        $type      = $validated['type'] ?? 'NOUVEAU';
         $parent_id = $type === 'RETOUR' ? ($validated['parent_ticket_id'] ?? null) : null;
 
-        // Création
         $ticket = Ticket::create([
             'titre'                   => $validated['titre'],
             'description'             => $finalDescription,
             'priorite'                => $validated['priorite'] ?? 'BASSE',
             'etat'                    => 'OUVERT',
             'project_id'              => $projectId,
-            'testeur_id'              => $user->id,
-            'developpeur_id'          => null, // Vide au départ, en attente d'assignation
+            'created_by'              => $user->id,
+            'developpeur_id'          => null,
             'proposed_developpeur_id' => null,
             'assignment_status'       => 'none',
             'force_assigned'          => false,
@@ -134,12 +128,13 @@ class TicketController extends Controller
             'parent_ticket_id'        => $parent_id,
         ]);
 
-        // Upload des pièces jointes (Screenshot vidéo etc)
+        // Handle attachments
         if ($request->hasFile('attachments')) {
             foreach ($request->file('attachments') as $file) {
                 $path = $file->store('attachments', 'public');
                 \App\Models\Attachment::create([
                     'ticket_id' => $ticket->id,
+                    'user_id'   => $user->id,
                     'file_name' => $file->getClientOriginalName(),
                     'file_path' => $path,
                     'file_type' => $file->getMimeType(),
@@ -147,12 +142,12 @@ class TicketController extends Controller
             }
         }
 
-        // [Sprint 2] - Le projet passe de 'ouvert' à 'en_cours' tout seul au premier ticket créé
+        // Si le projet était "ouvert", il passe automatiquement "en_cours"
         if ($project->statut === 'ouvert') {
             $project->update(['statut' => 'en_cours']);
         }
 
-        // 🧠 [Sprint 4] Appel silencieux à Llama 3 (Groq) pour catégoriser le ticket
+        // Analyse IA
         try {
             $aiService = new AIService();
             $aiResult  = $aiService->analyzeTicket($ticket->titre, $ticket->description ?? '');
@@ -163,7 +158,7 @@ class TicketController extends Controller
             if (!empty($aiResult['priorite_ia'])) {
                 $aiUpdates['priorite_ia'] = $aiResult['priorite_ia'];
                 if (!$request->has('priorite')) {
-                    $aiUpdates['priorite'] = $aiResult['priorite_ia']; // Surcharge la priorité si l'IA juge que c'est pire
+                    $aiUpdates['priorite'] = $aiResult['priorite_ia'];
                 }
             }
             if (!empty($aiResult['solution_ia'])) {
@@ -176,30 +171,31 @@ class TicketController extends Controller
             \Log::warning('AIService échoué: ' . $e->getMessage());
         }
 
-        // 🎯 Règle de RETOUR : un ticket de retour est assigné D'OFFICE au développeur d'origine
-        $devAssigned = null;
+        // Si ticket RETOUR, assignation directe au développeur du ticket parent
         if ($ticket->type === 'RETOUR' && $ticket->parent_ticket_id) {
             $parentTicket = Ticket::find($ticket->parent_ticket_id);
             if ($parentTicket && $parentTicket->developpeur_id) {
                 $ticket->update([
-                    'developpeur_id' => $parentTicket->developpeur_id,
+                    'developpeur_id'    => $parentTicket->developpeur_id,
                     'assignment_status' => 'approved',
-                    'force_assigned' => true,
+                    'force_assigned'    => true,
                 ]);
-                $devAssigned = clone $ticket;
-
-                $this->notify($parentTicket->developpeur_id, "🔁 Un ticket de retour a été créé et vous a été assigné d'office : {$ticket->titre}", $ticket->id);
+                $this->notify(
+                    $parentTicket->developpeur_id,
+                    "🔁 Un ticket de retour a été créé et vous a été assigné d'office : {$ticket->titre}",
+                    $ticket->id
+                );
             }
         }
 
-        // 🤖 [Sprint 3] Algorithme de charge de travail (AutoAssign) si c'est un ticket neuf
+        // Lancer l'auto-assignation seulement si pas de dev assigné
         if (!$ticket->developpeur_id) {
             $autoAssignService = new AutoAssignService();
-            $autoAssignService->assign($ticket); // Demande à l'algo de trouver le dev le moins chargé
+            $autoAssignService->assign($ticket);
         }
 
         $ticket = $ticket->fresh(['developpeur', 'proposedDeveloppeur']);
-        $dev = $ticket->proposedDeveloppeur ?? $ticket->developpeur;
+        $dev    = $ticket->proposedDeveloppeur ?? $ticket->developpeur;
 
         return response()->json([
             'ticket'      => $ticket,
@@ -217,7 +213,6 @@ class TicketController extends Controller
 
     public function update(Request $request, $id)
     {
-        // Code classique d'édition (omis des détails pour abréger les commentaires)
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
@@ -225,7 +220,10 @@ class TicketController extends Controller
             return response()->json(['message' => 'Seuls les testeurs peuvent modifier des tickets'], 403);
         }
 
-        // Bloque l'édition si le ticket est déjà en cours de résolution
+        if ($ticket->created_by !== $user->id) {
+            return response()->json(['message' => "Non autorisé. Vous n'êtes pas le créateur de ce ticket"], 403);
+        }
+
         if (in_array($ticket->etat, ['EN_COURS', 'A_TESTER', 'RECLAMATION', 'VALIDE'])) {
             return response()->json([
                 'message' => "Modification impossible : le ticket est déjà « {$ticket->etat} ». Seuls les tickets OUVERTS peuvent être modifiés.",
@@ -238,37 +236,37 @@ class TicketController extends Controller
             'priorite'    => 'sometimes|in:BASSE,MOYENNE,HAUTE,CRITIQUE',
         ]);
 
+        if (array_key_exists('description', $validated)) {
+            $validated['description'] = trim($validated['description']) ?: null;
+        }
+
         $ticket->update($validated);
+
         return response()->json($ticket->refresh(), 200);
     }
 
-    /**
-     * [Sprint 3] Cœur du KANBAN : Changement d'états et Drag & Drop
-     * Logique ultra-stricte basée sur les rôles (Workflow)
-     */
     public function changeStatus(Request $request, $id)
     {
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
-        // 1. Qui a le droit de faire glisser une carte ?
         if ($user->isManager()) {
             return response()->json(['message' => 'Les administrateurs ne peuvent pas modifier l\'état des tickets via le Kanban.'], 403);
         } elseif ($user->role === 'developpeur') {
-            // Le développeur ne peut toucher qu'aux tickets qu'il possède et ne peut aller que jusqu'à "A_TESTER"
             if (!$ticket->isAssignmentApproved() || $ticket->developpeur_id !== $user->id) {
                 return response()->json(['message' => 'Non autorisé. Ce ticket ne vous est pas assigné.'], 403);
             }
             $allowed = ['OUVERT', 'EN_COURS', 'A_TESTER'];
         } elseif ($user->role === 'testeur') {
-            // Le testeur ne peut toucher qu'aux siens, et seulement pour Valider ou Faire une Réclamation
-            if ($ticket->testeur_id !== $user->id) {
+            if ($ticket->created_by !== $user->id) {
                 return response()->json(['message' => "Non autorisé. Vous n'êtes pas le créateur de ce ticket."], 403);
             }
             if ($ticket->etat !== 'A_TESTER') {
                 return response()->json(['message' => 'Vous pouvez seulement agir sur un ticket « À tester ».'], 403);
             }
             $allowed = ['RECLAMATION', 'VALIDE'];
+        } else {
+            return response()->json(['message' => 'Non autorisé.'], 403);
         }
 
         $validated = $request->validate([
@@ -280,7 +278,6 @@ class TicketController extends Controller
             return response()->json(['message' => 'Transition non autorisée pour votre rôle.'], 403);
         }
 
-        // Si réclamation, le motif est obligatoire (Retour à l'envoyeur)
         if ($validated['etat'] === 'RECLAMATION' && empty($validated['raison_reclamation'])) {
             return response()->json(['message' => 'Une raison est obligatoire pour soumettre une réclamation.'], 422);
         }
@@ -292,14 +289,31 @@ class TicketController extends Controller
 
         $ticket->update($updateData);
 
-        // [Sprint 4] Notifications spécifiques aux transitions Kanban
+        $etatLabels = [
+            'OUVERT'      => '🟢 À traiter',
+            'EN_COURS'    => '🔵 En cours',
+            'A_TESTER'    => '🧪 À tester',
+            'RECLAMATION' => '⚠️ Réclamation',
+            'VALIDE'      => '✅ Validé',
+        ];
+        $label = $etatLabels[$validated['etat']] ?? $validated['etat'];
+
         if ($validated['etat'] === 'A_TESTER') {
-            $this->notify($ticket->testeur_id, "🧪 Le ticket « {$ticket->titre} » est prêt à tester.", $ticket->id);
+            $this->notify($ticket->created_by,
+                "🧪 Le ticket « {$ticket->titre} » est prêt à tester.",
+                $ticket->id);
         } elseif ($validated['etat'] === 'RECLAMATION') {
-            $raison = $validated['raison_reclamation'];
-            $this->notify($ticket->developpeur_id, "⚠️ Réclamation sur « {$ticket->titre} » — Raison : {$raison}", $ticket->id);
+            $this->notify($ticket->developpeur_id,
+                "⚠️ Réclamation sur « {$ticket->titre} » — Raison : {$validated['raison_reclamation']}",
+                $ticket->id);
         } elseif ($validated['etat'] === 'VALIDE') {
-            $this->notify($ticket->developpeur_id, "✅ Le ticket « {$ticket->titre} » a été validé.", $ticket->id);
+            $this->notify($ticket->developpeur_id,
+                "✅ Le ticket « {$ticket->titre} » a été validé par le testeur.",
+                $ticket->id);
+        } else {
+            $this->notify($ticket->created_by,
+                "🔄 Le ticket « {$ticket->titre} » est maintenant : {$label}",
+                $ticket->id);
         }
 
         return response()->json($ticket->fresh(), 200);
@@ -311,9 +325,6 @@ class TicketController extends Controller
         return $this->changeStatus($request, $id);
     }
 
-    /**
-     * [Sprint 3] L'administrateur VALIDE la proposition de l'algorithme d'AutoAssign.
-     */
     public function accept(Request $request, $id)
     {
         $user   = Auth::user();
@@ -323,37 +334,77 @@ class TicketController extends Controller
             return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent valider l\'assignation'], 403);
         }
 
+        if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
+            return response()->json(['message' => 'Non autorisé. Ce projet ne vous appartient pas.'], 403);
+        }
+
+        if ($ticket->assignment_status === 'approved') {
+            return response()->json(['message' => 'Cette assignation a déjà été validée.'], 409);
+        }
+
+        if ($ticket->assignment_status !== 'pending' || !$ticket->proposed_developpeur_id) {
+            return response()->json(['message' => 'Aucune assignation en attente de validation.'], 400);
+        }
+
         $dev = User::findOrFail($ticket->proposed_developpeur_id);
 
-        // Transforme la proposition en assignation ferme
         $ticket->update([
             'developpeur_id'          => $dev->id,
             'proposed_developpeur_id' => null,
             'assignment_status'       => 'approved',
         ]);
 
-        // Nettoie les notifs inutiles
-        \App\Models\Notification::where('ticket_id', $ticket->id)->where('message', 'LIKE', '%validation%')->delete();
+        \App\Models\Notification::where('ticket_id', $ticket->id)
+            ->where('message', 'LIKE', '%validation%')
+            ->delete();
 
-        // Notifie le Dev
-        $this->notify($dev->id, "🎫 Nouveau ticket assigné et validé par l'Admin : « {$ticket->titre} »", $ticket->id);
-        try { Mail::to($dev->email)->send(new TicketAssigned($ticket->load('project'), $dev, 'developpeur')); } catch (\Exception $e) {}
+        $devMessage = "🎫 Nouveau ticket assigné et validé par l'Admin : « {$ticket->titre} » — Priorité : {$ticket->priorite}";
+        if ($ticket->force_assigned) {
+            $devMessage = "🚨 URGENT: Ticket CRITIQUE assigné et validé : « {$ticket->titre} »";
+        }
 
-        return response()->json(['message' => 'Assignation validée.', 'ticket' => $ticket->fresh(['developpeur'])], 200);
+        $this->notify($dev->id, $devMessage, $ticket->id);
+
+        try {
+            Mail::to($dev->email)->send(new TicketAssigned($ticket->load('project'), $dev, 'developpeur'));
+        } catch (\Exception $e) {}
+
+        $this->notify(
+            $ticket->created_by,
+            "✅ Votre ticket « {$ticket->titre} » a été assigné à {$dev->prenom} {$dev->nom} (validation admin).",
+            $ticket->id
+        );
+
+        return response()->json([
+            'message' => 'Assignation validée.',
+            'ticket'  => $ticket->fresh(['developpeur']),
+        ], 200);
     }
 
-    /**
-     * [Sprint 3] L'administrateur REFUSE la proposition de l'algorithme.
-     */
     public function reject(Request $request, $id)
     {
         $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
 
+        if (!$user->isManager()) {
+            return response()->json(['message' => 'Non autorisé. Seuls les administrateurs peuvent refuser l\'assignation'], 403);
+        }
+
+        if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
+            return response()->json(['message' => 'Non autorisé. Ce projet ne vous appartient pas.'], 403);
+        }
+
+        if ($ticket->assignment_status === 'approved') {
+            return response()->json(['message' => 'Impossible de refuser une assignation déjà validée.'], 409);
+        }
+
+        if ($ticket->assignment_status !== 'pending' || !$ticket->proposed_developpeur_id) {
+            return response()->json(['message' => 'Aucune assignation en attente de validation.'], 400);
+        }
+
         $rejectedBy = $ticket->rejected_by ?? [];
         $devId      = $ticket->proposed_developpeur_id;
 
-        // On ajoute ce dev à la liste noire pour ce ticket, pour que l'algo ne le repropose plus
         if (!in_array($devId, $rejectedBy)) {
             $rejectedBy[] = $devId;
         }
@@ -365,33 +416,65 @@ class TicketController extends Controller
             'rejected_by'             => $rejectedBy,
         ]);
 
-        return response()->json(['message' => 'Assignation refusée. Veuillez assigner manuellement un développeur.', 'ticket' => $ticket], 200);
+        \App\Models\Notification::where('ticket_id', $ticket->id)
+            ->where('message', 'LIKE', '%validation%')
+            ->delete();
+
+        return response()->json([
+            'message' => 'Assignation refusée. Veuillez assigner manuellement un développeur.',
+            'ticket'  => $ticket,
+        ], 200);
     }
 
-    /**
-     * [Sprint 3] Assignation manuelle forcée par un Admin/Chef
-     */
     public function reassign(Request $request, $id)
     {
-        $request->validate(['developpeur_id' => 'required|exists:users,id']);
+        $user   = Auth::user();
         $ticket = Ticket::findOrFail($id);
-        $dev = User::findOrFail($request->developpeur_id);
+
+        if (!$user->isManager()) {
+            return response()->json(['message' => 'Seuls les administrateurs ou les chefs de projet peuvent assigner un développeur'], 403);
+        }
+
+        if ($user->role === 'chef_de_projet' && $ticket->project->created_by !== $user->id) {
+            return response()->json(['message' => 'Non autorisé. Ce projet ne vous appartient pas.'], 403);
+        }
+
+        $validated = $request->validate([
+            'developpeur_id' => 'required|exists:users,id',
+        ]);
+
+        $dev = User::with('membre')->findOrFail($validated['developpeur_id']);
+
+        if ($dev->role !== 'developpeur') {
+            return response()->json(['message' => 'L\'utilisateur sélectionné n\'est pas un développeur'], 400);
+        }
 
         $ticket->update([
             'developpeur_id'          => $dev->id,
             'proposed_developpeur_id' => null,
             'assignment_status'       => 'approved',
-            'force_assigned'          => true, // Marque que c'est un choix humain direct
+            'force_assigned'          => true,
         ]);
 
-        $this->notify($dev->id, "🎫 Un administrateur vous a assigné le ticket « {$ticket->titre} ».", $ticket->id);
-        
+        $this->notify(
+            $dev->id,
+            "🎫 Un administrateur vous a assigné le ticket « {$ticket->titre} ».",
+            $ticket->id
+        );
+
+        try {
+            Mail::to($dev->email)->send(new TicketAssigned($ticket->load('project'), $dev, 'developpeur'));
+        } catch (\Exception $e) {}
+
+        $this->notify(
+            $ticket->created_by,
+            "✅ Votre ticket « {$ticket->titre} » a été assigné à {$dev->prenom} {$dev->nom}.",
+            $ticket->id
+        );
+
         return response()->json($ticket->fresh(['developpeur']), 200);
     }
 
-    /**
-     * [Sprint 4] Enregistrement du temps passé (Time Tracking) par le dev.
-     */
     public function logTime(Request $request, $id)
     {
         $user   = Auth::user();
@@ -401,31 +484,45 @@ class TicketController extends Controller
             return response()->json(['message' => 'Seul le développeur assigné peut enregistrer du temps'], 403);
         }
 
-        $validated = $request->validate(['temps_ajoute' => 'required|numeric|min:0.1']);
+        $validated = $request->validate([
+            'temps_ajoute' => 'required|numeric|min:0.1',
+        ]);
 
-        // Ajoute au compteur total
         $ticket->temps_passe += $validated['temps_ajoute'];
         $ticket->save();
+
+        // Enregistrer dans time_logs
+        \App\Models\TimeLog::create([
+            'ticket_id' => $ticket->id,
+            'user_id'   => $user->id,
+            'heures'    => $validated['temps_ajoute'],
+        ]);
+
+        $this->notify($ticket->created_by, "⏱️ Du temps a été enregistré sur le ticket « {$ticket->titre} »", $ticket->id);
 
         return response()->json(['message' => 'Temps enregistré avec succès', 'ticket' => $ticket], 200);
     }
 
-    // [Sprint 4] Preview de l'IA (Avant validation)
     public function analyzePreview(Request $request)
     {
-        $validated = $request->validate(['titre' => 'required|string|max:255', 'description' => 'nullable|string']);
+        $validated = $request->validate([
+            'titre'       => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
         $aiService = new AIService();
-        return response()->json($aiService->analyzeTicket($validated['titre'], $validated['description'] ?? ''), 200);
+        $result    = $aiService->analyzeTicket($validated['titre'], $validated['description'] ?? '');
+
+        return response()->json($result, 200);
     }
 
-    // [Sprint 4] Analyse IA d'un ticket déjà existant
     public function analyzeAI(Request $request, $id)
     {
         $ticket = Ticket::findOrFail($id);
+
         $aiService = new AIService();
         $aiResult  = $aiService->analyzeTicket($ticket->titre, $ticket->description ?? '');
-        
-        // Met à jour la base avec les retours Groq
+
         $aiUpdates = array_filter([
             'categorie_ia' => $aiResult['categorie_ia'] ?? null,
             'priorite_ia'  => $aiResult['priorite_ia']  ?? null,

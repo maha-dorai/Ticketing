@@ -9,7 +9,7 @@ class AIService
 {
     private string $apiKey;
     private string $apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
-    private string $model  = 'llama-3.3-70b-versatile'; // Modèle IA extrêmement performant de Meta
+    private string $model  = 'llama-3.3-70b-versatile';
 
     public function __construct()
     {
@@ -17,13 +17,10 @@ class AIService
     }
 
     /**
-     * [Sprint 4] Analyse du ticket par l'Intelligence Artificielle.
-     * Cette fonction prend le titre et la description d'un bug, et envoie un prompt à l'API Llama 3 via Groq.
-     * Le but est de catégoriser le bug et suggérer une solution sans intervention humaine.
+     * Analyse un ticket et retourne : categorie_ia, priorite_ia, solution_ia
      */
     public function analyzeTicket(string $titre, string $description = ''): array
     {
-        // Structure de secours si l'IA plante
         $default = [
             'categorie_ia' => 'NON_CLASSE',
             'priorite_ia'  => null,
@@ -35,11 +32,9 @@ class AIService
             return $default;
         }
 
-        // 1. Construit le Prompt (ingénierie du prompt)
         $prompt = $this->buildPrompt($titre, $description);
 
         try {
-            // 2. Requête HTTP vers Groq (très rapide)
             $response = Http::timeout(15)
                 ->withHeaders([
                     'Authorization' => 'Bearer ' . $this->apiKey,
@@ -48,7 +43,7 @@ class AIService
                 ->post($this->apiUrl, [
                     'model'       => $this->model,
                     'max_tokens'  => 500,
-                    'temperature' => 0.2, // Faible température pour éviter les hallucinations et avoir un JSON strict
+                    'temperature' => 0.2,
                     'messages'    => [
                         [
                             'role'    => 'system',
@@ -62,13 +57,14 @@ class AIService
                 ]);
 
             if ($response->failed()) {
+                Log::error('AIService: Erreur API Groq', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                ]);
                 return $default;
             }
 
-            // 3. Extraction de la réponse textuelle
             $text = $response->json('choices.0.message.content', '');
-            
-            // 4. Parsing et validation du JSON retourné
             return $this->parseResponse($text, $default);
 
         } catch (\Exception $e) {
@@ -77,9 +73,8 @@ class AIService
         }
     }
 
-    /**
-     * [Sprint 4] Ingénierie du Prompt envoyée à l'IA
-     */
+    // ─────────────────────────────────────────────────────────────────────────
+
     private function buildPrompt(string $titre, string $description): string
     {
         $desc = trim($description) ?: 'Aucune description fournie.';
@@ -105,13 +100,9 @@ Règles de priorité :
 PROMPT;
     }
 
-    /**
-     * [Sprint 4] Nettoyage et validation de la réponse de l'IA.
-     * Les IA ont souvent tendance à entourer leur JSON de ```json ... ```. Ce script nettoie tout ça.
-     */
     private function parseResponse(string $text, array $default): array
     {
-        $text = preg_replace('/```json|```/', '', $text); // Nettoyage du markdown
+        $text = preg_replace('/```json|```/', '', $text);
         $text = trim($text);
 
         $data = json_decode($text, true);
@@ -121,7 +112,6 @@ PROMPT;
             return $default;
         }
 
-        // Vérification stricte contre les hallucinations (Enum validation)
         $categories = ['BUG', 'PERFORMANCE', 'SECURITE', 'UI_UX', 'BASE_DE_DONNEES', 'API', 'CONFIGURATION', 'AUTRE'];
         $priorites  = ['BASSE', 'MOYENNE', 'HAUTE', 'CRITIQUE'];
 
