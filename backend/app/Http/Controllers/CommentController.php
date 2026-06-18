@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use App\Models\Ticket;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,19 +27,21 @@ class CommentController extends Controller
             'user_id'   => $user->id
         ]);
 
-        // Notifier les personnes concernées (created_by au lieu de testeur_id)
-        $usersToNotify = collect([$ticket->created_by, $ticket->developpeur_id])
+        // Notifier les personnes concernées
+        $usersToNotify = collect([$ticket->testeur_id, $ticket->developpeur_id])
             ->filter()
             ->reject(fn($id) => $id === $user->id)
             ->unique();
 
-        foreach ($usersToNotify as $userId) {
-            \App\Http\Controllers\NotificationController::createAndBroadcast(
-                $userId,
-                "💬 Nouveau commentaire sur le ticket « {$ticket->titre} »",
-                $ticket->id
-            );
-        }
+foreach ($usersToNotify as $userId) {
+    // ❌ قبل: Notification::create (لا يبث real-time)
+    // ✅ بعد:
+    \App\Http\Controllers\NotificationController::createAndBroadcast(
+        $userId,
+        "💬 Nouveau commentaire sur le ticket « {$ticket->titre} »",
+        $ticket->id
+    );
+}
 
         return response()->json($comment->load('user'), 201);
     }

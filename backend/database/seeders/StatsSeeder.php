@@ -7,21 +7,17 @@ use App\Models\User;
 use App\Models\Project;
 use App\Models\Ticket;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Model;
 
 class StatsSeeder extends Seeder
 {
     public function run()
     {
-        Model::unguard();
-
         $testeurs = User::where('role', 'testeur')->get();
         $developpeurs = User::where('role', 'developpeur')->get();
         $chefs = User::where('role', 'chef_de_projet')->get();
 
         if ($testeurs->isEmpty() || $developpeurs->isEmpty() || $chefs->isEmpty()) {
             $this->command->error('Veuillez créer au moins un testeur, un développeur et un chef de projet avant de lancer ce seeder.');
-            Model::reguard();
             return;
         }
 
@@ -70,7 +66,7 @@ class StatsSeeder extends Seeder
                 'priorite' => $priorites[array_rand($priorites)],
                 'etat' => $etat,
                 'project_id' => $project->id,
-                'created_by' => $testeur->id,
+                'testeur_id' => $testeur->id,
                 'developpeur_id' => in_array($etat, ['OUVERT']) ? null : $developpeur->id,
                 'assignment_status' => in_array($etat, ['OUVERT']) ? 'pending' : 'approved',
                 'type' => $types[array_rand($types)],
@@ -82,7 +78,5 @@ class StatsSeeder extends Seeder
         }
 
         $this->command->info("$totalTickets tickets générés avec succès pour les statistiques !");
-
-        Model::reguard();
     }
 }

@@ -18,7 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
 
         $middleware->alias([
-            'auth'                  => \App\Http\Middleware\Authenticate::class,
             'is_admin'              => \App\Http\Middleware\IsAdmin::class,    // admin uniquement
             'is_manager'            => \App\Http\Middleware\IsManager::class,  // admin + chef_de_projet
             'check_status'          => \App\Http\Middleware\CheckUserStatus::class,

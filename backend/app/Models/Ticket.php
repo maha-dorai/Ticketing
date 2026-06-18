@@ -15,7 +15,7 @@ class Ticket extends Model
         'priorite',
         'etat',
         'project_id',
-        'created_by',
+        'testeur_id',
         'developpeur_id',
         'proposed_developpeur_id',
         'assignment_status',
@@ -43,7 +43,7 @@ class Ticket extends Model
 
     public function testeur()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'testeur_id');
     }
 
     public function developpeur()
@@ -58,7 +58,8 @@ class Ticket extends Model
 
     public function comments()
     {
-        return $this->hasMany(Comment::class)->orderBy('created_at', 'asc');
+        return $this->hasMany(Comment::class)
+                    ->orderBy('created_at', 'asc');
     }
 
     public function attachments()
@@ -68,11 +69,13 @@ class Ticket extends Model
 
     public function isAssignmentApproved(): bool
     {
-        return $this->assignment_status === 'approved' && $this->developpeur_id !== null;
+        return $this->assignment_status === 'approved'
+            && $this->developpeur_id !== null;
     }
 
     public function isAssignmentPending(): bool
     {
-        return $this->assignment_status === 'pending' && $this->proposed_developpeur_id !== null;
+        return $this->assignment_status === 'pending'
+            && $this->proposed_developpeur_id !== null;
     }
 }
