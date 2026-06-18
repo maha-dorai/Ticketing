@@ -167,9 +167,9 @@
               </p>
             </BaseCard>
 
-            <!-- AI analysis panel -->
+            <!-- AI metadata (catégorie + priorité) -->
             <div
-              v-if="ticket.categorie_ia || ticket.priorite_ia || ticket.solution_ia"
+              v-if="ticket.categorie_ia || ticket.priorite_ia"
               class="ds-ai-panel"
             >
               <div class="ds-ai-panel__head">
@@ -178,10 +178,6 @@
                   <h3 class="ds-ai-panel__title">Analyse automatique</h3>
                   <p class="ds-ai-panel__sub">Générée à la création du ticket</p>
                 </div>
-                <BaseButton variant="ghost" size="sm" :loading="aiLoading" @click="reanalyzeAI">
-                  <RefreshCw v-if="!aiLoading" :size="14" aria-hidden="true" />
-                  {{ aiLoading ? 'Mise à jour…' : 'Relancer' }}
-                </BaseButton>
               </div>
               <div class="ds-ai-tags">
                 <div v-if="ticket.categorie_ia" class="ds-ai-tag">
@@ -196,14 +192,14 @@
                   </span>
                 </div>
               </div>
-              <div
-                v-if="ticket.solution_ia && currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser?.id"
-                class="ds-ai-solution"
-              >
-                <p class="ds-ai-tag__label">Solution suggérée</p>
-                <p class="ds-description">{{ ticket.solution_ia }}</p>
-              </div>
             </div>
+
+            <!-- AI Solution Assistant — développeur assigné uniquement -->
+            <AIAssistantPanel
+              v-if="currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser?.id"
+              :ticket-id="ticket.id"
+              :solution="ticket.solution_ia"
+            />
 
             <!-- Description -->
             <BaseCard>
@@ -543,7 +539,7 @@
                   !isManager &&
                   !canDragTicket &&
                   !(currentUser?.role === 'developpeur' && ticket.developpeur_id === currentUser.id && ticket.etat !== 'FERME') &&
-                  !(currentUser?.role === 'testeur' && ticket.testeur_id === currentUser.id)
+                  !(currentUser?.role === 'testeur' && ticket.created_by === currentUser.id)
                 "
                 class="ds-empty-state"
                 style="padding: 2rem 0"
@@ -589,7 +585,6 @@ import {
   MessageSquare,
   Paperclip,
   Pencil,
-  RefreshCw,
   Tags,
   Ticket,
   Trash2,
@@ -601,6 +596,7 @@ import AppLayout from '../../components/layout/AppLayout.vue';
 import BaseButton from '../../components/ui/BaseButton.vue';
 import BaseBadge from '../../components/ui/BaseBadge.vue';
 import BaseCard from '../../components/ui/BaseCard.vue';
+import AIAssistantPanel from '../../components/ui/AIAssistantPanel.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -614,7 +610,6 @@ const stateUpdating = ref(false);
 const chatBox = ref(null);
 const workloads = ref([]);
 const timeToAdd = ref(null);
-const aiLoading = ref(false);
 
 const newComment = ref('');
 const submittingComment = ref(false);
@@ -761,7 +756,7 @@ const canDragTicket = computed(() => {
     return ticket.value.developpeur_id === currentUser?.id && ticket.value.assignment_status === 'approved';
   }
   if (role === 'testeur') {
-    return ticket.value.testeur_id === currentUser?.id && ticket.value.etat === 'A_TESTER';
+    return ticket.value.created_by === currentUser?.id && ticket.value.etat === 'A_TESTER';
   }
   return false;
 });
@@ -882,18 +877,6 @@ const categorieLabel = (cat) => {
     AUTRE: 'Autre', NON_CLASSE: 'Non classé',
   };
   return map[cat] || cat;
-};
-
-const reanalyzeAI = async () => {
-  aiLoading.value = true;
-  try {
-    await api.post(`/tickets/${ticket.value.id}/analyze-ai`);
-    await fetchTicket();
-  } catch (e) {
-    console.error(e);
-  } finally {
-    aiLoading.value = false;
-  }
 };
 
 const formatTime = (iso) => {

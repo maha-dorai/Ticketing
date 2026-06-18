@@ -21,7 +21,11 @@ class NotificationController extends Controller
             'lu'        => false,
         ]);
 
-        broadcast(new NotificationSent($notification));
+        try {
+            broadcast(new NotificationSent($notification));
+        } catch (\Exception $e) {
+            // WebSocket non disponible — notification créée quand même en base
+        }
     }
 
     public function index()
