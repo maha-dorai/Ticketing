@@ -224,14 +224,34 @@ class StatsController extends Controller
             ->groupBy('categorie_ia')->get();
 
         // 6. Délai moyen résolution (KPI) en heures
-        $avgResolutionTime = (clone $resolvedQuery)->select(\Illuminate\Support\Facades\DB::raw('AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as avg_hours'))->first()->avg_hours;
+        if (\Illuminate\Support\Facades\DB::getDriverName() === 'sqlite') {
+            $avgResolutionTime = (clone $resolvedQuery)->select(\Illuminate\Support\Facades\DB::raw('AVG((strftime("%s", updated_at) - strftime("%s", created_at)) / 3600) as avg_hours'))->first()->avg_hours;
+        } else {
+            $avgResolutionTime = (clone $resolvedQuery)->select(\Illuminate\Support\Facades\DB::raw('AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as avg_hours'))->first()->avg_hours;
+        }
 
         // 7. Heatmap d'activité (Jour x Heure)
-        $heatmap = (clone $query)->select(
-            \Illuminate\Support\Facades\DB::raw('DAYNAME(created_at) as day'),
-            \Illuminate\Support\Facades\DB::raw('HOUR(created_at) as hour'),
-            \Illuminate\Support\Facades\DB::raw('count(*) as count')
-        )->groupBy('day', 'hour')->get();
+        if (\Illuminate\Support\Facades\DB::getDriverName() === 'sqlite') {
+            $heatmap = (clone $query)->select(
+                \Illuminate\Support\Facades\DB::raw("CASE strftime('%w', created_at)
+                    WHEN '0' THEN 'Sunday'
+                    WHEN '1' THEN 'Monday'
+                    WHEN '2' THEN 'Tuesday'
+                    WHEN '3' THEN 'Wednesday'
+                    WHEN '4' THEN 'Thursday'
+                    WHEN '5' THEN 'Friday'
+                    WHEN '6' THEN 'Saturday'
+                END as day"),
+                \Illuminate\Support\Facades\DB::raw("CAST(strftime('%H', created_at) as integer) as hour"),
+                \Illuminate\Support\Facades\DB::raw("count(*) as count")
+            )->groupBy('day', 'hour')->get();
+        } else {
+            $heatmap = (clone $query)->select(
+                \Illuminate\Support\Facades\DB::raw('DAYNAME(created_at) as day'),
+                \Illuminate\Support\Facades\DB::raw('HOUR(created_at) as hour'),
+                \Illuminate\Support\Facades\DB::raw('count(*) as count')
+            )->groupBy('day', 'hour')->get();
+        }
 
         return response()->json([
             'avancement' => ['total' => $totalTickets, 'resolus' => $resolvedTickets],

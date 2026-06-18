@@ -51,6 +51,17 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+        $chef = User::firstOrCreate(
+            ['email' => 'chef@gmail.com'],
+            [
+                'nom'          => 'Projet',
+                'prenom'       => 'Chef',
+                'mot_de_passe' => Hash::make('Chef@1234'),
+                'role'         => 'chef_de_projet',
+                'statut'       => 'actif',
+            ]
+        );
+
         // 2. Générer des utilisateurs aléatoires (15 devs, 5 testeurs, 2 admins)
         $randomUsers = User::factory(22)->create();
 
@@ -59,7 +70,10 @@ class DatabaseSeeder extends Seeder
         $allTesters = User::where('role', 'testeur')->get();
 
         // 4. Générer des projets (ex: 8 projets)
-        $projects = Project::factory(8)->create();
+        $managers = User::whereIn('role', ['chef_de_projet', 'admin'])->get();
+        $projects = Project::factory(8)->create([
+            'created_by' => fn() => $managers->random()->id,
+        ]);
 
         // 5. Assigner des membres et des tickets à chaque projet
         foreach ($projects as $project) {
@@ -75,6 +89,7 @@ class DatabaseSeeder extends Seeder
             if (rand(0, 1)) $project->users()->syncWithoutDetaching([$dev->id]);
             if (rand(0, 1)) $project->users()->syncWithoutDetaching([$testeur->id]);
             if (rand(0, 1)) $project->users()->syncWithoutDetaching([$admin->id]);
+            if (rand(0, 1)) $project->users()->syncWithoutDetaching([$chef->id]);
 
             // Récupérer les devs du projet (pour l'assignation)
             $actualProjectDevs = $project->users()->where('role', 'developpeur')->get();
@@ -129,5 +144,11 @@ class DatabaseSeeder extends Seeder
                 }
             }
         }
+
+        // 6. Appeler les autres seeders
+        $this->call([
+            PendingUsersSeeder::class,
+            StatsSeeder::class,
+        ]);
     }
 }

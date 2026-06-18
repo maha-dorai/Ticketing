@@ -22,7 +22,7 @@ class ProjectFactory extends Factory
             'description' => fake()->paragraph(),
             'date_debut' => fake()->dateTimeBetween('-6 months', '-1 months'),
             'date_fin' => fake()->optional(0.7)->dateTimeBetween('now', '+6 months'),
-            'statut' => fake()->randomElement(['EN_COURS', 'TERMINE', 'EN_ATTENTE']),
+            'statut' => fake()->randomElement(['ouvert', 'en_cours', 'archive']),
         ];
     }
 }

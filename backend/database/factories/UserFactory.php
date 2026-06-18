@@ -24,7 +24,7 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
-        $roles = ['developpeur', 'developpeur', 'testeur', 'admin']; // Plus de chances d'avoir un developpeur
+        $roles = ['developpeur', 'developpeur', 'testeur', 'chef_de_projet', 'admin']; // Plus de chances d'avoir un developpeur
         $role = fake()->randomElement($roles);
         
         return [

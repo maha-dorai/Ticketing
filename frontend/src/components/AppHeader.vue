@@ -179,7 +179,8 @@ let echoChannel = null;
 
 onMounted(() => {
   fetchUnreadCount();
-  pollInterval = setInterval(fetchUnreadCount, 30000);
+  // On passe le polling à 5 minutes (300000 ms) au lieu de 30 secondes pour ne pas polluer le terminal Laravel
+  pollInterval = setInterval(fetchUnreadCount, 300000);
   document.addEventListener('notifications-read', fetchUnreadCount);
   document.addEventListener('click', closeDropdowns);
 
