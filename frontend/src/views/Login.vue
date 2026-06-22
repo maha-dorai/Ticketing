@@ -13,7 +13,7 @@
           <!-- Champ Email -->
           <div class="field">
             <label class="label">Adresse email</label>
-            <input v-model="email" type="email"  class="input" />
+            <input v-model.trim="email" type="email"  class="input" />
           </div>
 
           <!-- Champ Mot de Passe -->

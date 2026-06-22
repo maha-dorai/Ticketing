@@ -209,7 +209,7 @@
                 label="Titre"
                 required
                 placeholder="Décrivez le problème en une phrase"
-                @input="onFormInputChange"
+                @update:modelValue="onFormInputChange"
               />
               <div class="ds-field">
                 <label class="ds-field__label">Description</label>
@@ -312,9 +312,10 @@ const projectName = ref('');
 const loading = ref(false);
 const dragging = ref(null);
 const dragTarget = ref(null);
-const showReclModal  = ref(false);
-const reclRaison     = ref('');
-const pendingRecl    = ref(null);
+const showReclModal   = ref(false);
+const showCreateModal = ref(false);
+const reclRaison      = ref('');
+const pendingRecl     = ref(null);
 
 const cancelRecl = () => {
   showReclModal.value = false;
@@ -353,7 +354,13 @@ let aiDebounceTimer = null;
 const onFormInputChange = () => {
   const titre = form.value.titre?.trim() || '';
   const desc  = form.value.description?.trim() || '';
-  if (!titre && !desc) return; // nothing to analyze yet
+  if (!titre && !desc) {
+    clearTimeout(aiDebounceTimer);
+    aiPreviewResult.value = null;
+    aiAnalyzing.value = false;
+    aiTriggered.value = false;
+    return;
+  }
   if (!aiTriggered.value) aiTriggered.value = true;
 
   clearTimeout(aiDebounceTimer);
