@@ -1,0 +1,1044 @@
+Introduction Générale
+Dans un contexte de développement logiciel de plus en plus collaboratif et agile, la gestion rigoureuse des anomalies et des bugs représente un défi majeur pour toute équipe technique. Les outils de suivi classiques ne répondent plus toujours aux exigences de réactivité, de traçabilité et de collaboration des équipes modernes.
+C'est dans ce cadre que s'inscrit notre projet de fin d'études, réalisé à l'Institut Supérieur des Études Technologiques de Sousse (ISET Sousse). Ce projet consiste à concevoir et développer une Plateforme de Ticketing Intelligente pour le Suivi des Anomalies, offrant un espace centralisé permettant aux équipes de déclarer, suivre et résoudre les tickets de bugs de façon structurée et efficace.
+Ce travail a été réalisé au sein de l'agence E-2LYS, agence web multidisciplinaire spécialisée dans le développement de plateformes digitales sur mesure. La solution proposée repose sur une architecture moderne combinant Laravel (backend RESTful) et Vue.js 3 (frontend SPA), avec une gestion des accès basée sur des rôles distincts : Administrateur, Chef de projet, Testeur et Développeur.
+Ce rapport retrace l'ensemble des étapes de réalisation du projet selon une méthodologie agile Scrum, structurée en quatre sprints. Le premier chapitre, « Présentation du Cadre Général du Projet », introduira l'organisme d'accueil, l'étude de l'existant et la solution proposée. Le deuxième chapitre, « Spécification des Besoins et Choix Méthodologiques et Techniques », détaillera les acteurs, les besoins fonctionnels et non fonctionnels, la démarche Scrum adoptée, ainsi que les choix technologiques retenus. Les chapitres suivants présenteront les différents sprints réalisés, de la conception à la livraison des interfaces.
+Chapitre 1 : Présentation du Cadre Général du Projet
+Introduction
+Ce chapitre établit le cadre général de notre projet de fin d'études. Nous présenterons d'abord l'organisme d'accueil dans sa globalité, suivi d'un diagnostic approfondi de l'existant afin d'appréhender les processus opérationnels actuels et leurs limites. Cette analyse nous permettra d'identifier précisément la problématique à résoudre et d'exposer la solution envisagée.
+1.  Présentation de l'organisme d'accueil
+Dans le cadre de la réalisation de notre projet de fin d'études, nous avons eu l'opportunité d'effectuer notre stage au sein de l'agence E-2LYS. Avant de présenter le projet qui nous a été confié, il est essentiel de commencer par une présentation globale de cette entreprise, son organisation interne, ainsi que les technologies et projets qu'elle maîtrise.
+1.1.  Présentation générale de l'entreprise
+E-2LYS est une agence web multidisciplinaire tunisienne fondée en 2011, spécialisée dans le développement de plateformes web et l'accompagnement de la transformation digitale de ses clients. Elle intervient dans de nombreux secteurs d'activité tels que le corporate, l'industrie, l'agroalimentaire, la santé, l'éducation, le gouvernement, le tourisme et l'événementiel.
+L'agence opère à travers trois sociétés et deux marques, couvrant le marché tunisien, le marché français et les marchés export africains. Son approche repose sur des compétences analytiques, créatives et techniques, offrant une prestation globale qui inclut le conseil, la stratégie digitale, le design et le développement sur mesure.
+Le tableau ci-dessous présente les données essentielles concernant l'agence E-2LYS.
+Dénomination
+E-2LYS
+Date de création
+2011
+Spécialité
+Développement de plateformes web & transformation digitale
+Marchés
+Tunisie (local + export) · France · Afrique
+Effectif
+37 collaborateurs
+Technologies principales
+Laravel · Vue.js · React · WordPress · Mobile (iOS/Android)
+Structure
+3 sociétés — 2 marques
+Tableau 1 : Fiche signalétique de l'agence E-2LYS
+1.2.  Les départements de l'agence
+L'agence E-2LYS est structurée autour de plusieurs pôles complémentaires :
+Pôle Développement Backend (18 développeurs) : conception, développement et maintenance de plateformes digitales en Laravel, avec intégration des API REST et gestion des bases de données.
+Pôle Développement Frontend (14 développeurs) : intégration web et mobile, développement d'interfaces utilisateur en Vue.js, React et technologie mobile.
+Pôle Design (3 designers) : conception UI/UX, 
+charte graphique et expérience utilisateur.
+Pôle Gestion de Projets (3 chefs de projets) : pilotage des livrables, coordination entre les équipes et suivi de la qualité.
+Pôle Qualité (2 testeurs) : validation fonctionnelle et tests de non-régression des livrables.
+Pôle Administratif (RH & Finance) : gestion des ressources humaines, de la comptabilité et de la coordination interne.
+Nous avons été accueillis au sein du Pôle Développement, où notre mission était de concevoir et développer une plateforme de ticketing pour le suivi des anomalies.
+1.3.  Les projets de l'agence E-2LYS
+Parmi les réalisations notables de l'agence E-2LYS, on peut citer :
+Hutchinson HES : plateforme de partage des initiatives d'excellence au sein du groupe industriel Hutchinson (plus de 1000 utilisateurs worldwide).
+Plateformes e-commerce et sites institutionnels pour des entreprises tunisiennes et françaises dans des secteurs variés.
+Solutions de gestion interne (ERP, CRM, portails RH) développées sur mesure en Laravel.
+Applications mobiles iOS/Android pour des clients dans les secteurs de la santé et de l'éducation.
+2.  Étude de l'existant
+L'étude de l'existant constitue une étape fondamentale dans la conduite de notre projet. Elle permet d'analyser les pratiques actuellement en place au sein des équipes de développement pour gérer les anomalies et les bugs, d'identifier leurs limites, et de dégager les besoins réels auxquels notre solution devra répondre.
+2.1.  Description de l'existant
+Actuellement, de nombreuses équipes de développement gèrent le suivi de leurs anomalies de manière informelle et non centralisée. Les pratiques observées se résument principalement à :
+L'utilisation de fichiers tableurs (Excel, Google Sheets) pour lister et suivre les bugs signalés, sans structuration ni historique fiable.
+La communication par messagerie instantanée (WhatsApp, Telegram, Slack) ou par email pour signaler les anomalies, sans traçabilité ni centralisation des échanges.
+L'absence d'un workflow défini pour le cycle de vie des tickets : les anomalies sont signalées de façon informelle et leur résolution n'est pas systématiquement documentée.
+Le manque de visibilité pour les équipes : il n'existe pas de tableau de bord permettant de suivre l'avancement global des corrections ni d'avoir des statistiques par projet ou par membre.
+L'absence de système de notification : les membres de l'équipe ne sont pas automatiquement alertés lors de la création, la modification ou la résolution d'un ticket.
+2.2.  Critique de l'existant et problématique
+L'observation des pratiques actuelles a mis en évidence plusieurs points forts et plusieurs insuffisances importantes.
+Points forts du mode actuel :
+Simplicité de mise en place : les outils comme Excel ou la messagerie ne nécessitent aucune formation.
+Flexibilité : les équipes adaptent leurs pratiques selon leurs besoins immédiats.
+Insuffisances et problèmes identifiés :
+Absence de traçabilité : il est impossible de consulter l'historique complet des modifications apportées à un ticket ou de savoir qui a fait quoi et quand.
+Risque de perte d'informations : les échanges par messagerie sont éphémères et les fichiers Excel ne sont pas structurés pour garantir l'intégrité des données.
+Manque de collaboration structurée : sans outil dédié, la communication entre testeurs, développeurs et administrateurs est fragmentée.
+Absence de contrôle d'accès : n'importe quel membre peut modifier ou supprimer des données, ce qui compromet la fiabilité du suivi.
+Impossibilité de produire des statistiques : il est difficile d'évaluer la performance de l'équipe, le taux de résolution ou les tendances par projet.
+Ces constats soulèvent une question centrale : comment centraliser, structurer et sécuriser le suivi des anomalies tout en permettant une collaboration fluide entre les différents acteurs de l'équipe ?
+3.  Proposition d'une solution
+Face aux limites identifiées, la solution que nous proposons consiste à développer une Plateforme de Ticketing Intelligente pour le Suivi des Anomalies, une application web moderne qui centralise et structure l'ensemble du processus de déclaration, suivi et résolution des bugs au sein d'une équipe de développement.
+La plateforme a pour ambition de :
+Offrir un système d'authentification sécurisé avec gestion des rôles (Administrateur, Chef de projet, Testeur, Développeur), assurant un contrôle d'accès strict à chaque fonctionnalité.
+Permettre aux testeurs de créer des tickets structurés (titre, description, priorité, projet) et de suivre leur avancement en temps réel.
+Donner aux développeurs un espace dédié pour consulter les tickets qui leur sont assignés, mettre à jour leur état et documenter leur résolution via des commentaires.
+Fournir à chef de projet les outils nécessaires pour gérer les utilisateurs, les projets, les affectations et accéder à un tableau de bord statistique.
+Garantir la traçabilité complète : chaque modification de ticket est horodatée et attribuée à son auteur, sans possibilité de suppression.
+Automatiser les notifications par email lors des événements clés : validation de compte, changement d'état d'un ticket, fermeture d'un projet.
+La mise en place de cette plateforme apportera plusieurs bénéfices concrets. Elle permettra d'éliminer les risques de perte d'information, d'améliorer la réactivité de l'équipe face aux anomalies, et de fournir des indicateurs de performance clairs pour piloter la qualité du développement. L'architecture modulaire de la solution permettra également d'intégrer facilement de nouvelles fonctionnalités à l'avenir, comme un module d'intelligence artificielle pour la classification automatique des tickets.
+Conclusion
+Après avoir établi le cadre général du projet et identifié la problématique organisationnelle à résoudre, le chapitre suivant présentera les spécifications fonctionnelles et techniques nécessaires au développement de la plateforme, ainsi que la méthodologie agile adoptée pour structurer notre travail.
+Chapitre 2 : Spécification des Besoins et Choix Méthodolgique et Techniques
+Introduction
+La phase de spécification et d'analyse des besoins est une étape fondamentale dans la conduite d'un projet logiciel. Elle permet de structurer le système en identifiant ses acteurs clés, en formalisant leurs besoins et en définissant les choix méthodologiques et technologiques qui guideront l'ensemble du développement.
+Dans ce chapitre, nous détaillons, dans un premier temps, les exigences fonctionnelles et non fonctionnelles auxquelles la plateforme devra répondre. Ensuite, nous exposons le cadre méthodologique Scrum adopté, garantissant une gestion itérative et collaborative du projet. Enfin, nous justifions les choix technologiques retenus pour la réalisation de cette solution.
+1.  Identification des acteurs
+Un acteur représente un rôle assumé par une entité externe (humaine ou système) interagissant avec la plateforme. Dans notre système de ticketing, trois acteurs principaux ont été identifiés :
+Acteur
+Description
+Administrateur
+Acteur disposant des privilèges les plus élevés sur la plateforme. Il hérite de toutes les fonctionnalités du Chef de projet et dispose en exclusivité de la gestion des Chefs de projet (création, désactivation, consultation de la liste). Il assure ainsi la gouvernance générale du système.
+Chef de projet
+Acteur chargé de la gestion opérationnelle de la plateforme. Il supervise la plateforme, gère les comptes utilisateurs (validation, désactivation), crée et gère les projets, affecte les membres, consulte tous les tickets et accède au tableau de bord statistique.
+Testeur
+Membre de l'équipe responsable de la détection et du signalement des anomalies. Il crée les tickets de bugs, suit leur avancement, ajoute des commentaires et ferme les tickets dont la résolution a été confirmée.
+Développeur
+Membre de l'équipe chargé de la résolution des anomalies. Il consulte les tickets des projets qui lui sont assignés, met à jour leur état (En cours → Résolu) et documente techniquement les corrections apportées.
+Tableau 2 : Identification des acteurs du système
+2.  Les besoins fonctionnels
+Dans cette partie, nous présentons en détail les fonctionnalités associées à chaque acteur de la plateforme. Cette description couvre l'ensemble du périmètre fonctionnel, depuis la gestion des utilisateurs jusqu'au tableau de bord de supervision.
+2.1. Fonctionnalités liées à l’Administrateur
+L’application doit permettre au l’Administrateur authentifié de :
+Créer un compte chef de projet. 
+Modifier les informations d’un chef de projet. 
+Désactiver ou supprimer un chef de projet. 
+Consulter la liste des chefs de projet. 
+Accéder à toutes les fonctionnalités d’un chef de projet classique. 
+Consulter toutes les statistiques globales. 
+Gérer les permissions générales du système.
+2.2.  Fonctionnalités liées au Chef de projet
+L'application doit permettre au chef de projet authentifié de :
+Consulter la liste complète de tous les utilisateurs inscrits sur la plateforme.
+Valider un compte en attente et déclencher automatiquement l'envoi d'un email de notification au membre accepté.
+Rejeter une demande d'inscription et envoyer automatiquement un email d'information au membre concerné.
+Désactiver un compte actif sans le supprimer, afin de préserver la traçabilité des données.
+Gérer son compte personnel : modifier son mot de passe et son adresse email.
+Créer des projets en définissant leur nom, description et statut initial.
+Modifier les informations d'un projet existant et le fermer lorsque le travail est terminé.
+Affecter des membres (testeurs et développeurs) à un projet et les retirer si nécessaire.
+Filtrer et rechercher des projets par nom pour retrouver rapidement l'information.
+Consulter tous les tickets de la plateforme, suivre leur état et les fermer si nécessaire.
+Accéder au tableau de bord avec des statistiques détaillées par projet, par développeur et par testeur.
+2.3.  Fonctionnalités liées au Testeur
+L'application doit permettre au testeur authentifié de :
+Créer un compte et accéder à la plateforme après validation par l'administrateur.
+S'authentifier et gérer son compte (changer mot de passe ou adresse email).
+Consulter uniquement les projets auxquels il est affecté et les filtrer par nom.
+Créer un ticket d'anomalie en précisant le titre, la description, la priorité et le projet concerné.
+Modifier les informations de ses propres tickets (description, priorité) avant qu'ils soient pris en charge.
+Suivre l'état d'avancement de ses tickets en temps réel.
+Ajouter des commentaires sur un ticket pour communiquer avec le développeur ou fournir des informations complémentaires.
+Fermer un ticket lorsqu'il confirme que l'anomalie est définitivement résolue.
+2.4.  Fonctionnalités liées au Développeur
+L'application doit permettre au développeur authentifié de :
+Créer un compte et accéder à la plateforme après validation par l'administrateur.
+S'authentifier et gérer son compte (changer mot de passe ou adresse email).
+Consulter les projets qui lui sont assignés et les tickets associés.
+Mettre à jour l'état d'un ticket : passer un ticket de 'Ouvert' à 'En cours', puis à 'Résolu'.
+Ajouter des commentaires techniques pour documenter la résolution et communiquer avec le testeur.
+3.  Les besoins non fonctionnels
+Outre les fonctionnalités métier, la plateforme devra satisfaire un ensemble d'exigences de qualité :
+Critère
+Exigence
+Sécurité
+Authentification JWT sécurisée, hashage bcrypt des mots de passe, protection contre les injections SQL et attaques CSRF.
+Ergonomie
+Interface claire, intuitive et responsive, adaptée aux écrans desktop et mobile, avec des messages d'erreur explicites en français.
+Maintenabilité
+Code structuré selon le pattern MVC (Laravel), API REST documentée, séparation claire entre backend et frontend.
+Scalabilité
+Architecture modulaire permettant l'ajout futur de fonctionnalités (ex: module IA pour la classification automatique des tickets).
+Traçabilité
+Historique complet et horodaté de tous les changements effectués sur les tickets. Aucune suppression de données n'est autorisée.
+Performance
+Temps de réponse des API inférieur à 2 secondes pour les opérations courantes.
+Tableau 3 : Besoins non fonctionnels
+4.  Le Cadre Méthodologique Scrum
+4.1.  Présentation de Scrum
+Pour ce projet, nous avons adopté la méthodologie Scrum, un cadre agile permettant de livrer des fonctionnalités de manière incrémentale à travers des itérations courtes appelées Sprints. Cette approche favorise la collaboration, l'adaptabilité et la livraison continue de valeur.
+Le cycle Scrum commence par le Product Backlog, liste priorisée des fonctionnalités souhaitées, puis passe par le Sprint Planning où l'équipe sélectionne les tâches pour constituer le Sprint Backlog. Le cœur du processus est le Sprint (2 semaines dans notre cas), pendant lequel l'équipe développe les fonctionnalités planifiées. Chaque sprint se clôture par une Sprint Review (démonstration des livrables) et une Sprint Retrospective (bilan et amélioration continue).
+Figure 1 : Le cycle Scrum
+4.2.  Les Rôles Scrum
+Le framework Scrum définit des rôles précis permettant à chaque membre d'assumer des responsabilités claires et complémentaires :
+Product Owner (PO) : responsable de la définition et de la priorisation des besoins fonctionnels. Il est représenté par l'encadrante académique du projet.
+Scrum Master (SM) : garant de l'application correcte de Scrum. Le rôle est assuré en alternance par Maha Dorai et Ahmed Skhiri.
+Équipe de Développement : groupe auto-organisé responsable de la réalisation technique. Composée de Maha Dorai (frontend & intégration) et Ahmed Skhiri (backend & API).
+Rôle
+Mission
+Acteur(s)
+Product Owner
+Définit les besoins fonctionnels et priorise le backlog
+Encadrante académique
+Scrum Master
+Veille à l'application correcte de Scrum
+Maha Dorai / Ahmed Skhiri (alternance)
+Équipe de développement
+Réalise le travail technique (backend + frontend)
+Maha Dorai & Ahmed Skhiri
+Tableau 4 : Répartition des rôles Scrum
+5.  Le Backlog du Produit
+Le backlog produit regroupe l'ensemble des besoins fonctionnels exprimés sous forme de user stories. Chaque entrée comprend un identifiant unique, un thème, une description claire du besoin et un niveau de priorité défini selon la méthode MoSCoW :
+M (Must have) : indispensables au fonctionnement de la plateforme.
+S (Should have) : importantes mais pouvant être reportées à un sprint ultérieur.
+C (Could have) : optionnelles selon les ressources disponibles.
+ID
+Thème
+User Story
+Priorité
+Sprint
+US01
+Inscription
+En tant que membre, je veux créer un compte avec email et mot de passe, afin d'accéder à la plateforme après validation de l'administrateur.
+Must
+S1
+US02
+Validation compte
+En tant qu'chef de projet, je veux valider ou rejeter un compte en attente, afin de contrôler les accès à la plateforme (avec envoi d'email de notification).
+Must
+S1
+US03
+Authentification
+En tant qu'utilisateur, je veux m'authentifier avec mes identifiants, afin d'accéder à mon espace personnel et aux fonctionnalités correspondant à mon rôle.
+Must
+S1
+US04
+Réinit. mdp
+En tant qu'utilisateur, je veux recevoir un lien de réinitialisation par email, afin de récupérer l'accès à mon compte en cas d'oubli du mot de passe.
+Should
+S1
+US05
+Gestion Admin
+En tant qu’Administrateur, je veux créer un compte Chef de projet afin de lui déléguer la gestion opérationnelle de la plateforme.
+Must
+S1
+US06
+Contrôle Admin
+En tant qu’Administrateur, je veux désactiver un compte Chef de projet afin de révoquer ses accès et sécuriser la plateforme.
+Must
+S1
+US07
+Créer projet
+En tant que chef de projet, je veux créer et gérer des projets (créer, modifier, fermer), afin d'organiser le travail autour d'un périmètre fonctionnel défini.
+Must
+S2
+US08
+Affecter membres
+En tant que chef de projet, je veux affecter des testeurs et des développeurs à un projet, afin que chaque membre n'accède qu'aux projets qui le concernent.
+Must
+S2
+US09
+Consulter projets
+En tant que membre, je veux consulter uniquement les projets auxquels je suis affecté, avec la possibilité de filtrer et rechercher par nom.
+Must
+S2
+US10
+Créer ticket
+En tant que testeur, je veux créer un ticket d'anomalie (titre, description, priorité, projet), afin de signaler un bug à l'équipe de développement.
+Must
+S3
+US11
+Modifier état
+En tant que développeur, je veux modifier l'état d'un ticket (En cours / Résolu), afin de communiquer l'avancement de la correction à l'équipe.
+Must
+S3
+US12
+Fermer ticket
+En tant que testeur ou chef de projet, je veux fermer un ticket dont le bug est confirmé résolu, afin de clôturer définitivement le suivi de l'anomalie.
+Must
+S3
+US13
+Commentaires
+En tant qu'utilisateur, je veux ajouter des commentaires sur un ticket, afin de documenter l'avancement et faciliter la communication entre les membres.
+Should
+S3
+US14
+Tableau bord
+En tant que chef de projet, je veux accéder à un tableau de bord avec des statistiques par projet, par développeur et par testeur, afin de piloter la qualité du développement.
+Should
+S4
+US15
+Filtres avancés
+En tant qu'utilisateur, je veux filtrer et rechercher des tickets selon plusieurs critères (état, priorité, projet), afin de retrouver rapidement les anomalies qui me concernent.
+Could
+S4
+Tableau 5 : Backlog Produit Global
+6.  Planification des Sprints
+La planification des sprints mobilise l'ensemble de l'équipe Scrum. En définissant collectivement les objectifs et en sélectionnant les éléments prioritaires du backlog, nous garantissons des estimations réalistes et un engagement partagé, facteurs déterminants pour la réussite de chaque cycle de développement.
+Sprint
+Durée
+Objectif
+Livrables
+Sprint 1
+2 sem.
+Authentification & Gestion des utilisateurs
+Inscription · Login JWT · Validation compte · Reset mot de passe · Système de mailing
+Sprint 2
+2 sem.
+Gestion des projets
+CRUD projets · Affectation membres · Filtrage · Consultation par rôle
+Sprint 3
+2 sem.
+Gestion des tickets
+Création · Modification · Changement d'état · Fermeture · Commentaires · Notifications
+Sprint 4
+2 sem.
+Tableau de bord & Finalisation
+Statistiques · Tests finaux · Déploiement · Documentation
+Tableau 6 : Feuille de Route des Sprints (Roadmap Agile)
+7.  Diagramme de Cas d'Utilisation
+Le diagramme de cas d'utilisation constitue un outil visuel essentiel pour représenter les interactions entre les différents acteurs et le système développé. Il offre une vue d'ensemble synthétique des fonctionnalités principales de la plateforme, tout en identifiant les utilisateurs concernés.
+En raison de la complexité du diagramme global, nous avons choisi de le subdiviser par package d'acteurs, afin de mieux structurer l'information et de clarifier les interactions spécifiques de chaque profil avec le système.
+7.1.  Diagramme de cas d’utilisation : Package Manager (Administrateur et Chef de projet)
+La figure suivante illustre le diagramme de cas d’utilisation du package Manager. Le Chef de projet est l’acteur central de ce package : il est responsable de la gestion des projets, de la gestion des tickets, de la gestion des utilisateurs (validation, désactivation, affectation) et de la consultation du tableau de bord statistique. L’Administrateur, quant à lui, entretient une relation de généralisation (héritage) avec le Chef de projet : il hérite de l’intégralité de ses cas d’utilisation et dispose en exclusivité du cas d’utilisation « Gérer les Chefs de projet » (création de compte, désactivation, consultation de la liste). Cette relation de généralisation traduit le fait que l’Administrateur possède tous les droits du Chef de projet, auxquels s’ajoute son privilège exclusif de gouvernance des comptes gestionnaires.
+Figure 2 : Diagramme de cas d’utilisation : Package Manager
+7.2.  Diagramme de cas d’utilisation : Package Membre (Testeur et Développeur)
+La figure suivante illustre le diagramme de cas d’utilisation du package Membre. Un acteur générique « Membre » regroupe les fonctionnalités communes à tous les utilisateurs de ce profil : création de compte, gestion du compte personnel (modification du mot de passe et de l’adresse e-mail) et consultation des projets qui lui sont assignés. Le Testeur et le Développeur héritent tous deux de cet acteur générique par une relation de généralisation. Le Testeur dispose en outre des cas d’utilisation spécifiques à la gestion des tickets : créer un ticket, modifier un ticket et fermer un ticket. Le Développeur, quant à lui, possède le cas d’utilisation exclusif de modification de l’état d’un ticket (passage de « Ouvert » à « En cours », puis à « Résolu »). Enfin, un système de mailing externe intervient lors de l’authentification pour la validation de compte et la réinitialisation du mot de passe..
+Figure 3 : Diagramme de cas d’utilisation : Package Membre
+8.  Choix Techniques
+Cette section présente l'ensemble des décisions techniques qui ont guidé la réalisation du projet, depuis le choix du framework de développement jusqu'aux outils de conception et de versioning.
+8.1.  Outils de conception et de développement
+Outil
+Description et justification
+Visual Studio Code
+Éditeur de code principal utilisé pour le développement frontend (Vue.js) et backend (Laravel). Son large écosystème d'extensions (Volar pour Vue, PHP Intelephense), son débogueur intégré et son terminal intégré en font l'outil idéal pour ce projet.
+draw.io
+Outil de modélisation utilisé pour la création de tous les diagrammes UML : diagrammes de cas d'utilisation, de séquence et de classes. Sa prise en main intuitive et son export en haute définition facilitent l'intégration dans le rapport.
+GitHub
+Plateforme de versioning collaborative utilisée pour la gestion du code source. Elle permet la synchronisation du travail entre les deux membres de l'équipe, le suivi des modifications et la sauvegarde du code.
+Postman
+Outil de test des API REST utilisé pour valider les endpoints du backend Laravel avant leur intégration dans le frontend Vue.js.
+MySQL Workbench
+Outil graphique de gestion de la base de données MySQL utilisé pour la conception du schéma relationnel et la visualisation des données.
+Tableau 7 : Outils de développement
+8.2.  Framework de développement
+Pour le développement du backend, nous avons opté pour le framework Laravel, un framework web open source créé par Taylor Otwell en 2011, écrit en PHP et basé sur le pattern MVC (Modèle-Vue-Contrôleur). Laravel est reconnu pour sa rapidité, sa robustesse et son évolutivité. Il intègre nativement des fonctionnalités essentielles telles que l'authentification JWT (via le package tymon/jwt-auth), la gestion des bases de données via l'ORM Éloquent, le routage RESTful et le système de migrations.
+Pour le frontend, nous avons choisi Vue.js 3, un framework JavaScript progressif basé sur le pattern MVVM. Vue.js 3 offre une réactivité performante, une organisation modulaire via les composants, et une excellente intégration avec les API REST grâce à la bibliothèque Axios. La gestion de l'état de l'application est assurée par Pinia, le gestionnaire d'état officiel de Vue.js 3.
+8.3.  Architecture de la solution
+8.3.1. Pattern MVC (Backend Laravel)
+L'architecture de notre solution repose sur le pattern MVC (Modèle-Vue-Contrôleur), qui sépare l'application en trois couches distinctes :
+Le Modèle (Model) : représente les données et la logique métier. Dans Laravel, chaque modèle Éloquent correspond à une table de la base de données et encapsule toutes les interactions avec celle-ci.
+La Vue (View) : dans notre architecture SPA, cette couche est entièrement gérée par Vue.js 3 côté frontend. Elle affiche les données reçues via les API REST.
+Le Contrôleur (Controller) : traite les requêtes HTTP entrantes, interagit avec les modèles et retourne des réponses JSON structurées au frontend.
+Figure 4 : Architecture MVC de la solution
+8.3.2. Architecture RESTful API
+La communication entre le frontend Vue.js et le backend Laravel est assurée par une API RESTful sécurisée via JSON Web Tokens (JWT). Chaque requête du frontend est accompagnée d'un token JWT dans le header d'autorisation. Le backend valide ce token, identifie le rôle de l'utilisateur et renvoie uniquement les données auxquelles il est autorisé à accéder.
+8.3.3. Gestion de la base de données
+Nous avons opté pour MySQL comme système de gestion de base de données relationnelle. La gestion des migrations et des relations entre les tables est entièrement assurée par l'ORM Éloquent de Laravel, qui abstrait les requêtes SQL et garantit l'intégrité référentielle des données.
+9.  Diagramme de GANTT
+Le diagramme de Gantt permet de visualiser les différentes tâches du projet, leur durée, leurs dates de début et de fin, ainsi que les relations de dépendance entre elles. Il offre une vue claire de l'avancement global et des jalons importants du projet.
+Figure 5 : Diagramme de GANTT du projet
+Le projet s'étale sur une période de 8 semaines, structurée en quatre sprints successifs de deux semaines chacun. La phase de lancement (analyse des besoins, conception de l'architecture et mise en place de l'environnement de développement) précède le premier sprint. La rédaction du rapport progresse en parallèle avec le développement tout au long du projet.
+Conclusion
+Ce chapitre nous a permis de définir avec précision les besoins fonctionnels et non fonctionnels de la plateforme, d'établir le cadre méthodologique Scrum qui structurera notre travail, et de justifier les choix technologiques retenus. Les chapitres suivants présenteront le détail de chaque sprint réalisé, de la conception UML à la livraison des interfaces.
+Chapitre 3 : Sprint 1 – Authentification et Gestion des Utilisateurs
+Introduction
+Dans ce chapitre, nous présentons les démarches réalisées pour l’atteinte des objectifs de ce premier sprint, à savoir : la création de compte, l’authentification JWT, la réinitialisation du mot de passe, la gestion du profil utilisateur, la validation et le rejet des comptes, la désactivation/réactivation des comptes ainsi que la création de comptes chefs de projet. Nous commençons par les diagrammes UML, puis nous présentons les interfaces réalisées.
+1. Backlog du Sprint 1
+Le tableau ci-dessous présente le backlog du premier sprint, détaillant l’ensemble des user stories avec leurs identifiants, thèmes et niveaux de priorité.
+ID
+Thème
+User Story
+Priorité
+US01
+Inscription
+En tant que Membre/Testeur/Développeur, je souhaite créer un compte sur la plateforme en saisissant mes informations personnelles afin d'accéder aux fonctionnalités.
+Must
+US02
+Authentification
+En tant qu'utilisateur enregistré, je dois pouvoir m'authentifier via JWT afin d'accéder à mon espace personnel sécurisé selon mon rôle.
+Must
+US03
+Réinitialisation mot de passe
+En tant qu'utilisateur, je souhaite réinitialiser mon mot de passe en cas d'oubli via un lien sécurisé envoyé par email.
+Must
+US04
+Gérer son compte
+En tant que Membre authentifié, je veux modifier mon email ou mon mot de passe depuis ma page de profil.
+Must
+US05
+Valider / Rejeter un compte
+En tant qu'Admin, je souhaite valider ou rejeter les demandes d'inscription en attente et notifier le membre par email.
+Must
+US06
+Désactiver / Réactiver un compte
+En tant qu'Admin, je souhaite désactiver ou réactiver un compte utilisateur et envoyer une notification email au membre concerné.
+Must
+US07
+Créer un compte Chef de projet
+En tant qu'Admin, je souhaite créer un compte chef de projet avec un mot de passe temporaire envoyé par email.
+Must
+Tableau 8 : Backlog du Sprint 1
+2. Analyse et Conception
+2.1. Diagramme de cas d’utilisation
+La figure ci-après illustre le diagramme des cas d’utilisation élaboré pour le premier sprint. Il met en évidence les quatre acteurs impliqués (Membre, Testeur, Développeur, Admin et Chef de projet) ainsi que les différentes interactions qui leur sont proposées : création de compte, authentification, gestion du profil, gestion des utilisateurs et gestion des administrateurs.
+Figure 6 : Diagramme de cas d’utilisation du Sprint 1
+2.2. Description textuelle des cas d’utilisation
+2.2.1. Créer un compte (Membre / Testeur / Développeur)
+Cas d’utilisation : Créer un compte
+Sommaire d’identification
+Titre
+Créer un compte
+Description
+Ce cas décrit le processus d’inscription d’un nouveau membre sur la plateforme de ticketing.
+Acteurs
+Membre, Testeur, Développeur
+Description des enchaînements
+Pré-condition
+Disposer d’une adresse email valide et non encore utilisée sur la plateforme.
+Post-condition
+Le compte est créé avec le statut « en_attente » en attente de validation par un Admin.
+Scénario nominal
+1. L’utilisateur accède à la page d’inscription.
+2. Le système affiche le formulaire d’inscription.
+3. L’utilisateur saisit ses informations (nom, prénom, email, mot de passe, rôle).
+4. La vue vérifie la validité des champs.
+5. Le contrôleur transmet les données au modèle.
+6. Le modèle vérifie l’unicité de l’email.
+7. Le modèle crée le compte avec le statut « en_attente ».
+8. Un email de confirmation est envoyé à l’utilisateur.
+9. Un message de succès est affiché.
+Enchânements alternatifs
+E1 : Champs invalides → message d’erreur affiché, formulaire conservé.
+E2 : Email déjà utilisé → message d’erreur indiquant que l’adresse est déjà associée à un compte.
+Tableau 9 : Description textuelle « Créer un compte »
+2.2.2. S’authentifier
+Cas d’utilisation : S’authentifier
+Sommaire d’identification
+Titre
+S’authentifier
+Description
+Ce cas détaille la procédure d’authentification JWT des utilisateurs sur la plateforme.
+Description des enchaînements
+Acteurs
+Membre, Admin, Chef de projet
+Pré-condition
+Disposer d’un compte actif sur la plateforme.
+Post-condition
+Un token JWT est généré et l’utilisateur est redirigé vers son tableau de bord selon son rôle.
+Scénario nominal
+1. L’utilisateur accède à la page d’authentification.
+2. Le système affiche le formulaire de connexion.
+3. L’utilisateur saisit son email et son mot de passe.
+4. Le modèle vérifie les identifiants et le statut du compte.
+5. Un token JWT est généré.
+6. L’utilisateur est redirigé vers son tableau de bord selon son rôle.
+Enchânements alternatifs
+E1 : Identifiants incorrects → message d’erreur affiché.
+E2 : Compte en attente ou rejeté → accès refusé avec message explicatif.
+E3 : Compte désactivé → message d’erreur affiché.
+Tableau 10 : Description textuelle « S’authentifier »
+2.2.3. Réinitialiser le mot de passe
+Cas d’utilisation : Réinitialiser le mot de passe 
+Sommaire d’identification
+Titre
+Réinitialiser le mot de passe
+Description
+Ce cas présente les étapes du processus permettant à un utilisateur de réinitialiser son mot de passe en cas d’oubli.
+Acteurs
+Membre, Testeur, Développeur, Admin, Chef de projet
+Description des enchaînements
+Pré-condition
+L’utilisateur possède un compte actif avec une adresse email valide.
+Post-condition
+Le mot de passe est mis à jour avec succès et l’utilisateur est redirigé vers la page de connexion.
+Scénario nominal
+1. L’utilisateur clique sur « Mot de passe oublié ».
+2. Le système affiche le formulaire de récupération.
+3. L’utilisateur saisit son adresse email.
+4. Le modèle vérifie l’email et génère un token SHA-256 valable 1h.
+5. Un lien de réinitialisation est envoyé par email.
+6. L’utilisateur saisit son nouveau mot de passe.
+7. Le système met à jour le mot de passe et confirme le succès.
+Enchânements alternatifs
+E1 : Email inconnu → message d’erreur.
+E2 : Token expiré → invitation à refaire la demande.
+E3 : Mot de passe non conforme → message d’erreur explicatif.
+Tableau 4 : Description textuelle « Réinitialiser le mot de passe »
+2.2.4. Gérer son compte (Membre)
+Cas d’utilisation : Gérer son compte
+Sommaire d’identification
+Titre
+Gérer son compte
+Description
+Ce cas illustre la manière dont un membre gère son profil en modifiant son email ou son mot de passe.
+Acteurs
+Membre
+Description des enchaînements
+Pré-condition
+L’utilisateur doit être authentifié.
+Post-condition
+Le profil utilisateur est mis à jour avec succès.
+Scénario nominal
+1. L’utilisateur accède à sa page de profil.
+2. Le système affiche les informations du compte.
+3a. [Changer email] : L’utilisateur saisit le nouvel email et son mot de passe actuel. Le modèle vérifie l’unicité et met à jour l’email.
+3b. [Changer mot de passe] : L’utilisateur saisit l’ancien et le nouveau mot de passe. Le modèle vérifie et met à jour le mot de passe.
+4. Un message de succès est affiché.
+Enchânements alternatifs
+E1 : Email déjà utilisé → message d’erreur.
+E2 : Ancien mot de passe incorrect → message d’erreur.
+Tableau 5 : Description textuelle « Gérer son compte »
+2.2.5. Valider / Rejeter un compte (Admin)
+Cas d’utilisation : Valider / rejeter un compte
+Sommaire d’identification
+Titre
+Valider / Rejeter un compte
+Description
+Ce cas décrit le processus par lequel un Admin valide ou rejette une demande d’inscription en attente.
+Acteurs
+Admin
+Description des enchaînements
+Pré-condition
+L’Admin est authentifié et il existe des comptes avec le statut « en_attente ».
+Post-condition
+Le compte passe au statut « actif » ou « rejeté » et le membre reçoit une notification par email.
+Scénario nominal
+1. L’Admin accède à la liste des demandes en attente.
+2. Le système affiche la liste des comptes avec le statut « en_attente ».
+3. L’Admin sélectionne un compte et choisit l’action (valider ou rejeter).
+4. Le modèle met à jour le statut du compte.
+5. Le système de mailing envoie une notification email au membre.
+6. Un message de succès est affiché.
+Tableau 6 : Description textuelle « Valider / Rejeter un compte »
+2.2.6. Désactiver / Réactiver un compte (Admin)
+Cas d’utilisation : Désactiver / Réactiver un compte
+Sommaire d’identification
+Titre
+Désactiver / Réactiver un compte
+Description
+Ce cas décrit les actions de l’Admin pour désactiver un compte utilisateur actif sans le supprimer, ou le réactiver si nécessaire, avec notification email au membre concerné.
+Acteurs
+Admin
+Description des enchaînements
+Pré-condition
+L’Admin est authentifié.
+Post-condition
+Le statut du compte est mis à jour (« désactivé » ou « actif ») et le membre reçoit une notification par email.
+Scénario nominal
+1. L’Admin accède à la liste des utilisateurs.
+2. Le système affiche la liste avec les statuts.
+3. L’Admin sélectionne un utilisateur et choisit l’action.
+4. Le modèle met à jour le statut du compte.
+5. Le système de mailing envoie une notification email au membre.
+6. Un message de succès est affiché.
+Tableau 14 : Description textuelle « Désactiver / Réactiver un compte »
+2.2.7. Créer un compte Chef de projet (Admin)
+Cas d’utilisation : Créer un compte chef de projet
+Sommaire d’identification
+Titre
+Créer un compte Chef de projet
+Description
+Ce cas décrit le processus par lequel l'Admin crée un compte chef de projet avec génération automatique d’un mot de passe temporaire.
+Acteurs
+Admin
+Description des enchaînements
+Pré-condition
+L’Admin est authentifié.
+Post-condition
+Le compte chef de projet est créé avec le statut « actif » et force_password_change=true. Un email avec les identifiants est envoyé.
+Scénario nominal
+1. L’Admin accède à la page de création de compte chef de projet.
+2. Le système affiche le formulaire.
+3. L’Admin saisit nom, prénom et email.
+4. La vue vérifie les champs.
+5. Le modèle vérifie l’unicité de l’email.
+6. Le contrôleur génère un mot de passe temporaire.
+7. Le modèle enregistre le compte et active force_password_change.
+8. Un email avec les identifiants est envoyé au chef de projet.
+9. Un message de succès est affiché.
+Enchânements alternatifs
+E1 : Champs invalides → message d’erreur.
+E2 : Email déjà utilisé → message d’erreur.
+Tableau 15 : Description textuelle « Créer un compte Administrateur »
+3. Diagrammes de séquence
+3.1. Présentation
+Les diagrammes de séquence permettent la modélisation dynamique d’un système en langage UML. Ils décrivent les interactions temporelles entre les différents composants (acteur, vue, contrôleur, modèle, système de mailing) pour réaliser un cas d’utilisation donné. Chaque flèche pleine représente un appel, et chaque flèche en pointillé représente un retour.
+3.2. Diagramme de séquence « Créer un compte »
+Le diagramme ci-dessous décrit les interactions lors du processus d’inscription d’un nouveau membre. Le membre soumet ses informations, le système vérifie l’unicité de l’email et crée le compte avec le statut « en_attente » avant d’envoyer un email de confirmation.
+Figure 7 : Diagramme de séquence « Créer un compte »
+3.3. Diagramme de séquence « Gérer son compte »
+Le diagramme suivant illustre le processus de gestion du profil utilisateur. Un fragment combiné alt représente les deux sous-cas : la modification de l’adresse email (avec vérification de l’unicité et du mot de passe actuel) et la modification du mot de passe (avec vérification de l’ancien mot de passe).
+Figure 8 : Diagramme de séquence « Gérer son compte »
+3.4. Diagramme de séquence « Désactiver / Réactiver un compte »
+Le diagramme ci-dessous décrit les actions de l’Admin pour désactiver un compte utilisateur actif ou le réactiver. Chaque action déclenche automatiquement l’envoi d’un email de notification au membre concerné.
+Figure 9 : Diagramme de séquence « Désactiver / Réactiver un compte »
+3.5. Diagramme de séquence « Créer un compte Chef de projet »
+Le diagramme suivant décrit le processus par lequel l’Admin crée un compte chef de projet. Le système vérifie l’unicité de l’email, génère un mot de passe temporaire, enregistre le compte avec force_password_change=true et envoie les identifiants par email.
+Figure 10 :  Diagramme de séquence « Créer un compte Chef de projet »
+4. Diagramme de classe
+Un diagramme de classe est un type de diagramme UML qui décrit un système en visualisant les différents types d’objets ainsi que les relations statiques qui existent entre eux. Il illustre également les opérations et les attributs des classes.
+La figure ci-dessous illustre le diagramme de classes développé lors du premier sprint. Il présente la structure de gestion des utilisateurs avec leurs rôles et statuts, les mécanismes d’authentification JWT, ainsi que les champs spécifiques tels que « statut » (« en_attente », « actif », « rejeté », « désactivé ») et « force_password_change » pour les administrateurs.
+Figure 11 : Diagramme de classe du Sprint 1
+5. Revue du Sprint 1
+Cette section présente les résultats obtenus lors du premier sprint, illustrés par les interfaces développées de l’application.
+5.1. Interface d’Inscription
+L’interface d’inscription permet au membre de saisir ses informations personnelles (nom, prénom, email, mot de passe et rôle). Une validation des champs est implémentée côté client et côté serveur pour garantir la qualité des données.
+Figure 12 : Interface d’inscription
+5.2. Interface d’Authentification
+L’interface d’authentification permet à tous les utilisateurs de se connecter via leur email et mot de passe. En cas d’échec, un message d’erreur explicite est affiché.
+Figure 13 : Interface d’authentification
+5.3. Interface de Réinitialisation du Mot de Passe
+L’interface de réinitialisation guide l’utilisateur à travers les étapes : saisie de l’email, réception du lien sécurisé et définition d’un nouveau mot de passe.
+Figure 14 : Interface de réinitialisation du mot de passe
+5.4. Interface de Gestion du Profil
+L’interface de gestion du profil permet au membre de modifier son adresse email ou son mot de passe. La modification de l’email requiert la vérification du mot de passe actuel pour des raisons de sécurité.
+Figure 15 :  Interface de gestion du profil
+5.5. Interface de Validation des Comptes
+L’interface de validation permet à l’Admin de consulter la liste des comptes en attente et de valider ou rejeter chaque demande. Le membre reçoit une notification email selon la décision prise.
+Figure 16 : Interface de validation des comptes
+5.6. Interface de Gestion des Utilisateurs
+L’interface de gestion des utilisateurs permet à l’Admin de consulter la liste complète des utilisateurs, de désactiver ou réactiver leurs comptes. Chaque action déclenche l’envoi d’un email de notification au membre concerné.
+Figure 17 : Interface de gestion des utilisateurs
+5.7. Interface de Création d’un Compte Chef de projet
+L’interface de création de compte chef de projet est réservée à l’Admin. Elle permet de saisir les informations du chef de projet, générer automatiquement un mot de passe temporaire et l’envoyer par email.
+Figure 18 :  Interface de création d’un compte chef de projet
+6. Rétrospective du Sprint 1
+Cette section présente les réalisations du premier sprint. L’ensemble des objectifs ont été atteints avec la mise en œuvre complète de toutes les fonctionnalités planifiées : inscription avec validation par Admin, authentification JWT sécurisée, réinitialisation du mot de passe par email, gestion du profil (email et mot de passe), validation/rejet des comptes avec notification email, désactivation/réactivation avec notification email, et création de comptes chefs de projet avec mot de passe temporaire.
+Conclusion
+Ce premier sprint a permis de mettre en place les fondations sécurisées de la plateforme de ticketing : la gestion complète des utilisateurs et l’authentification JWT. Le prochain chapitre présentera le déroulement du deuxième sprint.
+Chapitre 4 : Sprint 2 – Gestion des Projets
+Introduction
+Dans ce chapitre, nous présentons les démarches réalisées pour l’atteinte des objectifs du deuxième sprint, qui couvre la création et la gestion des projets, ainsi que l’affectation des membres à ces projets. Nous exposons les différents diagrammes UML élaborés pour ce sprint, notamment le diagramme de cas d’utilisation, les diagrammes de séquence sélectionnés et le diagramme de classe. Ces éléments de modélisation permettent de formaliser les interactions entre les acteurs du système et les fonctionnalités développées.
+1. Backlog du Sprint 2
+Le tableau ci-dessous présente le backlog du deuxième sprint, détaillant l’ensemble des user stories retenues avec leur identifiant, leur description et leur ordre de priorité d’implémentation.
+ID
+Thème
+User Story
+Priorité
+US07
+Créer un projet
+En tant que chef de projet ou admin, je veux créer un nouveau projet avec un nom et une description, afin d’organiser le travail autour d’un périmètre fonctionnel défini. Le projet est créé avec le statut « ouvert » automatiquement.
+Must Have
+US08
+Modifier / Fermer
+En tant que chef de projet ou admin (créateur), je veux modifier les informations de mon projet ou le fermer — uniquement si tous ses tickets sont en statut VALIDE — sans pouvoir le supprimer, afin de préserver la traçabilité. À la fermeture, le projet est archivé avec son historique complet.
+Must Have
+US09
+Affecter des membres
+En tant que chef de projet ou admin (créateur), je veux affecter un testeur et plusieurs développeurs à mon projet, et pouvoir les retirer, afin que chaque membre n’accède qu’aux projets qui le concernent. La modification du projet envoie une notification aux membres affectés.
+Must Have
+US10
+Consulter les projets
+En tant que membre (testeur ou développeur), je veux consulter la liste des projets auxquels je suis affecté, filtrer et rechercher par nom, afin d’accéder rapidement aux informations qui me concernent.
+Must Have
+US11
+Supervision admin
+En tant qu’admin, je veux voir la liste de tous les projets (tous chefs confondus) mais ne modifier ou fermer que les projets que j’ai moi-même créés, afin d’assurer une supervision globale sans interférer avec le travail des chefs de projet.
+Must Have
+Tableau 16 : Backlog du Sprint 2
+2. Analyse et Conception
+2.0. Règles métier et cycle de vie du projet
+Le cycle de vie d’un projet suit une progression stricte en trois statuts, décrits dans le tableau ci-dessous.
+Statut
+Déclencheur
+Description
+ouvert
+Création du projet
+Statut initial défini automatiquement à la création par le chef de projet ou l’admin.
+en_cours
+Premier ticket créé par un testeur
+Le système passe automatiquement le projet en « en_cours » dès qu’un testeur soumet un premier ticket.
+fermé
+Fermeture volontaire par le créateur
+Possible uniquement si tous les tickets du projet ont le statut VALIDE. Le projet est archivé avec son historique complet.
+Tableau 17 : Cycle de vie d’un projet
+Les règles métier fondamentales régissant ce module sont les suivantes :
+Un chef de projet peut créer, modifier et fermer uniquement les projets qu’il a créés.
+Un admin hérite de toutes les capacités d’un chef de projet et peut consulter l’ensemble des projets de la plateforme ; il ne peut modifier ou fermer que ses propres projets.
+La fermeture d’un projet est conditionnelle : tous les tickets du projet doivent avoir le statut VALIDE.
+Un projet fermé est archivé avec son historique complet : date_debut, date_fin, membres participants, créateur, nombre de tickets.
+La suppression d’un projet est interdite (HTTP 403) pour garantir la traçabilité.
+Un seul testeur peut être affecté à un projet. Plusieurs développeurs peuvent être affectés simultanément.
+Toute modification du projet (membres ou informations) déclenche une notification à tous les membres affectés.
+Le passage automatique au statut « en_cours » s’effectue lorsqu’un testeur crée le premier ticket.
+2.1. Diagramme de cas d’utilisation
+La figure ci-après illustre le diagramme de cas d’utilisation élaboré pour le deuxième sprint. Ce diagramme met en évidence les interactions entre les acteurs du système — Administrateur, Chef de projet, Testeur et Développeur — dans le cadre du module de gestion des projets.
+Figure 19 : Diagramme de cas d’utilisation du Sprint 2
+2.2. Description textuelle des cas d’utilisation
+2.2.1. Cas d’utilisation « Créer un projet »
+Cas d’utilisation : Créer un projet
+Sommaire d’identification
+Titre
+Créer un projet
+Description
+Ce cas décrit le processus de création d’un nouveau projet par un chef de projet ou un administrateur sur la plateforme.
+Acteurs
+Chef de projet, Admin
+Description des enchaînements
+Pré-condition
+L’acteur est authentifié avec le rôle chef_de_projet ou admin.
+Post-condition
+Le projet est créé avec le statut « ouvert » et le champ created_by est renseigné. Il apparaît dans la liste des projets du créateur.
+Scénario nominal
+1. L’acteur accède à la page de gestion des projets. 2. Il clique sur « Nouveau projet ». 3. Le système affiche le formulaire de création (nom, description). 4. L’acteur remplit les informations et soumet. 5. Le système vérifie la validité des données. 6. Le système crée le projet avec statut « ouvert » et created_by = acteur courant. 7. Un message de confirmation est affiché.
+Enchaînements alternatifs / Erreurs
+E1 : Nom vide → « Le nom du projet est obligatoire. » E2 : Nom déjà utilisé → « Un projet avec ce nom existe déjà. »
+Tableau 18 : Description textuelle « Créer un projet »
+2.2.2. Cas d’utilisation « Modifier un projet »
+Cas d’utilisation : Modifier un projet
+Sommaire d’identification
+Titre
+Modifier un projet
+Description
+Ce cas décrit la modification des informations d’un projet existant par son créateur.
+Acteurs
+Chef de projet (créateur), Admin (créateur)
+Description des enchaînements
+Pré-condition
+Le projet existe avec le statut « ouvert » ou « en_cours ». L’acteur est le créateur du projet (created_by = acteur courant).
+Post-condition
+Les informations du projet sont mises à jour. Une notification est envoyée à tous les membres affectés.
+Scénario nominal
+1. L’acteur accède à la liste de ses projets. 2. Il sélectionne un projet et clique sur « Modifier ». 3. Le système affiche le formulaire pré-rempli. 4. L’acteur modifie les champs souhaités et soumet. 5. Le système valide et enregistre les modifications. 6. Le système envoie une notification à tous les membres du projet. 7. Un message de confirmation est affiché.
+Enchaînements alternatifs / Erreurs
+E1 : Tentative de modification par un non-créateur → HTTP 403 « Accès refusé. » E2 : Nom vide → « Le nom du projet est obligatoire. » E3 : Tentative de suppression → HTTP 403 « La suppression d’un projet est interdite. »
+Tableau 19 :  Description textuelle « Modifier un projet »
+2.2.3. Cas d’utilisation « Fermer un projet »
+Cas d’utilisation : Fermer un projet
+Sommaire d’identification
+Titre
+Fermer un projet
+Description
+Ce cas décrit la fermeture et l’archivage d’un projet lorsque tous ses tickets sont validés.
+Acteurs
+Chef de projet (créateur), Admin (créateur)
+Description des enchaînements
+Pré-condition
+Le projet est en statut « ouvert » ou « en_cours ». L’acteur est le créateur. Tous les tickets du projet ont le statut VALIDE.
+Post-condition
+Le statut du projet passe à « fermé ». Le projet est archivé avec : date_debut, date_fin (date de fermeture), liste des membres ayant participé, identité du créateur, nombre total de tickets. Aucun nouveau ticket ne peut être ajouté.
+Scénario nominal
+1. L’acteur clique sur « Fermer le projet ». 2. Le système vérifie que tous les tickets sont en statut VALIDE. 3. Le système passe le statut à « fermé » et enregistre la date_fin. 4. Le projet apparaît en lecture seule dans la liste archivée avec son historique complet. 5. Un message de confirmation est affiché.
+Enchaînements alternatifs / Erreurs
+E1 : Des tickets ne sont pas encore VALIDE → « Impossible de fermer : X ticket(s) ne sont pas encore validés. » E2 : Acteur non créateur → HTTP 403 « Accès refusé. »
+Tableau 20 : Description textuelle « Fermer un projet »
+2.2.4. Cas d’utilisation « Affecter des membres à un projet »
+Cas d’utilisation : Affecter des membres à un projet
+Sommaire d’identification
+Titre
+Affecter des membres à un projet
+Description
+Ce cas décrit le processus d’affectation et de retrait de membres (testeur et développeurs) sur un projet, avec notification automatique.
+Acteurs
+Chef de projet (créateur), Admin (créateur)
+Description des enchaînements
+Pré-condition
+Le projet existe avec le statut « ouvert » ou « en_cours ». Le créateur est authentifié. Les membres à affecter ont le statut « actif ».
+Post-condition
+Les membres sélectionnés sont associés au projet (table pivot project_user). Une notification est envoyée à tous les membres affectés. Les membres voient désormais le projet dans leur liste.
+Scénario nominal
+1. L’acteur accède à la page de son projet. 2. Il clique sur « Affecter des membres ». 3. Le système affiche les utilisateurs actifs disponibles (testeurs et développeurs). 4. L’acteur sélectionne les membres et confirme. 5. Le système enregistre les associations dans project_user. 6. Le système envoie une notification à chaque membre affecté. 7. Un message de confirmation est affiché.
+Enchaînements alternatifs / Erreurs
+E1 : Compte désactivé → « Ce compte n’est pas actif. » E2 : Membre déjà affecté → « Ce membre est déjà affecté à ce projet. » E3 : Second testeur → « Un projet ne peut avoir qu’un seul testeur assigné. » Enchaînement alternatif — Retirer un membre : L’acteur clique sur « Retirer » à côté d’un membre. Le système supprime l’association et envoie une notification au membre retiré.
+Tableau 21 : Description textuelle « Affecter des membres »
+2.2.5. Cas d’utilisation « Consulter les projets assignés »
+Cas d’utilisation : Consulter les projets assignés
+Sommaire d’identification
+Titre
+Consulter les projets assignés
+Description
+Ce cas décrit la consultation par un membre de la liste des projets auxquels il est affecté, avec filtre et recherche par nom.
+Acteurs
+Testeur, Développeur
+Description des enchaînements
+Pré-condition
+Le membre est authentifié et affecté à au moins un projet.
+Post-condition
+Le membre visualise la liste filtrée de ses projets.
+Scénario nominal
+1. Le membre accède à la page « Mes projets ». 2. Le système affiche uniquement les projets auxquels il est affecté. 3. Le membre peut saisir un nom dans le champ de recherche. 4. Le système filtre la liste en temps réel. 5. Le membre clique sur un projet pour consulter son détail.
+Enchaînements alternatifs / Erreurs
+E1 : Aucun projet assigné → « Aucun projet ne vous est assigné pour le moment. »
+Tableau 22 : Description textuelle « Consulter les projets assignés »
+2.2.6. Cas d’utilisation « Supervision admin »
+Cas d’utilisation : Supervision admin
+Sommaire d’identification
+Titre
+Supervision admin
+Description
+Ce cas décrit la capacité de l’admin à consulter tous les projets de la plateforme, tout en limitant ses droits de modification à ses propres projets.
+Acteurs
+Admin
+Description des enchaînements
+Pré-condition
+L’utilisateur est authentifié avec le rôle admin.
+Post-condition
+L’admin visualise l’ensemble des projets. Il ne peut modifier ou fermer que ceux qu’il a créés.
+Scénario nominal
+1. L’admin accède à la page « Tous les projets ». 2. Le système retourne la liste complète, tous chefs de projet confondus. 3. Pour chaque projet, les boutons Modifier/Fermer sont activés uniquement si created_by = admin courant. 4. L’admin peut filtrer et rechercher dans la liste.
+Enchaînements alternatifs / Erreurs
+E1 : Tentative de modification d’un projet non créé → HTTP 403 « Vous ne pouvez modifier que vos propres projets. »
+Tableau 23 : Description textuelle « Supervision admin »
+3. Diagrammes de séquence
+Les diagrammes de séquence permettent la modélisation dynamique d’un système en langage UML. Ils décrivent les interactions temporelles entre les différents composants (acteur, vue, contrôleur, modèle, système de mailing) pour réaliser un cas d’utilisation donné. Chaque flèche pleine représente un appel, et chaque flèche en pointillé représente un retour.
+Pour ce sprint, trois diagrammes de séquence ont été réalisés, correspondant aux scénarios dont la logique métier est la plus complexe et la plus représentative du module.
+3.1. Diagramme de séquence « Créer un projet »
+Ce diagramme décrit les interactions lors de la création d’un projet. Le système valide les données saisies, enregistre le projet avec le statut « ouvert » et renseigne le champ created_by avec l’identifiant de l’acteur courant.
+Figure 20 : Diagramme de séquence « Créer un projet »
+3.2. Diagramme de séquence « Fermer un projet »
+Ce diagramme illustre la fermeture conditionnelle d’un projet : vérification que tous les tickets associés ont le statut VALIDE, passage au statut « fermé », enregistrement de la date_fin et archivage complet avec l’historique du projet.
+Figure 21 : Diagramme de séquence « Fermer un projet »
+3.3. Diagramme de séquence « Affecter des membres »
+Ce diagramme illustre l’affectation d’un membre à un projet, avec vérification du statut du compte, application de la règle du testeur unique, enregistrement dans la table pivot project_user et envoi automatique d’une notification à chaque membre affecté.
+Figure 23 : Diagramme de séquence « Affecter des membres »
+4. Diagramme de classe
+Un diagramme de classe est un type de diagramme UML qui décrit la structure statique d’un système en représentant les classes, leurs attributs, leurs méthodes et les relations qui existent entre elles. Il constitue la base de la conception orientée objet et guide la création des modèles de la base de données.
+La figure ci-dessous illustre le diagramme de classes élaboré pour le Sprint 2, centré sur le module de gestion des projets, des affectations et des notifications.
+Figure 24 : Diagramme de classe du Sprint 2
+Structure du modèle de données — Sprint 2
+Structure de la classe Project :  id · nom · description · statut (ouvert | en_cours | fermé) · created_by (FK → User) · date_debut · date_fin · timestamps
+Table pivot project_user :  project_id (FK → Project) · user_id (FK → User) · created_at
+Relations :  Project belongsTo User (created_by)  ·  Project belongsToMany User (members)  ·  User belongsToMany Project  ·  Project hasMany Ticket  ·  Ticket belongsTo Project
+Contraintes métier :  Un seul membre de rôle testeur par projet.  ·  La fermeture est possible uniquement si tous les tickets ont etat = VALIDE.  ·  La suppression est interdite (HTTP 403).  ·  Toute modification déclenche une notification à tous les membres du projet.
+Tableau 24 : Structure du modèle de données du Sprint 2
+5. Revue du Sprint 2
+Cette section présente les résultats obtenus à l’issue du deuxième sprint, illustrés par les interfaces développées de l’application.
+5.1. Interface de Création d’un Projet
+L’interface de création permet au chef de projet ou à l’admin de saisir le nom et la description du projet. Le statut « ouvert » est attribué automatiquement à la création.
+Figure 25 : Interface de création d’un projet
+5.2. Interface de Modification d’un Projet
+L’interface de modification affiche le formulaire pré-rempli avec les données du projet sélectionné. Seul le créateur du projet peut accéder à cette interface. 
+Figure 26 : Interface de modification d’un projet
+5.3. Interface de Fermeture d’un Projet
+L’interface de fermeture déclenche la vérification conditionnelle de tous les tickets. Si la condition est remplie, le projet est archivé et passe en lecture seule.
+Figure 27 :  Interface de fermeture d’un projet
+5.4. Interface d’Affectation des Membres
+L’interface d’affectation affiche la liste des membres actifs disponibles. Le créateur peut affecter un testeur et plusieurs développeurs, ou retirer un membre existant. Chaque action déclenche l’envoi d’une notification email.
+Figure 28 :  Interface d’affectation des membres
+5.5. Interface de Consultation des Projets Assignés
+L’interface de consultation permet au testeur ou au développeur de visualiser uniquement les projets auxquels il est affecté, avec une recherche dynamique par nom.
+Figure 29 :  Interface de consultation des projets assignés
+5.6. Interface de Supervision Admin
+L’interface de supervision affiche la liste complète de tous les projets de la plateforme. Les boutons « Modifier » et « Fermer » sont activés uniquement pour les projets dont l’admin est le créateur
+Figure 30 :  Interface de supervision admin
+6. Rétrospective du Sprint 2
+Ce deuxième sprint a permis de réaliser l’ensemble des fonctionnalités planifiées avec succès : la création de projets avec statut automatique, la modification et la fermeture conditionnelle avec archivage complet, l’affectation et le retrait de membres avec notification automatique, la consultation des projets assignés avec filtre et recherche, ainsi que la supervision globale réservée à l’administrateur.
+Conclusion
+Ce deuxième sprint a permis de mettre en place le module central de la plateforme : la gestion des projets avec un cycle de vie précis, un contrôle strict des accès basé sur le rôle de créateur du projet, et des règles métier garantissant la qualité et la traçabilité (fermeture conditionnelle, archivage, interdiction de suppression, notification automatique). Ces briques constituent le socle sur lequel s’appuiera le Sprint 3, dédié à la gestion des tickets.
+Chapitre 5 : Sprint 3 – Gestion des Tickets
+Introduction
+Ce chapitre présente les travaux réalisés dans le cadre du troisième sprint, consacré à la gestion des tickets. Ce module constitue le cœur fonctionnel de la plateforme : il couvre la création de tickets par les testeurs, le workflow d’assignation automatique aux développeurs, la validation par les gestionnaires, le suivi du cycle de vie, l’enregistrement du temps passé, ainsi que les commentaires et pièces jointes. Nous décrivons les diagrammes UML élaborés pour ce sprint et les interfaces développées.
+1. Backlog du Sprint 3
+Le tableau suivant présente l’ensemble des user stories retenues pour ce sprint, avec leur identifiant, leur thème, leur description et leur priorité.
+ID
+Thème
+User Story
+Priorité
+US12
+Créer un ticket
+En tant que testeur affecté à un projet, je veux créer un ticket en renseignant un titre, une description structurée (étapes pour reproduire, résultat attendu vs obtenu, notes), une priorité, un temps estimé et des pièces jointes optionnelles, afin de signaler un bug ou une anomalie.
+Must Have
+US13
+Ticket de retour
+En tant que testeur, je veux créer un ticket de type RETOUR lié à un ticket parent déjà traité mais non résolu, afin que le même développeur soit automatiquement réassigné sans passer par le workflow d’auto-assignation.
+Must Have
+US14
+Auto-assignation
+En tant que système, je veux proposer automatiquement le développeur actif le moins chargé à l’admin pour validation, afin d’optimiser la répartition de la charge. Les tickets CRITIQUE déclenchent une notification urgente.
+Must Have
+US15
+Validation / Réassignation
+En tant qu’admin ou chef de projet, je veux valider ou rejeter la proposition d’assignation automatique, ou assigner manuellement un développeur, afin de garder le contrôle de l’attribution des tâches.
+Must Have
+US16
+Cycle de vie
+En tant que développeur assigné, je veux faire évoluer l’état d’un ticket (OUVERT → EN_COURS → RESOLU). En tant que testeur, je veux valider la résolution et fermer le ticket (FERME).
+Must Have
+US17
+Suivi du temps
+En tant que développeur assigné, je veux enregistrer le temps passé sur un ticket (logTime) pour alimenter les statistiques et comparer le temps estimé au temps réel.
+Should Have
+US18
+Commentaires & PJ
+En tant que membre du projet, je veux ajouter des commentaires et des pièces jointes (images, PDF, vidéos) à un ticket pour faciliter la communication et la documentation.
+Should Have
+Tableau 24 : Backlog du Sprint 3
+2. Analyse et Conception
+2.0. Règles métier
+Le module de gestion des tickets repose sur un ensemble de règles métier précises qui gouvernent la création, l’assignation et le cycle de vie de chaque ticket.
+Règle
+Description
+Création
+Seul le testeur affecté au projet peut créer un ticket. Il renseigne : titre, description structurée (étapes, résultat attendu vs obtenu, notes), priorité, temps estimé, type (NOUVEAU ou RETOUR) et pièces jointes optionnelles.
+Type RETOUR
+Un ticket RETOUR est lié à un ticket parent (parent_ticket_id). Il est automatiquement assigné au même développeur que le ticket parent, sans passer par le workflow d’auto-assignation.
+Auto-assignation
+À la création d’un ticket NOUVEAU, le système propose automatiquement le développeur actif du projet ayant le moins de tickets OUVERT/EN_COURS. La proposition est soumise à validation par l’Admin ou le Chef de projet.
+Ticket CRITIQUE
+Si la priorité est CRITIQUE, force_assigned = true. Une notification urgente est envoyée aux gestionnaires pour validation accélérée.
+Rejet d’assignation
+Si l’admin rejette la proposition, le développeur est ajouté à rejected_by et une nouvelle proposition est calculée en excluant les développeurs déjà refusés. L’admin peut aussi assigner manuellement.
+Cycle de vie
+OUVERT → EN_COURS (développeur commence) → RESOLU (développeur termine) → FERME (testeur valide). Le premier ticket créé passe automatiquement le projet de « ouvert » à « en_cours ».
+Suivi du temps
+Seul le développeur assigné peut enregistrer du temps (logTime). Le champ temps_passe est incrémenté à chaque saisie. Le testeur est notifié à chaque enregistrement.
+Pièces jointes
+Formats acceptés : jpg, jpeg, png, pdf, doc, docx, mp4, mov. Taille maximale : 10 Mo par fichier.
+Notifications
+Chaque changement d’état, assignation ou enregistrement de temps déclenche une notification temps réel et/ou un email aux parties concernées.
+Tableau 25 : Règles métier du Sprint 3
+2.1. Diagramme de cas d’utilisation
+Le diagramme ci-dessous représente les interactions entre les acteurs — Testeur, Développeur, Chef de projet, Admin — et les fonctionnalités du module de gestion des tickets.
+Figure 29 : Diagramme de cas d’utilisation du Sprint 3
+2.2. Description textuelle des cas d’utilisation
+2.2.1. Cas d’utilisation « Créer un ticket »
+Cas d’utilisation : Créer un ticket
+Sommaire d’identification
+Titre
+Créer un ticket
+Description
+Le testeur signale un bug en créant un ticket avec description structurée, priorité, temps estimé et pièces jointes optionnelles.
+Acteurs
+Testeur
+Description des enchaînements
+Pré-condition
+Le testeur est authentifié, son compte est actif et il est affecté au projet.
+Post-condition
+Le ticket est créé avec l’état OUVERT. L’auto-assignation est déclenchée. Si le projet était « ouvert », il passe automatiquement en « en_cours ».
+Scénario nominal
+1. Le testeur accède au projet et clique sur « Créer un ticket ». 2. Il renseigne : titre, étapes pour reproduire, résultat attendu vs obtenu, notes, priorité, temps estimé, type NOUVEAU. 3. Il joint optionnellement des fichiers (images, PDF, vidéos). 4. Il soumet le formulaire. 5. Le système valide les données et crée le ticket (état : OUVERT). 6. Le système déclenche l’auto-assignation. 7. Si le projet est « ouvert », il passe automatiquement en « en_cours ». 8. Un message de confirmation est affiché.
+Enchaînements alternatifs / Erreurs
+E1 : Titre vide → « Le titre est obligatoire. » E2 : Temps estimé ≤ 0 → « Le temps estimé doit être positif. » E3 : Fichier > 10 Mo → « Fichier trop volumineux. » E4 : Testeur non membre du projet → HTTP 403.
+Tableau 26 : Description textuelle « Créer un ticket »
+2.2.2. Cas d’utilisation « Ticket de retour »
+Cas d’utilisation : Créer un ticket de retour
+Sommaire d’identification
+Titre
+Créer un ticket de retour
+Description
+Le testeur crée un ticket lié à un ticket parent dont la correction est insuffisante.
+Acteurs
+Testeur
+Description des enchaînements
+Pré-condition
+Le ticket parent existe et possède un développeur assigné (assignment_status = approved).
+Post-condition
+Le ticket RETOUR est créé et directement assigné au développeur du ticket parent (force_assigned = true). Le développeur reçoit une notification.
+Scénario nominal
+1. Le testeur sélectionne le type RETOUR et choisit le ticket parent. 2. Il renseigne les informations du ticket. 3. Le système crée le ticket et récupère le developpeur_id du ticket parent. 4. Le système assigne directement ce développeur (assignment_status = approved, force_assigned = true). 5. Notification au développeur : « Un ticket de retour vous a été assigné d’office. »
+Enchaînements alternatifs / Erreurs
+E1 : Ticket parent sans développeur assigné → le workflow d’auto-assignation normal est déclenché.
+Tableau 27 : Description textuelle « Ticket de retour »
+2.2.3. Cas d’utilisation « Auto-assignation »
+Cas d’utilisation : Auto-assignation d’un ticket
+Sommaire d’identification
+Titre
+Auto-assignation d’un ticket
+Description
+Le système propose automatiquement le développeur le moins chargé du projet à l’admin pour validation.
+Acteurs
+Système (AutoAssignService), Admin, Chef de projet
+Description des enchaînements
+Pré-condition
+Le ticket vient d’être créé (type NOUVEAU). Des développeurs actifs sont présents dans le projet.
+Post-condition
+proposed_developpeur_id renseigné, assignment_status = pending. L’admin reçoit une notification de validation.
+Scénario nominal
+1. Le système récupère les développeurs actifs du projet. 2. Il exclut ceux présents dans rejected_by. 3. Il sélectionne le développeur avec le moins de tickets OUVERT/EN_COURS. 4. Si priorité = CRITIQUE, force_assigned = true. 5. Mise à jour : proposed_developpeur_id = dev sélectionné, assignment_status = pending. 6. Notification Admin + Chef de projet : « Nouveau ticket, assignation proposée à [Nom] — en attente de validation. »
+Enchaînements alternatifs / Erreurs
+E1 : Aucun développeur actif → assignment_status = none + notification admin. E2 : Tous les devs dans rejected_by → même comportement que E1.
+Tableau 28 : Description textuelle « Auto-assignation »
+2.2.4. Cas d’utilisation « Validation / Réassignation »
+Cas d’utilisation : Valider, rejeter ou réassigner un ticket
+Sommaire d’identification
+Titre
+Valider, rejeter ou réassigner
+Description
+L’admin ou le chef de projet valide la proposition d’assignation, la rejette, ou assigne manuellement un développeur.
+Acteurs
+Admin, Chef de projet
+Description des enchaînements
+Pré-condition
+assignment_status = pending (valider/rejeter) ou état quelconque (assigner manuellement). L’acteur est créateur du projet ou admin.
+Post-condition (Valider)
+developpeur_id = proposed_developpeur_id, assignment_status = approved. Notification + email au développeur et au testeur.
+Post-condition (Rejeter)
+Dev ajouté à rejected_by, assignment_status = rejected. Assignation manuelle requise.
+Post-condition (Réassigner)
+developpeur_id = dev choisi, force_assigned = true. Notification + email.
+Enchaînements alternatifs / Erreurs
+E1 : Rejet d’une assignation déjà approuvée → HTTP 409. E2 : Utilisateur choisi n’est pas un développeur → HTTP 400.
+Tableau 29 : Description textuelle « Validation / Réassignation »
+2.2.5. Cas d’utilisation « Cycle de vie du ticket »
+Cas d’utilisation : Cycle de vie du ticket
+Sommaire d’identification
+Titre
+Gérer le cycle de vie d’un ticket
+Description
+Le développeur fait évoluer l’état du ticket. Le testeur valide la résolution et clôt le ticket.
+Acteurs
+Développeur, Testeur
+Description des enchaînements
+Pré-condition
+assignment_status = approved. L’acteur est bien le developpeur_id du ticket.
+Post-condition
+L’état est mis à jour. Notifications envoyées à chaque transition.
+Scénario nominal
+1. Développeur : OUVERT → EN_COURS (commence le travail). 2. Développeur : EN_COURS → RESOLU (travail terminé). 3. Testeur : consulte le ticket résolu, valide la correction. 4. Testeur : RESOLU → FERME (validation définitive). 5. Notification au testeur à chaque changement d’état.
+Enchaînements alternatifs / Erreurs
+E1 : Transition invalide → HTTP 400. E2 : Développeur non assigné → HTTP 403.
+Tableau 30 : Description textuelle « Cycle de vie du ticket »
+2.2.6. Cas d’utilisation « Suivi du temps »
+Cas d’utilisation : Suivi du temps
+Sommaire d’identification
+Titre
+Enregistrer le temps passé sur un ticket
+Description
+Le développeur enregistre incrémentalement le temps passé pour alimenter les statistiques.
+Acteurs
+Développeur
+Description des enchaînements
+Pré-condition
+assignment_status = approved. L’acteur est le developpeur_id du ticket.
+Post-condition
+temps_passe incrémenté. Le testeur reçoit une notification.
+Scénario nominal
+1. Le développeur accède au ticket. 2. Il saisit le temps à ajouter (en heures). 3. Le système valide (> 0) et incrémente temps_passe. 4. Notification au testeur : « Du temps a été enregistré sur le ticket. »
+Enchaînements alternatifs / Erreurs
+E1 : Temps ≤ 0 → HTTP 422. E2 : Non-développeur assigné → HTTP 403.
+Tableau 31 : Description textuelle « Suivi du temps »
+3. Diagrammes de séquence
+Les diagrammes de séquence modélisent les interactions dynamiques entre les acteurs et les composants du système. Pour ce sprint, trois diagrammes ont été réalisés, correspondant aux flux dont la logique métier est la plus représentative et la plus complexe.
+3.1. Diagramme de séquence « Créer un ticket »
+Ce diagramme décrit le flux complet de création d’un ticket : validation des données, construction de la description structurée, création en base, gestion des pièces jointes, passage automatique du projet en « en_cours », puis déclenchement de l’auto-assignation via l’AutoAssignService.
+Figure 29 : Diagramme de séquence « Créer un ticket »
+3.2. Diagramme de séquence « Workflow d’assignation »
+Ce diagramme illustre le workflow complet d’assignation automatique : sélection du développeur le moins chargé par l’AutoAssignService, notification de validation à l’admin, puis les deux branches — validation (approve) ou rejet (reject) — avec leurs notifications respectives.
+Figure 30 : Diagramme de séquence « Workflow d’assignation »
+3.3. Diagramme de séquence « Cycle de vie du ticket »
+Ce diagramme représente les transitions d’état successives du ticket : OUVERT → EN_COURS → RESOLU (développeur), puis RESOLU → FERME (testeur). Chaque transition déclenche une notification à la partie concernée.
+Figure 31 : Diagramme de séquence « Cycle de vie du ticket »
+4. Diagramme de classe
+Le diagramme de classe ci-dessous présente la structure statique du module de gestion des tickets avec les nouvelles classes introduites dans ce sprint (Ticket, Comment, Attachment) et leurs relations avec les classes existantes (User, Project).
+Figure 32 : Diagramme de classe du Sprint 3
+Structure du modèle de données — Sprint 3
+Classe Ticket :  id · titre · description · priorite (BASSE|MOYENNE|HAUTE|CRITIQUE) 
+· 
+etat (OUVERT| EN_COURS|RESOLU|FERME)
+ · project_id (FK) · testeur_id (FK) · developpeur_id (FK, nullable) · proposed_developpeur_id (FK, nullable) · assignment_status (none|pending|approved|rejected) · force_assigned · rejected_by (JSON) · temps_estime · temps_passe · type (NOUVEAU|RETOUR) · parent_ticket_id (FK, nullable) · timestamps
+Classe Comment :  id · ticket_id (FK) · user_id (FK) · contenu · timestamps
+Classe Attachment :  id · ticket_id (FK) · file_name · file_path · file_type · timestamps
+Relations :  Ticket belongsTo Project · Ticket belongsTo User (testeur) · Ticket belongsTo User (developpeur, nullable) · Ticket hasMany Comment · Ticket hasMany Attachment · Ticket belongsTo Ticket (parent, nullable) · Ticket hasMany Ticket (enfants RETOUR)
+Tableau 32 : Structure du modèle de données du Sprint 3
+5. Revue du Sprint 3
+Cette section présente les interfaces développées à l’issue du troisième sprint.
+5.1. Interface de Création d’un Ticket
+L’interface propose un formulaire structuré : titre, étapes pour reproduire, résultat attendu vs obtenu, notes, priorité, temps estimé et type (NOUVEAU / RETOUR). Pour un ticket de retour, le testeur sélectionne le ticket parent dans une liste déroulante.
+Figure 33 : Interface de création d’un ticket
+5.2. Vue Kanban des Tickets
+Les tickets du projet sont affichés en vue Kanban organisée par état (A traiter, En cours, A tester, Réclamation, Validé). Chaque carte affiche le titre, la priorité, le développeur assigné et le temps estimé.
+Figure 34 : Vue Kanban des tickets
+5.3. Interface de Détail d’un Ticket
+La page de détail affiche toutes les informations du ticket : état, priorité, développeur assigné, temps estimé / passé, description structurée, historique des commentaires et pièces jointes téléchargeables.
+[ Insérer ici la capture d’écran — Détail d’un ticket ]
+Figure 35 : Détail d’un ticket
+5.4. Interface de Validation des Assignations
+L’admin ou le chef de projet visualise les tickets en attente de validation. Pour chaque ticket, il peut accepter la proposition automatique, la rejeter ou assigner manuellement un autre développeur.
+[ Insérer ici la capture d’écran — Validation des assignations ]
+Figure 36 : Interface de validation des assignations
+5.5. Interface de Suivi du Temps
+Le développeur enregistre le temps passé directement depuis la page de détail. Un récapitulatif temps estimé / temps passé est affiché avec une barre de progression visuelle.
+[ Insérer ici la capture d’écran — Suivi du temps ]
+Figure 37 : Interface de suivi du temps
+6. Rétrospective du Sprint 3
+Ce troisième sprint a permis de livrer l’ensemble des fonctionnalités du module de gestion des tickets : création avec description structurée et pièces jointes, workflow d’auto-assignation avec validation par les gestionnaires, tickets de retour avec assignation directe, suivi du cycle de vie complet (OUVERT → EN_COURS → RESOLU → FERME), enregistrement du temps passé et système de commentaires.
+Conclusion
+Le Sprint 3 a concrétisé la fonctionnalité centrale de la plateforme : la gestion complète des tickets. Le workflow d’assignation automatique, combiné à la validation humaine des gestionnaires, garantit une répartition équilibrée de la charge entre les développeurs. Le cycle de vie structuré des tickets, depuis leur création par le testeur jusqu’à leur clôture après validation, assure une traçabilité totale. Ces bases solides permettront au Sprint 4 d’y greffer la couche d’Intelligence Artificielle pour l’analyse et la classification automatique des tickets.

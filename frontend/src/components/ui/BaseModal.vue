@@ -1,140 +1,127 @@
 <template>
   <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="modelValue" class="bm-backdrop" @click.self="close" role="dialog" aria-modal="true">
-        <div class="bm-panel" :class="`bm-panel--${size}`">
-
-          <!-- Header -->
-          <div class="bm-header">
-            <h2 class="bm-title">{{ title }}</h2>
-            <button class="bm-close" @click="close" aria-label="Fermer">
-              <X :size="18" />
-            </button>
-          </div>
-
-          <!-- Body -->
-          <div class="bm-body">
-            <slot />
-          </div>
-
-          <!-- Footer -->
-          <div v-if="$slots.footer" class="bm-footer">
-            <slot name="footer" />
-          </div>
-
+    <div v-if="modelValue" class="ds-overlay" @click="close">
+      <div class="ds-modal" :class="sizeClass" @click.stop>
+        <div class="ds-modal-header">
+          <h3 class="ds-modal-title">{{ title }}</h3>
+          <button class="ds-close-btn" @click="close" aria-label="Fermer">×</button>
+        </div>
+        <div class="ds-modal-body">
+          <slot />
+        </div>
+        <div v-if="$slots.footer" class="ds-modal-footer">
+          <slot name="footer" />
         </div>
       </div>
-    </Transition>
+    </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue';
-import { X } from 'lucide-vue-next';
+import { computed } from 'vue';
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   modelValue: boolean;
   title?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-}>(), {
-  title: '',
-  size: 'md',
-});
+  size?: 'sm' | 'md' | 'lg';
+}>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
 }>();
 
-const close = () => emit('update:modelValue', false);
-
-const onKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && props.modelValue) close();
+const close = () => {
+  emit('update:modelValue', false);
 };
 
-onMounted(() => window.addEventListener('keydown', onKeydown));
-onUnmounted(() => window.removeEventListener('keydown', onKeydown));
+const sizeClass = computed(() => {
+  if (props.size === 'lg') return 'ds-modal-lg';
+  if (props.size === 'sm') return 'ds-modal-sm';
+  return '';
+});
 </script>
 
 <style scoped>
-.bm-backdrop {
+.ds-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 1rem;
 }
 
-.bm-panel {
-  background: var(--ds-bg, #fff);
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+.ds-modal {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   max-height: 90vh;
-  width: 100%;
+  animation: modalIn 0.2s ease-out;
 }
 
-.bm-panel--sm  { max-width: 400px; }
-.bm-panel--md  { max-width: 560px; }
-.bm-panel--lg  { max-width: 720px; }
-.bm-panel--xl  { max-width: 960px; }
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
-.bm-header {
+.ds-modal-lg {
+  max-width: 600px;
+}
+
+.ds-modal-sm {
+  max-width: 320px;
+}
+
+.ds-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--ds-border, #e5e7eb);
-  flex-shrink: 0;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.bm-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--ds-text, #111827);
+.ds-modal-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
   margin: 0;
 }
 
-.bm-close {
+.ds-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--ds-text-muted, #6b7280);
-  cursor: pointer;
-  transition: background .15s;
 }
-.bm-close:hover { background: var(--ds-surface, #f3f4f6); }
 
-.bm-body {
-  padding: 1.5rem;
+.ds-close-btn:hover {
+  color: #1e293b;
+}
+
+.ds-modal-body {
   overflow-y: auto;
   flex: 1;
 }
 
-.bm-footer {
+.ds-modal-footer {
   display: flex;
+  gap: 0.75rem;
   justify-content: flex-end;
-  gap: .75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--ds-border, #e5e7eb);
-  flex-shrink: 0;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  background-color: #f8fafc;
 }
-
-/* Transition */
-.modal-enter-active,
-.modal-leave-active { transition: opacity .2s ease; }
-.modal-enter-active .bm-panel,
-.modal-leave-active .bm-panel { transition: transform .2s ease, opacity .2s ease; }
-.modal-enter-from,
-.modal-leave-to { opacity: 0; }
-.modal-enter-from .bm-panel,
-.modal-leave-to .bm-panel { transform: scale(.96); opacity: 0; }
 </style>

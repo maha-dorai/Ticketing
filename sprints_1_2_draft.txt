@@ -1,0 +1,625 @@
+967: Sprint 1 – Authentification et Gestion des Utilisateurs
+968: 
+969: Introduction
+970: 
+971: Dans ce chapitre, nous présentons les démarches réalisées pour l’atteinte des objectifs de ce premier sprint, à savoir : la création de compte, l’authentification JWT, la réinitialisa-tion du mot de passe, la gestion du profil utilisateur, la validation et le rejet des comptes, la désactivation/réactivation des comptes ainsi que la création de comptes chefs de projet. Nous commençons par les diagrammes UML, puis nous présentons les interfaces réalisées.
+972: 
+973: Backlog du Sprint 1
+974: 
+975: Le tableau ci-dessous présente le backlog du premier sprint, détaillant l’ensemble des user stories avec leurs identifiants, thèmes et niveaux de priorité.
+976: Table 3.1: Backlog du Sprint 1
+977: 
+978: ID
+979: Thème
+980: User Story
+981: Priorité
+982: US01
+983: Inscription
+984: En tant que membre, je veux créer un compte avec email et mot de passe, afin Must S1 d’accéder à la plateforme après validation de l’administrateur.
+985: Must
+986: US02
+987: Authentification
+988: En tant qu’utilisateur enregistré, je dois pouvoir m’authentifier via JWT afin d’accéder à mon espace personnel sécurisé selon mon rôle.
+989: Must
+990: US03
+991: Réinitialisation mot de passe
+992: En tant qu’utilisateur, je souhaite réinitialiser mon mot de passe en cas d’oubli via un lien sécurisé envoyé par email.
+993: Must
+994: US04
+995: Gérer son compte
+996: En tant que Membre authentifié, je veux modifier mon email ou mon mot de passe depuis ma page de profil.
+997: Must
+998: US05
+999: Valider / Rejeter un compte
+1000: En tant qu’Admin, je souhaite valider ou rejeter les demandes d’inscription en attente et notifier le membre par email.
+1001: Must
+1002: 
+1003: ID
+1004: Thème
+1005: User Story
+1006: Priorité
+1007: US06
+1008: Désactiver / Réac-tiver un compte
+1009: En tant qu’Admin, je souhaite désactiver ou réactiver un compte utilisateur et envoyer une notification email au membre concerné.
+1010: Must
+1011: US07
+1012: Créer un compte Chef de projet
+1013: En tant qu’Admin, je souhaite créer un compte chef de projet avec un mot de passe temporaire envoyé par email.
+1014: Must
+1015: 
+1016: Analyse et Conception
+1017: 
+1018: Diagramme de cas d’utilisation
+1019: 
+1020: La figure ci-après illustre le diagramme des cas d’utilisation élaboré pour le premier sprint. Il met en évidence les quatre acteurs impliqués (Testeur, Développeur, Administrateur et Chef de projet) ainsi que les différentes interactions qui leur sont proposées : création de compte, authentification, gestion du profil, gestion des utilisateurs et gestion des administrateurs.
+1021: 
+1022: 
+1023: Figure 3.1: Diagramme de cas d’utilisation du Sprint 1
+1024: 
+1025: 
+1026: Description textuelle des cas d’utilisation
+1027: 
+1028: Créer un compte (Testeur / Développeur)
+1029: 
+1030: Table 3.2: Description textuelle « Créer un compte »
+1031: 
+1032: Casd’utilisation: Créer un compte
+1033: Sommaire d’identification
+1034: Titre
+1035: Créer un compte
+1036: Description
+1037: Ce cas décrit le processus d’inscription d’un nouveau membre sur la plate-forme de ticketing.
+1038: 
+1039: Acteurs
+1040: Testeur, Développeur
+1041: Description des enchaînements
+1042: Pré-condition
+1043: Disposer d’une adresse email valide et non encore utilisée sur la plateforme.
+1044: Post-condition
+1045: Le compte est créé avec le statut « en_attente » en attente de validation par un Admin.
+1046: Scénario nominal
+1047: L’utilisateur accède à la page d’inscription.
+1048: Le système affiche le formulaire d’inscription.
+1049:  3. L’utilisateur saisit ses informations (nom, prénom, email, mot de passe, rôle).
+1050:  4. La vue vérifie la validité des champs.
+1051:  5. Le contrôleur transmet les données au modèle.
+1052:  6. Le modèle vérifie l’unicité de l’email.
+1053:  7. Le modèle crée le compte avec le statut « en_attente ».
+1054:  8. Un email de confirmation est envoyé à l’utilisateur.
+1055:  9. Un message de succès est affiché.
+1056: Enchânements alterna-tifs
+1057: E1 : Champs invalides → message d’erreur affiché, formulaire conservé.
+1058: E2 : Email déjà utilisé → message d’erreur indiquant que l’adresse est déjà associée à un compte.
+1059: 
+1060: S’authentifier
+1061: 
+1062: Table 3.3: Description textuelle « S’authentifier »
+1063: 
+1064: Casd’utilisation: S’authentifier
+1065: Sommaire d’identification
+1066: Titre
+1067: S’authentifier
+1068: Description
+1069: Ce cas détaille la procédure d’authentification JWT des utilisateurs sur la pla-teforme.
+1070: Acteurs
+1071: Admin, Chef de projet
+1072: 
+1073: Description des enchaînements
+1074: Pré-condition
+1075: Disposer d’un compte actif sur la plateforme.
+1076: Post-condition
+1077: Un token JWT est généré et l’utilisateur est redirigé vers son tableau de bord selon son rôle.
+1078: Scénario nominal
+1079: 1. L’utilisateur accède à la page d’authentification.
+1080:  2. Le système affiche le formulaire de connexion.
+1081:  3. L’utilisateur saisit son email et son mot de passe.
+1082: 4. Le contrôleur transmet les identifiants au modèle, qui vérifie leur validité et
+1083: le statut du compte (actif, en_attente, rejeté, désactivé).
+1084:  5. Un token JWT est généré.
+1085:  6. L’utilisateur est redirigé vers son tableau de bord selon son rôle.
+1086: Enchânements alterna-tifs
+1087: E1 : Identifiants incorrects → message d’erreur affiché.
+1088:  E2 : Compte en attente ou rejeté → accès refusé avec message explicatif.
+1089:  E3 : Compte désactivé → message d’erreur affiché.
+1090: 
+1091: Réinitialiser le mot de passe
+1092: 
+1093: Table 3.4: Description textuelle « Réinitialiser le mot de passe »
+1094: 
+1095: Cas d’utilisation : Ré-initialiser le mot de passe
+1096: Sommaire d’identification
+1097: Titre
+1098: Réinitialiser le mot de passe
+1099: Description
+1100: Ce cas présente les étapes du processus permettant à un utilisateur de réinitia-liser son mot de passe en cas d’oubli.
+1101: Acteurs
+1102: Membre, Testeur, Développeur, Admin, Chef de projet
+1103: Description des enchaînements
+1104: Pré-condition
+1105: L’utilisateur possède un compte actif avec une adresse email valide.
+1106: Post-condition
+1107: Le mot de passe est mis à jour avec succès et l’utilisateur est redirigé vers la page de connexion.
+1108: 
+1109: Scénario nominal
+1110: 1. L’utilisateur clique sur « Mot de passe oublié ». 2. Le système affiche le for-mulaire de récupération. 3. L’utilisateur saisit son adresse email. 4. Le modèle vérifie l’email et génère un token SHA-256 valable 1h. 5. Un lien de réinitia-lisation est envoyé par email. 6. L’utilisateur saisit son nouveau mot de passe.
+1111: 7. Le système met à jour le mot de passe et confirme le succès.
+1112: Enchânements alterna-tifs
+1113: E1 : Email inconnu → message d’erreur. E2 : Token expiré → invitation à refaire la demande. E3 : Mot de passe non conforme → message d’erreur ex-plicatif.
+1114: 
+1115: Gérer son compte (Membre)
+1116: 
+1117: Table 3.5: Description textuelle « Gérer son compte »
+1118: 
+1119: Cas d’utilisation : Gérer son compte
+1120: Sommaire d’identification
+1121: Titre
+1122: Gérer son compte
+1123: Description
+1124: Ce cas illustre la manière dont un membre gère son profil en modifiant son email ou son mot de passe.
+1125: Acteurs
+1126: Membre
+1127: Description des enchaînements
+1128: Pré-condition
+1129: L’utilisateur doit être authentifié.
+1130: Post-condition
+1131: Le profil utilisateur est mis à jour avec succès.
+1132: 
+1133: Scénario nominal
+1134: 1. L’utilisateur accède à sa page de profil. 2. Le système affiche les informa-tions du compte. 3a. [Changer email] : L’utilisateur saisit le nouvel email et son mot de passe actuel. Le modèle vérifie l’unicité et met à jour l’email. 3b. [Changer mot de passe] : L’utilisateur saisit l’ancien et le nouveau mot de passe. Le modèle vérifie et met à jour le mot de passe. 4. Un message de suc-cès est affiché.
+1135: Enchânements alterna-tifs
+1136: E1 : Email déjà utilisé → message d’erreur. E2 : Ancien mot de passe incorrect
+1137: → message d’erreur.
+1138: 
+1139: Valider / Rejeter un compte (Admin)
+1140: 
+1141: Table 3.6: Description textuelle « Valider / Rejeter un compte »
+1142: 
+1143: Cas d’utilisation : Valider / rejeter un compte
+1144: Sommaire d’identification
+1145: Titre
+1146: Valider / Rejeter un compte
+1147: Description
+1148: Ce cas décrit le processus par lequel un Admin valide ou rejette une demande d’inscription en attente.
+1149: Acteurs
+1150: Admin
+1151: Description des enchaî-nements
+1152: Pré-condition
+1153: L’Admin est authentifié et il existe des comptes avec le statut « en_attente ».
+1154: Post-condition
+1155: Le compte passe au statut « actif » ou « rejeté » et le membre reçoit une noti-fication par email.
+1156: Scénario nominal
+1157: 1. L’Admin accède à la liste des demandes en attente. 2. Le système affiche la liste des comptes avec le statut « en_attente ». 3. L’Admin sélectionne un compte et choisit l’action (valider ou rejeter). 4. Le modèle met à jour le statut du compte. 5. Le système de mailing envoie une notification email au membre.
+1158: 6. Un message de succès est affiché.
+1159: 
+1160: Désactiver / Réactiver un compte (Admin)
+1161: 
+1162: Table 3.7: Description textuelle « Désactiver / Réactiver un compte »
+1163: 
+1164: Casd’utilisation
+1165: : Désactiver / Réactiver un compte
+1166: Sommaire d’identification
+1167: Titre
+1168: Désactiver / Réactiver un compte
+1169: Description
+1170: Ce cas décrit les actions de l’Admin pour désactiver un compte utilisateur actif sans le supprimer, ou le réactiver si nécessaire, avec notification email au membre concerné.
+1171: Acteurs
+1172: Admin
+1173: Description des enchaînements
+1174: Pré-condition
+1175: L’Admin est authentifié.
+1176: Post-condition
+1177: Le statut du compte est mis à jour (« désactivé » ou « actif ») et le membre reçoit une notification par email.
+1178: Scénario nominal
+1179: 1. L’Admin accède à la liste des utilisateurs. 2. Le système affiche la liste avec les statuts. 3. L’Admin sélectionne un utilisateur et choisit l’action. 4. Le modèle met à jour le statut du compte. 5. Le système de mailing envoie une notification email au membre. 6. Un message de succès est affiché.
+1180: 
+1181: Créer un compte Chef de projet (Admin)
+1182: Table 3.8: Description textuelle « Créer un compte Chef de projet »
+1183: 
+1184: Cas d’utilisation : Créer un compte chef de projet
+1185: Sommaire d’identification
+1186: Titre
+1187: Créer un compte Chef de projet
+1188: Description
+1189: Ce cas décrit le processus par lequel l’Admin crée un compte chef de projet avec génération automatique d’un mot de passe temporaire.
+1190: Acteurs
+1191: Admin
+1192: Description des enchaînements
+1193: Pré-condition
+1194: L’Admin est authentifié.
+1195: Post-condition
+1196: Le compte chef de projet est créé avec le statut « actif » et force_password_change=true. Un email avec les identifiants est envoyé.
+1197: Scénario nominal
+1198: 1. L’Admin accède à la page de création de compte chef de projet. 2. Le sys-tème affiche le formulaire. 3. L’Admin saisit nom, prénom et email. 4. La vue vérifie les champs. 5. Le modèle vérifie l’unicité de l’email. 6. Le contrôleur génère un mot de passe temporaire. 7. Le modèle enregistre le compte et active force_password_change. 8. Un email avec les identifiants est envoyé au chef de projet. 9. Un message de succès est affiché.
+1199: Enchânements alterna-tifs
+1200: E1 : Champs invalides → message d’erreur. E2 : Email déjà utilisé → message d’erreur.
+1201: 
+1202: Diagrammes de séquence
+1203: 
+1204: Présentation
+1205: 
+1206: Les diagrammes de séquence permettent la modélisation dynamique d’un système en langage UML. Ils décrivent les interactions temporelles entre les différents composants (acteur, vue, contrôleur, modèle, système de mailing) pour réaliser un cas d’utilisation donné. Chaque flèche pleine représente un appel, et chaque flèche en pointillé représente un retour.
+1207: Diagramme de séquence « Créer un compte »
+1208: 
+1209: Le diagramme ci-dessous décrit les interactions lors du processus d’inscription d’un nouveau membre. Le membre soumet ses informations, le système vérifie l’unicité de l’email et crée le compte avec le statut « en_attente » avant d’envoyer un email de confirmation.
+1210: 
+1211: Figure 3.2: Diagramme de séquence « Créer un compte »
+1212: 
+1213: 
+1214: Diagramme de séquence « Gérer son compte »
+1215: 
+1216: Le diagramme suivant illustre le processus de gestion du profil utilisateur. Un fragment com-biné alt représente les deux sous-cas : la modification de l’adresse email (avec vérification de l’unicité et du mot de passe actuel) et la modification du mot de passe (avec vérification de l’ancien mot de passe).
+1217: 
+1218: Figure 3.3: Diagramme de séquence « Gérer son compte »
+1219: 
+1220: 
+1221: Diagramme de séquence « Désactiver / Réactiver un compte »
+1222: 
+1223: Le diagramme ci-dessous décrit les actions de l’Admin pour désactiver un compte utilisa-teur actif ou le réactiver. Chaque action déclenche automatiquement l’envoi d’un email de notification au membre concerné.
+1224: 
+1225: Figure 3.4: Diagramme de séquence « Désactiver / Réactiver un compte »
+1226: 
+1227: 
+1228: Diagramme de séquence « Créer un compte Chef de projet »
+1229: 
+1230: Le diagramme suivant décrit le processus par lequel l’Admin crée un compte chef de pro-jet. Le système vérifie l’unicité de l’email, génère un mot de passe temporaire, enregistre le compte avec force_password_change=true et envoie les identifiants par email.
+1231: 
+1232: Figure 3.5: Diagramme de séquence « Créer un compte Chef de projet »
+1233: 
+1234: 
+1235: Diagramme de classe
+1236: 
+1237: Un diagramme de classe est un type de diagramme UML qui décrit un système en visualisant les différents types d’objets ainsi que les relations statiques qui existent entre eux. Il illustre également les opérations et les attributs des classes.
+1238: La figure ci-dessous illustre le diagramme de classes développé lors du premier sprint. Il présente la structure de gestion des utilisateurs avec leurs rôles et statuts, les mécanismes d’authentification JWT, ainsi que les champs spécifiques tels que « statut » (« en_attente »,
+1239: « actif », « rejeté », « désactivé ») et « force_password_change » pour les administrateurs.
+1240: 
+1241: Figure 3.6: Diagramme de classe du Sprint 1
+1242: 
+1243: 
+1244: Revue du Sprint 1
+1245: 
+1246: Cette section présente les résultats obtenus lors du premier sprint, illustrés par les interfaces développées de l’application.
+1247: 
+1248: Interface d’Inscription
+1249: 
+1250: L’interface d’inscription permet au membre de saisir ses informations personnelles (nom, prénom, email, mot de passe et rôle). Une validation des champs est implémentée côté client et côté serveur pour garantir la qualité des données.
+1251: 
+1252: Figure 3.7: Interface d’inscription
+1253: 
+1254: 
+1255: Interface d’Authentification
+1256: 
+1257: L’interface d’authentification permet à tous les utilisateurs de se connecter via leur email et mot de passe. En cas d’échec, un message d’erreur explicite est affiché.
+1258: 
+1259: Figure 3.8: Interface d’authentification
+1260: Interface de Réinitialisation du Mot de Passe
+1261: 
+1262: L’interface de réinitialisation guide l’utilisateur à travers les étapes : saisie de l’email, récep-tion du lien sécurisé et définition d’un nouveau mot de passe.
+1263: 
+1264: Figure 3.9: Interface de réinitialisation du mot de passe
+1265: 
+1266: 
+1267: Interface de Gestion du Profil
+1268: 
+1269: L’interface de gestion du profil permet au membre de modifier son adresse email ou son mot de passe. La modification de l’email requiert la vérification du mot de passe actuel pour des raisons de sécurité.
+1270: 
+1271: Figure 3.10: Interface de gestion du profil
+1272: Interface de Validation des Comptes
+1273: 
+1274: L’interface de validation permet à l’Admin de consulter la liste des comptes en attente et de valider ou rejeter chaque demande. Le membre reçoit une notification email selon la décision prise.
+1275: 
+1276: Figure 3.11: Interface de validation des comptes
+1277: 
+1278: 
+1279: Interface de Gestion des Utilisateurs
+1280: 
+1281: L’interface de gestion des utilisateurs permet à l’Admin de consulter la liste complète des utilisateurs, de désactiver ou réactiver leurs comptes. Chaque action déclenche l’envoi d’un email de notification au membre concerné.
+1282: 
+1283: Figure 3.12: Interface de gestion des utilisateurs
+1284: Interface de Création d’un Compte Chef de projet
+1285: 
+1286: L’interface de création de compte chef de projet est réservée à l’Admin. Elle permet de saisir les informations du chef de projet, générer automatiquement un mot de passe temporaire et l’envoyer par email.
+1287: 
+1288: Figure 3.13: Interface de création d’un compte chef de projet
+1289: 
+1290: 
+1291: Rétrospective du Sprint 1
+1292: 
+1293: Cette section présente les réalisations du premier sprint. L’ensemble des objectifs ont été at-teints avec la mise en œuvre complète de toutes les fonctionnalités planifiées : inscription avec validation par Admin, authentification JWT sécurisée, réinitialisation du mot de passe par email, gestion du profil (email et mot de passe), validation/rejet des comptes avec notifi-cation email, désactivation/réactivation avec notification email, et création de comptes chefs de projet avec mot de passe temporaire.
+1294: Axe d’amélioration identifié : la gestion de l’expiration du token JWT côté frontend mérite-rait une amélioration UX avec une redirection automatique vers la page de connexion, plutôt qu’une erreur silencieuse.
+1295: 
+1296: Conclusion
+1297: 
+1298: Ce premier sprint a permis de mettre en place les fondations sécurisées de la plateforme de ticketing : la gestion complète des utilisateurs et l’authentification JWT. Le prochain chapitre présentera le déroulement du deuxième sprint.
+1299: Sprint 2 – Gestion des Projets
+1300: 
+1301: Introduction
+1302: 
+1303: Dans ce chapitre, nous présentons les démarches réalisées pour l’atteinte des objectifs du deuxième sprint, qui couvre la création et la gestion des projets, ainsi que l’affectation des membres à ces projets. Nous exposons les différents diagrammes UML élaborés pour ce sprint, notamment le diagramme de cas d’utilisation, les diagrammes de séquence sélection-nés et le diagramme de classe. Ces éléments de modélisation permettent de formaliser les interactions entre les acteurs du système et les fonctionnalités développées.
+1304: 
+1305: Backlog du Sprint 2
+1306: 
+1307: Le tableau ci-dessous présente le backlog du deuxième sprint, détaillant l’ensemble des user stories retenues avec leur identifiant, leur description et leur ordre de priorité d’implémentation.
+1308: Table 4.1: Backlog du Sprint 2
+1309: 
+1310: ID
+1311: Thème
+1312: User Story
+1313: Priorité
+1314: US07
+1315: Créer un projet
+1316: En tant que chef de projet ou admin, je veux créer un nouveau projet avec un nom et une description, afin d’organiser le travail autour d’un périmètre fonctionnel défini. Le projet est créé avec le statut « ouvert » automatiquement.
+1317: Must Have
+1318: US08
+1319: Modifier / Fermer
+1320: En tant que chef de projet ou admin (créateur), je veux modifier les informations de mon projet ou le fermer — uniquement si tous ses tickets sont en statut VALIDE — sans pouvoir le suppri-mer, afin de préserver la traçabilité. À la fermeture, le projet est archivé avec son historique complet.
+1321: Must Have
+1322: 
+1323: ID
+1324: Thème
+1325: User Story
+1326: Priorité
+1327: US09
+1328: Affecterdes membres
+1329: En tant que chef de projet ou admin (créateur), je veux affec-ter un testeur et plusieurs développeurs à mon projet, et pouvoir les retirer, afin que chaque membre n’accède qu’aux projets qui le concernent. La modification du projet envoie une notification aux membres affectés.
+1330: Must Have
+1331: US10
+1332: Consulter les pro-jets
+1333: En tant que membre (testeur ou développeur), je veux consul-ter la liste des projets auxquels je suis affecté, filtrer et recher-cher par nom, afin d’accéder rapidement aux informations qui me concernent.
+1334: Must Have
+1335: US11
+1336: Supervisionad-min
+1337: En tant qu’admin, je veux voir la liste de tous les projets (tous chefs confondus) mais ne modifier ou fermer que les projets que j’ai moi-même créés, afin d’assurer une supervision globale sans interférer avec le travail des chefs de projet.
+1338: Must Have
+1339: 
+1340: Analyse et Conception
+1341: 
+1342: Règles métier et cycle de vie du projet
+1343: 
+1344: Le cycle de vie d’un projet suit une progression stricte en trois statuts, décrits dans le tableau ci-dessous.
+1345: Table 4.2: Cycle de vie d’un projet
+1346: 
+1347: Statut
+1348: Déclencheur
+1349: Description
+1350: ouvert
+1351: Création du projet
+1352: Statut initial défini automatiquement à la création par le chef de projet ou l’admin.
+1353: en_cours
+1354: Premier ticket créé par un testeur
+1355: Le système passe automatiquement le projet en « en_cours » dès qu’un testeur soumet un premier ticket.
+1356: 
+1357: Statut
+1358: Déclencheur
+1359: Description
+1360: archivé
+1361: Fermeture volontaire par le créateur
+1362: Possible uniquement si tous les ti-ckets du projet ont le statut VALIDE. Le projet est archivé avec son histo-rique complet.
+1363: 
+1364: Les règles métier fondamentales régissant ce module sont les suivantes :
+1365: 
+1366: Un chef de projet peut consulter, modifier et fermer uniquement les projets qu’il a créés.
+1367: 
+1368: Un admin hérite de toutes les capacités d’un chef de projet et peut consulter l’ensemble des projets de la plateforme ; il ne peut modifier ou fermer que ses propres projets.
+1369: La fermeture d’un projet est conditionnelle : tous les tickets du projet doivent avoir le statut VALIDE.
+1370: Un projet archivé conserve son historique complet : date_debut, date_fin, membres participants, créateur, nombre de tickets.
+1371: La suppression d’un projet est interdite pour garantir la traçabilité.
+1372: 
+1373: Un seul testeur peut être affecté à un projet. Plusieurs développeurs peuvent être affec-tés simultanément.
+1374: Toute modification du projet (membres ou informations) déclenche une notification à tous les membres affectés.
+1375: Le passage automatique au statut « en_cours » s’effectue lorsqu’un testeur crée le pre-mier ticket.
+1376: Les règles métier associées au cycle de vie des tickets ne seront effectives qu'à partir du Sprint 3,
+1377:  lors de l'implémentation du module de gestion des tickets. En conséquence, dans la version actuelle
+1378:  de l'application, ces contraintes ne sont pas encore prises en compte
+1379: 
+1380: Diagramme de cas d’utilisation
+1381: 
+1382: La figure ci-après illustre le diagramme de cas d’utilisation élaboré pour le deuxième sprint. Ce diagramme met en évidence les interactions entre les acteurs du système — Adminis-trateur, Chef de projet, Testeur et Développeur — dans le cadre du module de gestion des projets.
+1383: 
+1384: 
+1385: Figure 4.1: Diagramme de cas d’utilisation du Sprint 2
+1386: 
+1387: 
+1388: Description textuelle des cas d’utilisation
+1389: 
+1390: Cas d’utilisation « Créer un projet »
+1391: Table 4.3: Description textuelle « Créer un projet »
+1392: 
+1393: Casd’utilisation: Créer un projet
+1394: Sommaire d’identification
+1395: Titre
+1396: Créer un projet
+1397: Description
+1398: Ce cas décrit le processus de création d’un nouveau projet par un chef de projet ou un administrateur sur la plateforme.
+1399: Acteurs
+1400: Chef de projet, Admin
+1401: Description des enchaînements
+1402: Pré-condition
+1403: L’acteur est authentifié avec le rôle chef_de_projet ou admin.
+1404: Post-condition
+1405: Le projet est créé avec le statut « ouvert » et le champ created_by est renseigné. Il apparaît dans la liste des projets du créateur.
+1406: Scénario nominal
+1407: 1. L’acteur accède à la page de gestion des projets. 2. Il clique sur « Nouveau projet ». 3. Le système affiche le formulaire de création (nom, description). 4. L’acteur remplit les informations et soumet. 5. Le système vérifie la validité des données. 6. Le système crée le projet avec statut « ouvert » et created_by
+1408: = acteur courant. 7. Un message de confirmation est affiché.
+1409: Enchaînementsalter-natifs / Erreurs
+1410: E1 : Nom vide → « Le nom du projet est obligatoire. » E2 : Nom déjà utilisé
+1411: → « Un projet avec ce nom existe déjà. »
+1412: 
+1413: Cas d’utilisation « Modifier un projet »
+1414: 
+1415: Table 4.4: Description textuelle « Modifier un projet »
+1416: 
+1417: Cas d’utilisation : Modifier un projet
+1418: Sommaire d’identification
+1419: Titre
+1420: Modifier un projet
+1421: 
+1422: Description
+1423: Ce cas décrit la modification des informations d’un projet existant par son créateur.
+1424: Acteurs
+1425: Chef de projet (créateur), Admin (créateur)
+1426: Description des enchaînements
+1427: Pré-condition
+1428: Le projet existe avec le statut « ouvert » ou « en_cours ». L’acteur est le créa-teur du projet (created_by = acteur courant).
+1429: Post-condition
+1430: Les informations du projet sont mises à jour. Une notification est envoyée à tous les membres affectés.
+1431: Scénario nominal
+1432: 1. L’acteur accède à la liste de ses projets. 2. Il sélectionne un projet et clique sur « Modifier ». 3. Le système affiche le formulaire pré-rempli. 4. L’acteur modifie les champs souhaités et soumet. 5. Le système valide et enregistre les modifications. 6. Le système envoie une notification à tous les membres du projet. 7. Un message de confirmation est affiché.
+1433: Enchaînementsalter-natifs / Erreurs
+1434: E1 : Tentative de modification par un non-créateur → HTTP 403 « Accès re-fusé. » E2 : Nom vide → « Le nom du projet est obligatoire. » E3 : Tentative de suppression → HTTP 403 « La suppression d’un projet est interdite. »
+1435: 
+1436: Cas d’utilisation « Fermer un projet »
+1437: 
+1438: Table 4.5: Description textuelle « Fermer un projet »
+1439: 
+1440: Cas d’utilisation : Fermer un projet
+1441: Sommaire d’identification
+1442: Titre
+1443: Fermer un projet
+1444: Description
+1445: Ce cas décrit la fermeture et l’archivage d’un projet lorsque tous ses tickets sont validés.
+1446: Acteurs
+1447: Chef de projet (créateur), Admin (créateur)
+1448: 
+1449: Description des enchaînements
+1450: Pré-condition
+1451: Le projet est en statut « ouvert » ou « en_cours ». L’acteur est le créateur. Tous les tickets du projet ont le statut VALIDE.
+1452: Post-condition
+1453: Le statut du projet passe à « archivé ». Le projet est archivé avec : date_debut, date_fin (date de fermeture), liste des membres ayant participé, identité du créateur, nombre total de tickets. Aucun nouveau ticket ne peut être ajouté.
+1454: Scénario nominal
+1455: 1. L’acteur clique sur « Fermer le projet ». 2. Le système vérifie que tous les tickets sont en statut VALIDE. 3. Le système passe le statut à « archivé » et enregistre la date_fin. 4. Le projet apparaît en lecture seule dans la liste archi-vée avec son historique complet. 5. Un message de confirmation est affiché.
+1456: Enchaînementsalter-natifs / Erreurs
+1457: E1 : Des tickets ne sont pas encore VALIDE → « Impossible de fermer : X ticket(s) ne sont pas encore validés. » E2 : Acteur non créateur → HTTP 403
+1458: « Accès refusé. »
+1459: 
+1460: Cas d’utilisation « Affecter membres au projet »
+1461: 
+1462: Table 4.6: Description textuelle « Affecter membres au projet »
+1463: 
+1464: Cas d’utilisation : Affecter des membres à un projet
+1465: Sommaire d’identification
+1466: Titre
+1467: Affecter des membres à un projet
+1468: Description
+1469: Ce cas décrit le processus d’affectation et de retrait de membres (testeur et développeurs) sur un projet, avec notification automatique.
+1470: Acteurs
+1471: Chef de projet (créateur), Admin (créateur)
+1472: Description des enchaînements
+1473: 
+1474: Pré-condition
+1475: Le projet existe avec le statut « ouvert » ou « en_cours ». Le créateur est au-thentifié. Les membres à affecter ont le statut « actif ». Le projet accepte au maximum un testeur actif. Toute tentative d’affecter un second testeur est re-jetée
+1476: Post-condition
+1477: Les membres sélectionnés sont associés au projet (table pivot project_user). Une notification est envoyée à tous les membres affectés. Les membres voient désormais le projet dans leur liste.
+1478: Scénario nominal
+1479: 1. L’acteur accède à la page de son projet. 2. Il clique sur « Affecter des membres ». 3. Le système affiche les utilisateurs actifs disponibles (testeurs et développeurs). 4. L’acteur sélectionne les membres et confirme. 5. Le sys-tème enregistre les associations dans project_user. 6. Le système envoie une notification à chaque membre affecté. 7. Un message de confirmation est affi-ché.
+1480: Enchaînementsalter-natifs / Erreurs
+1481: E1 : Compte désactivé → « Ce compte n’est pas actif. » E2 : Membre déjà affecté → « Ce membre est déjà affecté à ce projet. » E3 : Second testeur →
+1482: « Un projet ne peut avoir qu’un seul testeur assigné. » Enchaînement alternatif
+1483: — Retirer un membre : L’acteur clique sur « Retirer » à côté d’un membre. Le système supprime l’association et envoie une notification au membre retiré.
+1484: 
+1485: Cas d’utilisation « Consulter les projets assignés »
+1486: 
+1487: Table 4.7: Description textuelle « Consulter les projets assignés »
+1488: 
+1489: Cas d’utilisation : Consulter les projets assignés
+1490: Sommaire d’identification
+1491: Titre
+1492: Consulter les projets assignés
+1493: Description
+1494: Ce cas décrit la consultation par un membre de la liste des projets auxquels il est affecté, avec filtre et recherche par nom.
+1495: 
+1496: Acteurs
+1497: Testeur, Développeur
+1498: Description des enchaînements
+1499: Pré-condition
+1500: Le membre est authentifié et affecté à au moins un projet.
+1501: Post-condition
+1502: Le membre visualise la liste filtrée de ses projets.
+1503: Scénario nominal
+1504: 1. Le membre accède à la page « Mes projets ». 2. Le système affiche unique-ment les projets auxquels il est affecté. 3. Le membre peut saisir un nom dans le champ de recherche. 4. Le système filtre la liste en temps réel. 5. Le membre clique sur un projet pour consulter son détail.
+1505: Enchaînementsalter-natifs / Erreurs
+1506: E1 : Aucun projet assigné → « Aucun projet ne vous est assigné pour le mo-ment. »
+1507: 
+1508: Diagrammes de séquence
+1509: 
+1510: Pour ce sprint, trois diagrammes de séquence ont été réalisés, correspondant aux scénarios dont la logique métier est la plus complexe et la plus représentative du module.
+1511: 
+1512: Diagramme de séquence « Créer un projet »
+1513: 
+1514: Ce diagramme décrit les interactions lors de la création d’un projet. Le système valide les données saisies, enregistre le projet avec le statut « ouvert » et renseigne le champ created_by avec l’identifiant de l’acteur courant.
+1515: 
+1516: 
+1517: Figure 4.2: Diagramme de séquence « Créer un projet »
+1518: 
+1519: 
+1520: Diagramme de séquence « Fermer un projet »
+1521: 
+1522: Ce diagramme illustre la fermeture conditionnelle d’un projet : vérification que tous les tickets associés ont le statut VALIDE, passage au statut « archivé », enregistrement de la date_fin et archivage complet avec l’historique du projet.
+1523: 
+1524: Figure 4.3: Diagramme de séquence « Fermer un projet »
+1525: 
+1526: 
+1527: Diagramme de séquence « Affecter des membres »
+1528: 
+1529: Ce diagramme illustre l’affectation d’un membre à un projet, avec vérification du statut du compte, application de la règle du testeur unique, enregistrement dans la table pivot pro-ject_user et envoi automatique d’une notification à chaque membre affecté.
+1530: 
+1531: Figure 4.4: Diagramme de séquence « Affecter des membres »
+1532: Diagramme de classe
+1533: 
+1534: Un diagramme de classe est un type de diagramme UML qui décrit la structure statique d’un système en représentant les classes, leurs attributs, leurs méthodes et les relations qui existent entre elles. Il constitue la base de la conception orientée objet et guide la création des modèles de la base de données.
+1535: La figure ci-dessous illustre le diagramme de classes élaboré pour le Sprint 2, centré sur le module de gestion des projets, des affectations et des notifications.
+1536: 
+1537: Figure 4.5: Diagramme de classe du Sprint 2
+1538: Revue du Sprint 2
+1539: 
+1540: Cette section présente les résultats obtenus à l’issue du deuxième sprint, illustrés par les in-terfaces développées de l’application.
+1541: 
+1542: Interface de Création d’un Projet
+1543: 
+1544: L’interface de création permet au chef de projet ou à l’admin de saisir le nom et la description du projet. Le statut « ouvert » est attribué automatiquement à la création.
+1545: 
+1546: Figure 4.6: Interface de création d’un projet
+1547: Interface de Modification d’un Projet
+1548: 
+1549: L’interface de modification affiche le formulaire pré-rempli avec les données du projet sélec-tionné. Seul le créateur du projet peut accéder à cette interface.* *
+1550: 
+1551: Figure 4.7: Interface de modification d’un projet
+1552: 
+1553: 
+1554: Interface de Fermeture d’un Projet
+1555: 
+1556: L’interface de fermeture déclenche la vérification conditionnelle de tous les tickets. Si la condition est remplie, le projet est archivé et passe en lecture seule.
+1557: 
+1558: Figure 4.8: Interface de fermeture d’un projet
+1559: 
+1560: 
+1561: Interface d’Affectation des Membres
+1562: 
+1563: L’interface d’affectation affiche la liste des membres actifs disponibles. Le créateur peut af-fecter un testeur et plusieurs développeurs, ou retirer un membre existant. Chaque action
+1564: déclenche l’envoi d’une notification email.
+1565: 
+1566: Figure 4.9: Interface d’affectation des membres
+1567: 
+1568: 
+1569: Interface de Consultation des Projets Assignés
+1570: 
+1571: L’interface de consultation permet au testeur ou au développeur de visualiser uniquement les projets auxquels il est affecté, avec une recherche dynamique par nom.
+1572: 
+1573: Figure 4.10: Interface de consultation des projets assignés
+1574: 
+1575: 
+1576: Interface de Supervision Admin
+1577: 
+1578: L’interface de supervision affiche la liste complète de tous les projets de la plateforme. Les boutons « Modifier » et « Fermer » sont activés uniquement pour les projets dont l’admin est le créateur
+1579: 
+1580: Figure 4.11: Interface de supervision admin
+1581: 
+1582: 
+1583: Rétrospective du Sprint 2
+1584: 
+1585: Ce deuxième sprint a permis de réaliser l’ensemble des fonctionnalités planifiées avec succès
+1586: : la création de projets avec statut automatique, la modification et la fermeture conditionnelle avec archivage complet, l’affectation et le retrait de membres avec notification automatique, la consultation des projets assignés avec filtre et recherche, ainsi que la supervision globale réservée à l’administrateur.
+1587: Axe d’amélioration identifié : l’interface de supervision admin pourrait être enrichie d’un filtre par chef de projet pour faciliter la navigation lorsque le nombre de projets devient im-portant.
+1588: 
+1589: Conclusion
+1590: 
+1591: Ce deuxième sprint a permis de mettre en place le module central de la plateforme : la gestion des projets avec un cycle de vie précis, un contrôle strict des accès basé sur le rôle de créateur du projet, et des règles métier garantissant la qualité et la traçabilité (fermeture conditionnelle, archivage, interdiction de suppression, notification automatique). Ces briques constituent le socle sur lequel s’appuiera le Sprint 3, dédié à la gestion des tickets.

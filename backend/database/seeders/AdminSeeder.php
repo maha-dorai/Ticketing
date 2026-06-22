@@ -9,15 +9,24 @@ class AdminSeeder extends Seeder
 {
     public function run()
     {
-        DB::table('users')->insert([
-            'nom'          => 'Admin',
-            'prenom'       => 'System',
-            'email'        => 'admin@platform.com',
-            'mot_de_passe' => Hash::make('Admin@1234'),
-            'role'         => 'admin',
-            'statut'       => 'actif',
-            'created_at'   => now(),
-            'updated_at'   => now(),
+        // Créer l'utilisateur
+        $user = \App\Models\User::firstOrCreate(
+            ['email' => 'admin@platform.com'],
+            [
+                'nom'          => 'Admin',
+                'prenom'       => 'System',
+                'mot_de_passe' => Hash::make('Admin@1234'),
+            ]
+        );
+
+        // Créer le chef de projet associé
+        $chefDeProjet = \App\Models\ChefDeProjet::firstOrCreate([
+            'user_id' => $user->id
+        ]);
+
+        // Assigner le rôle d'admin au chef de projet
+        \App\Models\Admin::firstOrCreate([
+            'chef_de_projet_id' => $chefDeProjet->id
         ]);
     }
 }

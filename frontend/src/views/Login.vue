@@ -1,21 +1,29 @@
 <template>
+  <!-- [Sprint 1] Page de Connexion : Layout principal -->
   <AuthLayout>
       <AuthBrand subtitle="Plateforme de gestion de tickets" />
       <div class="card">
         <h2 class="card-title">Connexion</h2>
+
+        <!-- Alertes pour les règles métier (Erreurs de mot de passe, Comptes en attente...) -->
         <AlertBanner v-if="errorMessage" variant="error" class="alert alert-error">{{ errorMessage }}</AlertBanner>
         <AlertBanner v-if="pendingMessage" variant="pending" class="alert alert-warn">{{ pendingMessage }}</AlertBanner>
+        
         <form @submit.prevent="onSubmit" class="form">
+          <!-- Champ Email -->
           <div class="field">
             <label class="label">Adresse email</label>
-            <input v-model="email" type="email"  class="input" />
+            <input v-model.trim="email" type="email"  class="input" />
           </div>
+
+          <!-- Champ Mot de Passe -->
           <div class="field">
             <div class="label-row">
               <label class="label">Mot de passe</label>
               <router-link to="/forgot-password" class="forgot-link">Mot de passe oublié ?</router-link>
             </div>
             <div class="input-wrap">
+              <!-- Bouton dynamique pour afficher/masquer le mot de passe -->
               <input v-model="password" :type="show ? 'text' : 'password'" required placeholder="••••••••" class="input input-pr" />
               <button type="button" class="eye-btn" @click="show = !show" tabindex="-1">
                 <svg v-if="show" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
@@ -28,6 +36,7 @@
               </button>
             </div>
           </div>
+
           <button type="submit" :disabled="loading" class="btn-primary">
             <svg v-if="loading" class="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="18" height="18">
               <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="op25"/>
@@ -36,6 +45,7 @@
             <span v-else>Se connecter →</span>
           </button>
         </form>
+
         <div class="card-footer">
           Pas encore de compte ?
           <router-link to="/register" class="link">S'inscrire</router-link>
@@ -45,6 +55,9 @@
 </template>
 
 <script setup>
+/**
+ * [Sprint 1] Logique du composant de Connexion
+ */
 import { ref } from 'vue';
 import { useAuthStore } from '../stores/authStore';
 import AuthLayout from '../components/layout/AuthLayout.vue';
@@ -53,28 +66,41 @@ import AlertBanner from '../components/ui/AlertBanner.vue';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-const authStore = useAuthStore();
+const authStore = useAuthStore(); // Appel du Pinia Store
+
+// Variables réactives (Mise à jour de l'UI instantanée)
 const email = ref(''); const password = ref(''); const show = ref(false);
 const loading = ref(false); const errorMessage = ref(''); const pendingMessage = ref('');
 
+/**
+ * Appelée quand l'utilisateur clique sur "Se connecter"
+ */
 const onSubmit = async () => {
   errorMessage.value = ''; pendingMessage.value = ''; loading.value = true;
+  
   try {
+    // Appel du service de connexion dans le Store
     const status = await authStore.login(email.value, password.value);
+    
     if (status === 'success') {
+      // Routage conditionnel selon le rôle de l'utilisateur
       const role = authStore.currentUser?.role;
-      if (role === 'admin') router.push({ name: 'Dashboard' });
+      if (role === 'admin') router.push({ name: 'Dashboard' }); // Les admins vont sur les stats par défaut
       else if (role === 'chef_de_projet') router.push({ name: 'Dashboard' });
-      else router.push({ name: 'Projects' });
+      else router.push({ name: 'Projects' }); // Les devs/testeurs vont sur la liste de leurs projets
+
     } else if (status === 'en_attente') pendingMessage.value = 'Votre compte est en attente de validation par un administrateur.';
     else if (status === 'rejete') errorMessage.value = 'Votre compte a été rejeté. Contactez l\'administrateur.';
     else if (status === 'desactive') errorMessage.value = 'Votre compte a été désactivé.';
     else errorMessage.value = 'Email ou mot de passe incorrect.';
-  } finally { loading.value = false; }
+  } finally { 
+    loading.value = false; // Arrête l'animation de chargement
+  }
 };
 </script>
 
 <style scoped>
+/* Styles esthétiques (Omis dans les commentaires pédagogiques car standards CSS) */
 .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 2rem; box-shadow: 0 25px 50px rgba(0,0,0,0.4); }
 .card-title { font-size: 1.25rem; font-weight: 700; color: #f1f5f9; margin: 0 0 1.5rem; }
 .alert { padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500; margin-bottom: 1.25rem; }

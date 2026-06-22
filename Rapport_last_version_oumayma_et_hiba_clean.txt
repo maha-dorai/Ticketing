@@ -1,0 +1,3052 @@
+
+--- PAGE 1 ---
+Dédicaces 
+ 
+ 
+Nous dédions ce travail de fin d'études à nos chers parents, en témoignage de notre 
+reconnaissance pour leur amour indéfectible, leurs sacrifices consentis et leurs 
+conseils éclairés qui ont orienté notre parcours académique et personnel. Puissent-
+ils jouir d'une santé florissante, du bonheur et d'une longévité bénie. 
+Nos remerciements sincères s'adressent également à nos frères et sœurs, à 
+l'ensemble de notre famille, à nos amis fidèles, ainsi qu'à tous nos enseignants qui 
+nous ont accompagné es avec bienveillance et nous ont prodigué leurs 
+encouragements tout au long de cette formation. 
+Cette réalisation est le fruit de leur soutien constant et de leur confiance en nos 
+capacités. 
+ 
+ 
+Oumayma, Hiba 
+  
+
+--- PAGE 2 ---
+Remerciements 
+ 
+Nous tenons à exprimer notre profonde reconnaissance à toutes les personnes qui 
+ont contribué à la réalisation de ce projet de fin d'études. 
+Nos remerciements les plus sincères s'adressent à Madame Ahlem ELHAJ, notre 
+encadrante académique à l'ISET de Sousse, pour son accompagnement constant, 
+sa rigueur et ses conseils avisés qui ont guidé notre travail. 
+Nous remercions également Monsieur Badis HANZOUTI et Monsieur Iheb 
+NACHET, nos encadrants professionnels, pour leur expertise, leurs suggestions 
+pertinentes et leur soutien qui ont enrichi notre projet. 
+Nos remerciements s'adressent aussi à l'ensemble du corps professoral de l'Institut 
+Supérieur des Études Technologiques de Sousse pour la qualité de la formation 
+reçue. 
+Enfin, nous remercions les membres du jury pour l'honneur qu'ils nous font en 
+acceptant d'évaluer notre travail. 
+  
+
+--- PAGE 3 ---
+Sommaire 
+ 
+Introduction Générale ................................................................................................................. 1 
+Chapitre 1 : Présentation du Cadre Général du Projet ............................................................... 2 
+Introduction ................................................................................................................................ 2 
+1. Présentation de l’organisme d’accueil ................................................................................ 2 
+1.1. Présentation générale de l’entreprise .......................................................................... 2 
+1.2. Les départements de l’entreprise ................................................................................ 3 
+1.3. Les projets de INNO THINK LABS .......................................................................... 3 
+1.4. Description du centre de formation ELS .................................................................... 4 
+2. Étude de l’existant ............................................................................................................... 4 
+2.1. Description de l’existant ............................................................................................. 4 
+2.2. Critique de l’existant et problématique ...................................................................... 5 
+3. Proposition d’une solution .................................................................................................. 6 
+Conclusion .................................................................................................................................. 7 
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques .................... 8 
+Introduction ................................................................................................................................ 8 
+1. Identification des acteurs .................................................................................................... 8 
+2. Les besoins fonctionnels ..................................................................................................... 9 
+2.1. Fonctionnalités liées aux visiteurs .............................................................................. 9 
+2.2. Fonctionnalités liées aux Etudiants ............................................................................ 9 
+2.3. Fonctionnalités liées aux formateurs ........................................................................ 10 
+2.4. Fonctionnalités liées aux admins .............................................................................. 10 
+2.5. Fonctionnalités liées aux super-admins .................................................................... 11 
+3. Le Cadre Méthodologique Scrum ..................................................................................... 11 
+3.1. Présentation de Scrum .............................................................................................. 11 
+3.2. Les Rôles Scrum ....................................................................................................... 12 
+
+--- PAGE 4 ---
+3.3. Le backlog du produit .............................................................................................. 13 
+4. Diagramme de cas d’utilisation ........................................................................................ 18 
+4.1. Diagramme de cas d’utilisation : Package administratif .......................................... 18 
+4.2. Diagramme de cas d’utilisation : Package Formateur .............................................. 20 
+4.3. Diagramme de cas d’utilisation : Package Etudiant ................................................. 21 
+5. Planification des sprints .................................................................................................... 22 
+6. Choix techniques ............................................................................................................... 23 
+6.1. Outils de conception et de développement ............................................................... 23 
+6.2. Framework de développement ................................................................................. 24 
+6.3. Architecture de la solution ....................................................................................... 25 
+7. Diagramme de GANTT .................................................................................................... 28 
+Conclusion ................................................................................................................................ 29 
+Chapitre 3 : SPRINT  1 - Authentification et Gestion des Utilisateurs .................................... 30 
+Introduction .............................................................................................................................. 30 
+1. Backlog du sprint 1 ........................................................................................................... 30 
+2. Analyse et Conception ...................................................................................................... 31 
+2.1. Diagramme de cas d’utilisation ................................................................................ 31 
+2.2. Description textuelle des cas d’utilisation ................................................................ 33 
+3. Diagrammes de séquence .................................................................................................. 40 
+3.1. Présentation .............................................................................................................. 40 
+3.2. Diagramme de séquence « créer un compte » .......................................................... 41 
+3.3. Diagramme de séquence « S’authentifier » .............................................................. 42 
+3.4. Diagramme de séquence « Réinitialiser le mot de passe » ...................................... 43 
+3.5. Diagramme de séquence « Modifier Email » ........................................................... 44 
+4. Diagramme de classe ........................................................................................................ 45 
+5. Revue du sprint 1 .............................................................................................................. 46 
+5.1. Interface d’Inscription .............................................................................................. 46 
+
+--- PAGE 5 ---
+5.2. Interface d’authentification ...................................................................................... 47 
+5.3. Interface modifier profil ........................................................................................... 48 
+5.4. Interface mot de passe oublié ................................................................................... 49 
+5.5. Interface création d’un nouvel utilisateur ................................................................. 51 
+5.6. Interface gestion des utilisateurs .............................................................................. 51 
+5.7. Interface consultation liste de rôles .......................................................................... 52 
+6. Rétrospective du sprint ..................................................................................................... 53 
+Conclusion ................................................................................................................................ 53 
+Chapitre 4 : SPRINT  2 - Gestion de Formations ..................................................................... 54 
+Introduction .............................................................................................................................. 54 
+1. Backlog du Sprint 2 .......................................................................................................... 54 
+2. Analyse et Conception ...................................................................................................... 56 
+2.1. Diagramme de cas d’utilisation ................................................................................ 56 
+2.2. Description textuelle de cas d’utilisation coté admin ............................................... 58 
+2.3. Description textuelle de cas d’utilisation coté administratif et formateurs .............. 61 
+3. Diagrammes de séquence .................................................................................................. 64 
+3.1. Diagramme de séquence « Créer une formation » ................................................... 65 
+3.2. Diagramme de séquence « Créer un cours » ............................................................ 65 
+4. Diagramme de classe du sprint 2 ...................................................................................... 67 
+5. Revue du sprint 2 .............................................................................................................. 67 
+5.1. Interface de création de formation............................................................................ 68 
+5.2. Interface d’affichage des formations ........................................................................ 68 
+5.3. Interface des détails de la formation......................................................................... 69 
+5.4. Interface de modification de formation .................................................................... 69 
+Conclusion ................................................................................................................................ 70 
+Chapitre 5 : Sprint 3 - Parcours Etudiant ................................................................................. 71 
+Introduction .............................................................................................................................. 71 
+
+--- PAGE 6 ---
+1. Backlog du Sprint3 ........................................................................................................... 71 
+2. Analyse et Conception ...................................................................................................... 72 
+2.1. Diagramme de cas d’utilisation ................................................................................ 73 
+2.2. Description textuelle de cas d’utilisation ................................................................. 74 
+3. Diagramme de séquence ................................................................................................... 76 
+3.1. Diagramme de séquence « Ajouter une formation au panier » ................................ 76 
+3.2. Diagramme de séquence « Réserver une formation » .............................................. 77 
+4. Diagramme de classe du Sprint 3 ...................................................................................... 78 
+5. Revue du sprint 3 .............................................................................................................. 79 
+5.1. Interface du panier .................................................................................................... 79 
+5.2. Interface de consultation des réservations ................................................................ 79 
+5.3. Interface de gestion des réservations ........................................................................ 80 
+Conclusion ................................................................................................................................ 80 
+Chapitre 6 : Sprint 4 - Évaluation & Certification ................................................................... 81 
+Introduction .............................................................................................................................. 81 
+1. Backlog du sprint 4 ........................................................................................................... 81 
+2. Analyse et conception ....................................................................................................... 82 
+2.1. Diagramme de cas d’utilisation ................................................................................ 82 
+2.2. Description textuelle de cas d’utilisation coté admin ............................................... 84 
+2.3. Description textuelle de cas d’utilisation coté étudiant ............................................ 85 
+3. Diagrammes de séquence .................................................................................................. 87 
+3.1. Diagramme de séquence « Créer un quiz » .............................................................. 88 
+3.2. Diagramme de séquence « Passer un quiz » ............................................................ 89 
+4. Diagramme de classe ........................................................................................................ 91 
+5. Revue du sprint 4 .............................................................................................................. 92 
+5.1. Interface de création de quiz .................................................................................... 93 
+5.2. Interface de détails du quiz ....................................................................................... 94 
+
+--- PAGE 7 ---
+5.3. Interface de gestion des évaluations ......................................................................... 95 
+5.4. Interface de tentative ................................................................................................ 95 
+5.5. Interface de résultats ................................................................................................. 96 
+5.6. Interface de retour d’expérience ............................................................................... 97 
+5.7. Interface de la liste des feedbacks ............................................................................ 97 
+Conclusion ................................................................................................................................ 98 
+Conclusion Générale ................................................................................................................ 99 
+Bibliographie ............................................................................................................................ 100 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 8 ---
+Liste des Tableaux 
+Tableau 1:Fiche signalétique de l'entreprise INNO THINK LABS ........................................... 3 
+Tableau 2: Répartition des Rôles Scrum .................................................................................. 13 
+Tableau 3:Backlog Produit Global ........................................................................................... 18 
+Tableau 4:Feuille de Route des Sprints (Roadmap Agile) ....................................................... 22 
+Tableau 5:Outils de développement ......................................................................................... 24 
+Tableau 6:Backlog du Sprint1 .................................................................................................. 31 
+Tableau 7: Description textuelle « Créer un compte » ............................................................. 34 
+Tableau 8:Description textuelle « s’authentifier » ................................................................... 35 
+Tableau 9:Description textuelle "Réinitialiser le mot de passe" .............................................. 37 
+Tableau 10: Description textuelle « Gérer compte » ................................................................ 39 
+Tableau 11:Description textuelle « Gestion utilisateurs » ........................................................ 40 
+Tableau 12:Backlog du Sprint 2 ............................................................................................... 56 
+Tableau 13:Description textuelle "Créer une formation" ......................................................... 59 
+Tableau 14:Description textuelle "Modifier une formation" .................................................... 60 
+Tableau 15:Description textuelle "Supprimer une formation" ................................................. 61 
+Tableau 16:Description textuelle "Créer un cours" .................................................................. 62 
+Tableau 17:Description textuelle "Modifier un cours" ............................................................. 63 
+Tableau 18:Description textuelle “Supprimer un cours" .......................................................... 64 
+Tableau 19:Backlog du sprint 3 ................................................................................................ 72 
+Tableau 20:Description textuelle " Ajouter une formation au panier " .................................... 74 
+Tableau 21:Description textuelle " Réserver une formation " .................................................. 76 
+Tableau 22: Backlog du quatrième sprint ................................................................................. 82 
+Tableau 23:Description textuelle « Publier un quiz » .............................................................. 85 
+Tableau 24:Description textuelle « Passer un quiz » ................................................................ 87 
+ 
+ 
+ 
+ 
+
+--- PAGE 9 ---
+Liste des Figures 
+Figure 1:Processus du Scrum ................................................................................................... 11 
+Figure 2:Les rôles clés du cadre Scrum et leurs responsabilités .............................................. 12 
+Figure 3:Diagramme de cas d'utilisation “Package Administratif" .......................................... 19 
+Figure 4:Diagramme de cas d'utilisation "Package Formateur" ............................................... 20 
+Figure 5:Diagramme de cas d'utilisation "Package Etudiant" .................................................. 21 
+Figure 6:Les Frameworks Backend les Plus Utilisés en Janvier 2023 ..................................... 25 
+Figure 7:Interactions entre modèle, vue et contrôleur .............................................................. 26 
+Figure 8:Architecture Eloquent ORM « Pont entre modèles Laravel et base de données » .... 27 
+Figure 9:Diagramme de GANTT ............................................................................................. 28 
+Figure 10:Diagramme de cas d'utilisation du premier sprint ................................................... 32 
+Figure 11:Diagramme de séquence " Créer un compte " ......................................................... 41 
+Figure 12:Diagramme de séquence "S'authentifier" ................................................................ 42 
+Figure 13:Diagramme de séquence "Réinitialiser le mot de passe" ......................................... 43 
+Figure 14:Diagramme de séquence "Modifier Email" ............................................................. 44 
+Figure 15:Diagramme de classe du sprint 1 ............................................................................. 45 
+Figure 16:Interface d'inscription .............................................................................................. 47 
+Figure 17:Interface d'authentification ...................................................................................... 47 
+Figure 18:Interface de modification de profil .......................................................................... 48 
+Figure 19:Interface de modification des paramètres du compte .............................................. 48 
+Figure 20:Interface de récupération de mot de passe par e-mail .............................................. 49 
+Figure 21:Interface de Vérification du code de réinitialisation ................................................ 50 
+Figure 22:Interface de création d’un nouveau mot de passe .................................................... 50 
+Figure 23:Interface de création d'un nouvel utilisateur ............................................................ 51 
+Figure 24:Interface de gestion des utilisateurs ......................................................................... 52 
+Figure 25:Interface consultation des rôles................................................................................ 52 
+Figure 26:Diagramme de cas d'utilisation du deuxième sprint ................................................ 57 
+Figure 27:Diagramme de séquence "Créer une formation" ..................................................... 65 
+Figure 28:Diagramme de séquence "Créer un cours" .............................................................. 66 
+Figure 29:Diagramme de classe de sprint 2 ............................................................................. 67 
+Figure 30: Interface de création de formation .......................................................................... 68 
+Figure 31: Interface d’affichage des formations ...................................................................... 68 
+Figure 32: Interface des détails de la formation ....................................................................... 69 
+
+--- PAGE 10 ---
+Figure 33: Interface de modification de formation .................................................................. 69 
+Figure 34:Diagramme de cas d'utilisation du troisième sprint ................................................. 73 
+Figure 35::Diagramme de séquence " Ajouter une formation au panier" ................................ 77 
+Figure 36:Diagramme de séquence “Réserver une formation" ................................................ 78 
+Figure 37:Diagramme de classe de sprint 3 ............................................................................. 78 
+Figure 38: Interface du panier .................................................................................................. 79 
+Figure 39: Interface de consultation des réservations .............................................................. 79 
+Figure 40: Interface de gestion des réservations ...................................................................... 80 
+Figure 41:Diagramme de cas d'utilisation du quatrième sprint ................................................ 83 
+Figure 42:Diagramme de séquence "Créer un quiz" ................................................................ 88 
+Figure 43: Diagramme de séquence « Passer un quiz »  .......................................................... 90 
+Figure 44: Digramme de classe de sprint 4 .............................................................................. 91 
+Figure 45: Interface de création de quiz ................................................................................... 93 
+Figure 46: Interface de détails du quiz ..................................................................................... 94 
+Figure 47: Interface de gestion des évaluations ....................................................................... 95 
+Figure 48: Interface de tentative ............................................................................................... 95 
+Figure 49: Interface de résultats ............................................................................................... 96 
+Figure 50: Interface de retour d’expérience ............................................................................. 97 
+Figure 51: Interface de la liste des feedbacks .......................................................................... 97 
+  
+
+--- PAGE 11 ---
+Introduction Générale 
+ 
+1 
+ 
+Introduction Générale 
+Le domaine de la formation en ligne a connu un essor considérable ces dernières années, en 
+réponse aux besoins croissants  en apprentissage à distance, à la flexibilité des parcours 
+pédagogiques, ainsi qu'à l'évolution des modes de travail et d'enseignement. Que ce soit pour 
+l'acquisition de nouvelles compétences, la reconversion professionnelle ou le perfectionnement 
+dans un domaine précis, les plateformes de formation sont devenues un outil incontournable, 
+tant pour les centres de formation que pour les apprenants. 
+Cependant, malgré cette évolution, plusieurs établissements rencontrent encore des difficultés 
+à digitaliser efficacement leurs services, à organiser les cours, suivre les apprenants, ou proposer 
+une interaction fluide entre les différents intervenants. C'est dans ce contexte que s'inscrit notre 
+projet de fin d'études à l'Institut Supérieur des Études Technologiques de Sousse (ISET Sousse), 
+visant à concevoir et développer une plateforme web complète dédiée à la gestion d'un centre 
+de formation en ligne. 
+Ce projet a été réalisé dans le cadre d'un stage de quatre mois, effectué au sein de l'entreprise 
+INNO THINK LABS, du 03 février au 24 mai 2025. L'objectif principal de ce travail est de 
+proposer une solution numérique efficace, moderne et intuitive, permettant de faciliter la 
+gestion des formations, des cours et des inscriptions. 
+Ce rapport retrace les différentes é tapes de la réalisation de ce projet, de l'analyse des besoins 
+jusqu'à sa mise en œuvre technique, en passant par la conception et le développement de la 
+solution. Nous débuterons par un premier chapitre intitulé « Présentation du cadre général du 
+projet », qui introduira l'organisme d'accueil, l'étude de l'existant et la solution proposée. Le 
+deuxième chapitre, « Spécification des besoins et choix méthodologiques et techniques », 
+présentera les utilisateurs de la plateforme, les besoins fonctionnels et non  fonctionnels, ainsi 
+que la démarche agile adoptée et les choix techniques retenus durant notre stage. Les chapitres 
+suivants détailleront les différents sprints réalisés, allant de l ’analyse et  la conception à la 
+validation des interfaces développées. Nous clôturerons ce rapport par une conclusion générale 
+qui résumera les résultats obtenus et les perspectives d'amélioration envisagées. 
+
+--- PAGE 12 ---
+Chapitre 1 : Présentation du Cadre Général du Projet 
+ 
+2 
+Chapitre 1 : Présentation du Cadre Général du Projet 
+ 
+Introduction  
+Ce chapitre établit le cadre général du projet de fin d'études. Nous présenterons d'abord 
+l'organisme d'accueil dans sa globalité, suivi d'un diagnostic approfondi de l'existant afin 
+d'appréhender les processus opérationnels actuels et leurs contraintes au sein du centre de 
+formation ELS. Cette analyse nous permettra d'identifier précisément la problématique 
+organisationnelle à résoudre. Nous exposerons ensuite la solution envisagée pour optimiser les 
+opérations et répondre efficaceme nt aux besoins identifiés. Le chapitre s'achèvera par la 
+présentation du planning prévisionnel détaillant les différentes phases d'exécution réalisées 
+pendant la période de stage. 
+1. Présentation de l’organisme d’accueil  
+Dans le cadre de la réalisation de no tre projet de fin d ’études, nous avons eu l ’opportunité 
+d’effectuer notre stage au sein de l ’entreprise INNO THINK LABS . Avant de présenter en 
+détail le projet qui nous a été confié, il est essentiel de commencer par une présentation globale 
+de cette entreprise, son organisation interne, ainsi que les projets qu ’elle mène. Ensuite, nous 
+présenterons le centre E mpowerment Learning Success (ELS ), en tant que client du projet.  
+Cette section permettra de mieux comprendre le cadre professionnel dans lequel notre projet a 
+été développé. 
+1.1. Présentation générale de l’entreprise  
+INNO THINK LABS est une société tunisienne innovante Fondée en 2024, spécialisée dans la 
+création et la gestion de portails internet. Elle intervient dans plusieurs domaines en liant 
+technologie, stratégie de communication et accompagnement digital . Son ambition est de 
+développer des plateformes web performantes répondant aux besoins actuels et futurs de ses 
+clients. Son approche repose sur la rigueur technique, la créativité et une grande adaptabilité 
+aux enjeux du marché numérique. (1) 
+ 
+ 
+ 
+
+--- PAGE 13 ---
+Chapitre 1 : Présentation du Cadre Général du Projet 
+ 
+3 
+Pour mieux situer le cadre du stage, le tableau ci -après présente les données essentielles 
+concernant l’entreprise INNO THINK LABS. 
+Tableau 1:Fiche signalétique de l'entreprise INNO THINK LABS 
+1.2. Les départements de l’entreprise  
+L'entreprise INNO THINK LABS est structurée autour de trois départements stratégiques 
+complémentaires : 
+- Département Développement : il s’agit du pôle technique de l’entreprise. Il prend 
+en charge la conception, le développement, l ’intégration et la maintenance de 
+plateformes digitales. Il est composé de développeurs, intégrateurs web, designers 
+UX/UI, et chefs de projet technique. 
+- Département Communication  : ce  département gère l ’image de marque, la 
+stratégie digitale, le community management, la création de contenu, les campagnes 
+publicitaires ainsi que la communication externe de ses clients. 
+- Département Administratif : il assure la gestion des ressources humaines,  de la 
+comptabilité, de la facturation, de la logistique, ainsi que la coordination 
+administrative interne. 
+Nous avons été accueilli es au sein du Département Développement, où notre mission était de 
+réaliser un projet de développement d’une plateforme web éducative au profit de centre de 
+formation ELS que nous présentant dans la section qui suit. 
+1.3. Les projets de INNO THINK LABS  
+Parmi les projets récents menés par INNO THINK LABS, nous citons : 
+- PurePara : parapharmacie en ligne. 
+Dénomination INNO THINK LABS 
+Logo  
+Raison sociale S.A.R.L. (Société à Responsabilité Limitée) 
+Date de création Septembre 2024 
+Adresse 20 IM AOUN, Jawhra, Sousse, Tunisie 
+Téléphone 98 481 493 
+Email contact@thinklab.tn 
+Effectif actuel 15 collaborateurs 
+
+
+--- PAGE 14 ---
+Chapitre 1 : Présentation du Cadre Général du Projet 
+ 
+4 
+- O10 : plateforme d’accompagnement de porteurs de projets. 
+- WayNot : plateforme de formation et de développement personnel. 
+- Maison de Passion : projet de valorisation du lifestyle et de l’artisanat. 
+1.4. Description du centre de formation ELS 
+Le Centre de Formation Professionnelle Empowerment Learning Success (ELS), fondé en 2022 
+et situé rue Farabi Trocadéro, immeuble Kraiem 1er étage, est spécialisé dans le développement 
+des compétences individuelles et organisationnelles. Il propose deux axes de services : un pôle 
+formation (langues, soft skills, management) et un pôle consultation (juridique, RH, coaching, 
+bilan de compétences). Dirigé par une équipe qualifiée, ELS se distingue par la qualité de ses 
+programmes et son approche personnalisée, visant à transformer les compétences en 
+opportunités professionnelles concrètes. (2) 
+2. Étude de l’existant  
+L’étude de l’existant constitue une étape essentielle dans le développement de notre projet. Elle 
+permet d’analyser les méthodes actuellement utilisées par le Centre ELS pour gérer ses activités 
+pédagogiques et administratives. Cette phase vise à identifier les limites organisationnelles, 
+techniques et fonctionnelles rencontrées au quotidien par les différents acteurs (administrateurs, 
+formateurs, étudiants). En mettant en évidence les difficultés observées sur le terrain, cette 
+analyse nous aide à mieux cerner les besoins réels du centre, et à orienter la conception et la 
+réalisation d’une solution numérique adaptée, cohérente et efficace.  
+2.1. Description de l’existant 
+Le centre de formation ELS fonctionne actuellement selon un modèle traditionnel basé 
+essentiellement sur des interactions en présentiel. L’ensemble des opérations administratives et 
+pédagogiques est géré de manière manuelle, sans recours à un système d’information centralisé. 
+- Gestion administrative :  Les inscriptions se font exclusivement sur place. Les 
+documents sont traités au format papier, ce qui implique un archivage manuel, souvent 
+chronophage, avec un risque accru d’erreurs et de perte d’informations.  
+La correction des tests de niveau et la gestion des dossiers sont assurées manuellement 
+par le personnel administratif, ce qui entraîne une surcharge de travail, notamment lors 
+des périodes d’affluence. 
+
+--- PAGE 15 ---
+Chapitre 1 : Présentation du Cadre Général du Projet 
+ 
+5 
+- Gestion des contenus pédagogiques : Les formateurs ne disposent pas d ’un espace 
+numérique leur permettant de gérer ou de structurer leurs cours. Les contenus sont 
+partagés de manière informelle, et aucun outil ne permet la gestion centralisée des 
+ressources pédagogiques. 
+ 
+- Accès aux services pour les étudiants : Les étudiants doivent se rendre physiquement 
+au centre pour passer les tests de niveau ou assister aux cours. Ce fonctionnement exclut 
+une partie des étudiants pot entiels, notamment ceux qui résident loin du centre ou qui 
+ont des contraintes de mobilité. 
+ 
+2.2. Critique de l’existant et problématique 
+Parmi les points forts du fonctionnement actuel du centre ELS, on peut souligner que, malgré 
+l’absence d’outils numériques, le centre dispose de certains atouts non négligeables tels que : 
+- Une relation humaine directe entre les étudiants, les formateurs et l ’équipe 
+administrative, ce qui favorise un encadrement personnalisé. 
+- Un accompagnement pédagogique de proximité, notamment en présentiel, qui permet 
+une interaction immédiate et des échanges enrichissants. 
+- Un cadre institutionnel structuré et une équipe engagée dans le développement de la 
+formation continue. 
+Cependant, l 'observation des pratiques au sein du centre EL S a révélé plusieurs aspects à 
+améliorer : 
+- Le traitement manuel des documents papiers entraîne des risques d'erreurs, ralentit les 
+processus administratifs et mobilise inutilement les ressources humaines. 
+- Le manque d'outils numériques pédagogiques ; en effet les formateurs ne disposent pas 
+de moyens efficaces pour structurer leurs cours, partager leurs contenus. 
+- L'offre de formation en présentiel reste difficile d'accès pour les étudiants éloignés 
+géographiquement ou ayant des contraintes de déplacement. 
+- Les processus comme l'inscription, les tests de niveau, le suivi des cours et la 
+certification restent manuels, ce qui limite la capacité d'adaptation du centre face à une 
+demande croissante. 
+
+--- PAGE 16 ---
+Chapitre 1 : Présentation du Cadre Général du Projet 
+ 
+6 
+Le modèle traditionnel du centre ELS, bien qu'efficace dans un cadre restreint, atteint ses limites 
+dans un contexte où la digitalisation de la formation devient essentielle. Cette situation soulève 
+une question centrale : comment moderniser les services du centre tout en préservant la qualité 
+de son accompagnement humain ? 
+3. Proposition d’une solution  
+Face aux limites identifiées dans l ’organisation actuelle du centre ELS, la solution que nous 
+proposons consiste à développer une plateforme web dédiée qui vise à digitaliser l’ensemble du 
+processus pédagogique et administratif, tout en maintenant l’encadrement humain déjà présent. 
+La plateforme a pour ambition de : 
+- Optimiser la gestion des rôles et des utilisateurs (Super Admin, Admin, Formateur, 
+Étudiant). 
+- Automatiser les processus d’inscription. 
+- Améliorer l’accessibilité des formations, notamment via des sessions en ligne et l’accès 
+aux contenus à distance. 
+- Suivre les performances des étudiants grâce à un système de quiz, de notations et de 
+certificats automatisés. 
+- Offrir un espace numérique aux formateurs leur permettant de structurer leurs cours et 
+de partager facilement des ressources pédagogiques. 
+- Gérer la visibilité des formations.  En effet, une formation ne sera plus accessible aux 
+nouvelles inscriptions une fois terminée. 
+La mise en place de cette plateforme apportera plusieurs bénéfices notables. Elle permettra 
+de réduire significativement la charge de travail administratif grâce à l'automatisation des 
+processus. Les formateurs bénéficieront d'une meilleure organisation pédagogique, avec des 
+outils numériques adapté s à la gestion de leurs cours et contenus. Du côté des étudiants, 
+l’accessibilité sera grandement améliorée, notamment pour ceux situés à distance. 
+L'ensemble de ces améliorations contribuera à élever la qualité du  service proposé par le 
+centre ELS et à valoriser son image, en l’alignant avec les standards actuels du numérique. 
+ 
+ 
+
+--- PAGE 17 ---
+Chapitre 1 : Présentation du Cadre Général du Projet 
+ 
+7 
+Conclusion  
+Après avoir établi les éléments préalables à la mise en œuvre du projet, nous allons désormais 
+nous concentrer sur les premières étapes de son développement. Le chapitre suivant présentera 
+les spécifications fonctionnelles et techniques nécessaires au développement de la plateforme. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 18 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+8 
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et 
+Techniques  
+ 
+Introduction  
+La phase de spécification et d ’analyse des besoins, étape fondamentale dans la conduite d ’un 
+projet, permet de structurer le système en identifiant ses acteurs clés et en leur assignant des  
+rôles spécifiques.  
+Dans ce chapitre nous détaillons, dans un premier temps, les exigences fonctionnelles (attentes 
+métier) et non fonctionnelles que l’application devra satisfaire. Dans un second temps, nous 
+exposons le  cadre méthodologique  structuré aut our des bonnes pratiques Agile, garantissant 
+une gestion itérative et collaborative du développement. Enfin, nous justifions les  choix 
+technologiques retenus pour ce projet. 
+1. Identification des acteurs  
+Un acteur représente un rôle assumé par une entité externe (humaine ou système) interagissant 
+avec la plateforme via des échanges de données ou des fonctionnalités spécifiques. Dans notre 
+centre de formation en ligne, les cinq acteurs identifiés sont : 
+- Visiteur : c'est l'utilisateur non -inscrit qui peut co nsulter le contenu public de la 
+plateforme, notamment la liste des formations par catégorie, les noms des chapitres et avoir un 
+aperçu du contenu des cours sans y accéder pleinement. Il peut également créer un compte pour 
+devenir étudiant. 
+- Etudiant : c'est l'utilisateur inscrit qui, après avoir effectué une réservation et payé pour 
+une formation, peut accéder intégralement aux chapitres, cours et leçons. À la fin de sa 
+formation, il passe un test sous forme de quiz et obtient une certification s'il atteint au moins le 
+score défini pour cette formation. 
+- Formateur : c'est l'utilisateur responsable de la gestion compl ète de ses cours. Il peut 
+créer, modifier et organiser le contenu de ses formations, y compris les chapitres, les leçons. 
+- Admin : c'est l'utilisateur qui supervise la plateforme en gérant les comptes des étudiants 
+et des formateurs uniquement, ainsi que les formations proposées  et les évaluations. Il n'a pas 
+accès à la gestion des autres admins. 
+
+--- PAGE 19 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+9 
+- Super-admin : c’est l'utilisateur disposant des droits les plus étendus sur la plateforme. 
+En plus des fonctionnalités de l' admin, il peut gérer tous les types d'utilisateurs, y compris les 
+admins eux-mêmes. 
+2. Les besoins fonctionnels  
+Dans cette partie, nous présentons en détail l es fonctionnalités associées aux acteurs de notre 
+plateforme éducative. Cela permet une gestion complète du parcours de formation, depuis la 
+simple consultation en tant que visiteur jusqu’à l’administration globale du système, en passant 
+par l’expérience personnalisée des étudiants et l’expertise pédagogique des formateurs. 
+2.1. Fonctionnalités liées aux visiteurs  
+L’application doit permettre au visiteur de : 
+- Consulter la liste des formations par catégorie 
+- Avoir un aperçu du contenu des formations 
+- Créer un compte pour devenir étudiant  : afin de bénéficier pleinement des services de 
+formation proposés, le visiteur doit créer un compte personnel pour devenir étudiant. 
+2.2.  Fonctionnalités liées aux Etudiants 
+L'application doit permettre à l'étudiant authentifié de : 
+- Modifier ses données personnelles, informations de contact et paramètres 
+d'authentification. 
+- Consulter la liste des formations disponibles par catégorie ou feedbacks. 
+- Ajouter les formations souhaitées au panier. 
+- Réserver les formations choisies directement depuis le panier. 
+- Valider l'inscription en effectuant le paiement au centre de formation. 
+- Suivre un parcours personnalisé selon le type de formation : pour les formations 
+linguistiques, passer un test de niveau initial pour être affecté à la formation appropriée 
+pour les formations thématiques, suivre l'intégralité du programme prévu  
+- Assister à la formation puis passer un quiz final d'évaluation à l'issue de celle -ci, quel 
+que soit le type de formation suivi. 
+- Recevoir un certificat si le score minimal est atteint au quiz final  
+- Évaluer la formation en partageant son retour d'expérience par une notation en étoiles. 
+
+--- PAGE 20 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+10 
+- Accéder à tout moment à l'ensemble de ses certifications archivées dans son espace 
+personnel. 
+2.3. Fonctionnalités liées aux formateurs  
+L'application doit permettre au formateur authentifié de : 
+- Modifier ses données personnelles, informations de contact et paramètres 
+d'authentification. 
+- Structurer l'organisation pédagogique en créant les cours, chapitres et leçons selon 
+la progression souhaitée. 
+- Intégrer des réunions en ligne  à l’aide d’outils tierces pour favoriser l'échange et 
+l'accompagnement pédagogique avec les étudiants. 
+2.4. Fonctionnalités liées aux admins 
+L'application doit permettre à l’admin de : 
+- Créer les comptes des formateurs et envoyer leurs identifiants de connexion par email. 
+- Visualiser tous les utilisateurs avec options de suppression ou de blocage de comptes. 
+- Consulter la liste des différents rôles utilisateurs. 
+- Créer de nouvelles formations et administrer l'ensemble du catalogue existant 
+- Créer et organiser les cours, leçons et chapitres. 
+- Gérer les dates de publication des formations (immédiate ou programmée à une date 
+précise). 
+- Gérer et publier les quiz. 
+- Consulter la liste des évaluations des étudiants et voir en détail leurs scores ainsi que les 
+réponses données. 
+- Accéder aux statistiques détaillées de chaque quiz (pourcentage de réussite, score 
+moyen, nombre de tentatives par étudiant). 
+- Consulter les feedbacks des utilisateurs pour chaque formation. 
+- Gérer les réservations en les acceptant, refusant ou supprimant. 
+ 
+
+--- PAGE 21 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+11 
+2.5. Fonctionnalités liées aux super-admins 
+Le super -admin dispose de toutes les fonctionnalités de l' admin, auxquelles s'ajoutent des 
+privilèges étendus. En plus des capacités d'administration standard, il peut gérer l'ensemble des 
+types d'utilisateurs, y compris les admins. 
+3. Le Cadre Méthodologique Scrum 
+3.1.  Présentation de Scrum 
+Scrum constitue l'une des approches agiles les plus populaires en gestion de projet. Cette 
+méthodologie repose sur un flux de travail structuré qui implique trois rôles clés : le Product 
+Owner qui priorise les besoins, le Scrum Master qui facilite le processus, et l'équipe de 
+développement. La figure suivante illustre ce cadre agile pour le développement de projets. (3)  
+ 
+Figure 1:Processus du Scrum 
+Le cycle commence par le Product Backlog, liste des fonctionnalités souhaitées, puis passe par 
+le Sprint Planning où l'équipe sélectionne les tâches pour constituer le Sprint Backlog.  
+Le cœur du processus est le Sprint (1 -4 semaines) pendant lequel l'équipe développe les 
+fonctionnalités, avec des réunions quotidiennes (Daily Stand Up). 
+ Le cycle se termine par le Sprint Review pour évaluer le travail accompli et le Rétrospective 
+du sprint pour améliorer le processus.  
+
+
+--- PAGE 22 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+12 
+Le diagramme montre le caractère itératif de Scrum, où chaque sprint produit un incrément de 
+travail fini, permettant d'adapter continuellement le produit aux besoins des utilisateurs. (4) 
+3.2. Les Rôles Scrum 
+Le Framework Scrum définit des rôles bien précis permettant à chaque membre de l'équipe 
+d'assumer des responsabilités claires et complémentaires, afin d'assurer une organisation 
+efficace et une progression fluide du projet. 
+Cette illustration met en évidence la complémentarité des rôles dans une équipe Scrum, chacun 
+ayant des responsabilités spécifiques pour garantir la réussite du projet. 
+ 
+Figure 2:Les rôles clés du cadre Scrum et leurs responsabilités 
+ 
+- Product Owner (PO)  : c’est le «  seul » responsable de la gestion du backlog. Il peut 
+déléguer certaines tâches de gestion de son backlog à l ’équipe de développement mais 
+gardera toujours la responsabilité des résultats. (5) 
+- Scrum Master (SM)  : c’est le garant de l ’application correcte d u Scrum. Il facilite le 
+travail de l’équipe, aide tout le monde à adapter leurs interactions avec l’équipe Scrum pour 
+maximiser la valeur créée par cette équipe. (6) 
+- Equipe de développement (équipe Scrum)  : c’est un groupe auto -organisé et 
+pluridisciplinaire (généralement de 3 à 9 personnes) responsable collectivement de livrer 
+des incréments de produit fonctionnels à la fin de chaque Sprint, sans hiérarchie interne . 
+(7) 
+Ce tableau illustre l'adaptation du cadre Scrum à notre projet, identifiant les intervenants clés, 
+leurs fonctions spécifiques et leurs responsabilités dans l'organisation de notre travail. 
+
+
+--- PAGE 23 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+13 
+ 
+Tableau 2: Répartition des Rôles Scrum 
+3.3. Le backlog du produit 
+Le backlog produit regroupe l’ensemble des besoins fonctionnels exprimés sous forme de user 
+stories. Chaque entrée comprend un identifiant unique, un thème, une description claire du 
+besoin, ainsi qu’un niveau de priorité.  
+Pour gérer cette priorisation, nous avons utilisé la méthode MoSCoW, qui classe les exigences 
+en quatre niveaux : (8) 
+- M (Must have) : indispensables au fonctionnement du produit, 
+- S (Should have) : importantes mais pouvant être reportées, 
+- C (Could have) : optionnelles selon les ressources, 
+- W(Won’t have): non retenues pour cette version. 
+Le tableau suivant présente un aperçu du backlog utilisé dans notre application, avec 
+les priorités définies selon cette méthode. 
+Id Thème User Story Priorité 
+1 Formulaire d’inscription  - En tant que visiteur, je souhaite accéder à 
+un formulaire d'inscription afin de  créer 
+un compte utilisateur sur la plateforme. 
+- En tant qu'admin ou formateur, j'ai besoin 
+que mon compte soit configuré par un 
+responsable autorisé pour garantir 
+l'attribution précise des permissions 
+nécessaire. 
+- En tant que super -admin, je souhaite 
+disposer d'un compte unique doté de tous 
+ 
+Must 
+Rôle Mission Acteur(s) 
+Product Owner (PO) Définit les besoins fonctionnels 
+(les User Stories) 
+- Mme Rahma AMRI 
+ 
+Scrum Master  Veille à ce que Scrum soit bien 
+appliqué. 
+ Mme Ahlem ELHAJ  
+Equipes de développement Ceux qui réalisent le travail 
+technique 
+Hiba HAMILA et  
+ Oumayma ZAHROUNI 
+
+--- PAGE 24 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+14 
+les droits d'accès pour gérer l'ensemble de 
+la plateforme. 
+2 Authentification utilisateur En tant qu'utilisateur enregistré ( étudiant, 
+formateur, admin ou super-admin), je dois 
+pouvoir m'authentifier sur la plateforme afin 
+d'accéder à mon espace personnel et aux 
+fonctionnalités correspondant à mon profil. 
+  
+         Must 
+3 Gestion Compte utilisateur En tant qu’utilisateur  authentifié (étudiant, 
+formateur, admin ou super -admin) je veux 
+accéder à mon compte personnel et pouvoir 
+modifier mes informations  (email, mot de 
+passe, numéro téléphone, nom, prénom). 
+ 
+          Must 
+4 Réinitialisation du mot de 
+passe 
+En tant qu'utilisateur authentifié (étudiant, 
+formateur, admin, super -admin), je souhaite 
+accéder à un formulaire dédié me permettant 
+de réinitialiser mon mot de passe en cas 
+d'oubli. 
+          
+          Should  
+5 Consultation liste 
+d’utilisateurs  
+- En tant qu' admin, je devrais pouvoir 
+consulter la liste de tous les utilisateurs 
+inscrits sur le site, à l'exception des autres 
+admins.  
+ - En tant que super-admin, je devrais pouvoir 
+consulter la liste complète de tous les 
+utilisateurs inscrits sur le site, y compris les 
+admins. 
+     
+ 
+Must 
+6 Validation des réservations En tant qu’admin, je dois pouvoir valider les 
+réservations après confirmation du paiement  
+en présentiel afin que les étudiants puissent 
+assister aux formations. 
+    
+Must 
+7 Filtrage des formations En tant qu'utilisateur, je souhaite pouvoir 
+filtrer les formations selon différents critères 
+        
+Should 
+
+--- PAGE 25 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+15 
+(feedbacks, catégorie) et les rechercher afin 
+de trouver rapidement les contenus 
+correspondant à mes besoins spécifiques. 
+8 Aperçu des formations En tant que visiteur, je souhaite avoir un 
+aperçu des caractéristiques des formations 
+(description, durée, nombre de cours, nombre 
+de places disponibles). 
+Should 
+9 Panier de formations En tant qu’étudiant, je souhaite ajouter des 
+formations à mon panier afin de préparer ma 
+préinscription. 
+Must 
+10 Réservation de formations En tant qu’étudiant, je souhaite effectuer une 
+réservation de mes formations en ligne, afin 
+de procéder à leur validation définitive 
+auprès du centre 
+ 
+Must 
+11 Test de niveau linguistique  En tant qu'étudiant inscrit à une formation 
+linguistique, je souhaite pouvoir passer un 
+test de niveau initial afin d'être affecté à une 
+formation adaptée à mes compétences. 
+ 
+Must 
+12 Quiz d'évaluation En tant qu'étudiant ayant terminé une 
+formation, je souhaite passer un quiz 
+d'évaluation finale afin de valider mes acquis 
+et d’obtenir un certificat à condition 
+d’atteindre le score requis. 
+ 
+Must 
+13 Retour d'expérience En tant qu'étudiant ayant terminé une 
+formation et passé le quiz, je souhaite pouvoir 
+laisser un feedback sous forme d'évaluation 
+par étoiles afin de partager mon expérience. 
+ 
+Should 
+14 Téléchargement de 
+ressources  
+En tant qu'étudiant, je souhaite pouvoir 
+télécharger les ressources pédagogiques 
+partagées par les formateurs afin d'y accéder 
+hors ligne. 
+ 
+Must 
+
+--- PAGE 26 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+16 
+15 Espace personnel 
+d'archivage 
+En tant qu'étudiant, je souhaite accéder à un 
+espace personnel où sont archivées mes 
+certificats afin de pouvoir les consulter et les 
+télécharger à tout moment. 
+ 
+Must 
+16 Organisation des cours - En tant qu’admin, je souhaite pouvoir 
+organiser tous les cours en chapitres et 
+leçons afin de structurer l’ensemble du 
+contenu pédagogique proposé. 
+- En tant que formateur, je souhaite 
+pouvoir organiser uniquement mes 
+propres cours en chapitres et leçons afin 
+de structurer logiquement le contenu 
+destiné à mes étudiants 
+ 
+ 
+Must 
+17  Intégration des réunions en 
+ligne à l’aide d’outils tierces  
+En tant que formateur, je souhaite pouvoir 
+intégrer des outils de réunion en ligne tiers 
+(lien de réunion Google Meet) afin  de 
+favoriser l'échange et l'accompagnement 
+pédagogique avec les étudiants. 
+ 
+Should 
+18 Soumission de Quiz En tant que formateur, je souhaite soumettre 
+mes Quiz à l'admin pour publication afin 
+qu'ils soient disponibles pour les étudiants. 
+ 
+Must 
+19 Gestion des catégories 
+ 
+En tant qu’admin, je souhaite pouvoir créer et 
+gérer des catégories de formations afin 
+d'organiser logiquement l'offre pédagogique. 
+ 
+Must 
+20 Gestion de formations En tant qu ’admin, je souhaite pouvoir créer 
+de nouvelles formations en définissant leurs 
+caractéristiques (titre, description, catégorie, 
+durée, prix) afin d'enrichir l'offre de la 
+plateforme. 
+ 
+Must 
+21 Publication de Quiz En tant qu’admin, je souhaite pouvoir valider 
+et publier les Quiz préparés par les formateurs 
+afin de les rendre accessibles aux étudiants. 
+ 
+Must 
+
+--- PAGE 27 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+17 
+22 Analyse des performances 
+de quiz 
+En tant qu’admin , je souhaite accéder à un 
+tableau de statistiques détaillées pour chaque 
+quiz (pourcentage de réussite, score moyen, 
+nombre de tentatives par étudiant) afin 
+d'évaluer l'efficacité des évaluations et 
+d'identifier les points d'amélioration dans le 
+contenu pédagogique. 
+ 
+ 
+Should 
+23 Consultation liste de rôles  En tant qu’admin, je veux visualiser le 
+nombre d’utilisateurs par rôle (étudiant, 
+formateur, admin) pour superviser les 
+permissions et adapter l’organisation des 
+accès si nécessaire. 
+ 
+Should 
+24 Consultation de la liste des 
+formation  
+- En tant qu’admin, je veux consulter, 
+modifier et supprimer les formations afin 
+de gérer efficacement le contenu 
+proposé. 
+- En tant qu'étudiant, je veux uniquement 
+consulter la liste des formations 
+disponibles afin de choisir celles qui 
+m'intéressent. 
+ 
+ 
+ 
+Must 
+25 Notification du démarrage 
+des formations  
+ 
+- En tant qu’étudiant, je souhaite recevoir 
+une notification deux jours avant le 
+début de la formation que j’ai réservée. 
+- En tant que formateur, je souhaite 
+recevoir une notification deux jours 
+avant le début de mes formations 
+ 
+ 
+Should 
+26 Notification de confirmation 
+de réservation 
+ 
+En tant qu ’étudiant, je souhaite recevoir un 
+email de confirmation une fois ma réservation 
+validée 
+Should 
+27 Gestion des réservations En tant qu ’administrateur, je souhaite 
+disposer d ’une interface affichant les 
+ 
+Must 
+
+--- PAGE 28 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+18 
+réservations en attente des étudiants, afin de 
+pouvoir les valider ou les refuser. 
+28 Accéder au contenu de la 
+formation  
+En tant qu'étudiant ayant effectué une 
+réservation valide pour une formation, je 
+souhaite pouvoir accéder à l'intégralité du 
+contenu pédagogique (cours, chapitres et 
+leçons) pour mes études. 
+ 
+Must 
+ 
+Tableau 3:Backlog Produit Global 
+4. Diagramme de cas d’utilisation  
+Le diagramme de cas d ’utilisation constitue un outil visuel essentiel pour représenter les 
+interactions entre les différents acteurs et le système développé. Il offre une vue d ’ensemble 
+synthétique des fonctionnalités principales de la plateforme, tout en identifiant les utilisateurs 
+concernés. 
+En raison de la complexité du diagramme global, nous avons choisi de le subdiviser par acteur, 
+afin de mieux structurer l’information et de clarifier les interactions spécifiques de chaque profil 
+avec le système. 
+4.1. Diagramme de cas d’utilisation : Package administratif 
+La figure suivante illustre le diagramme de cas d’utilisation côté admin et super-admin. 
+
+--- PAGE 29 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+19 
+ 
+Figure 3:Diagramme de cas d'utilisation “Package Administratif" 
+
+
+--- PAGE 30 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+20 
+4.2. Diagramme de cas d’utilisation : Package Formateur 
+La figure suivante illustre le diagramme de cas d’utilisation côté formateur. 
+ 
+Figure 4:Diagramme de cas d'utilisation "Package Formateur" 
+
+
+--- PAGE 31 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+21 
+4.3. Diagramme de cas d’utilisation : Package Etudiant 
+La figure suivante illustre le diagramme de cas d’utilisation côté étudiant. 
+ 
+Figure 5:Diagramme de cas d'utilisation "Package Etudiant" 
+
+
+--- PAGE 32 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+22 
+5. Planification des sprints  
+La planification des sprints mobilise systématiquement l'ensemble de l'équipe Scrum - 
+développeurs, Scrum Master et Product Owner. Cette approche inclusive s'appuie sur un 
+principe essentiel : ceux qui réaliseront concrètement les tâches sont les mieux placés pour 
+anticiper les obstacles techniques et opératio nnels. En définissant collectivement les objectifs 
+et en sélectionnant les éléments prioritaires du backlog, nous garantissons des estimations 
+réalistes et un engagement partagé, facteurs déterminants pour la réussite de chaque cycle de 
+développement. 
+Le tableau suivant présente la décomposition des sprints : 
+Sprint 1  : Authentification & 
+Gestion des uutilisateurs 
+Mise en place des fondations du système avec les fonctionnalités 
+d’authentification (connexion, inscription, mot de passe oublié, etc.) et la 
+gestion des différents types d ’utilisateurs (étudiant, formateurs, super-
+admin, admin) avec leurs permissions respectives. 
+ 
+Sprint 2 : Gestion de formations 
+(cours, chapitres, leçons)  
+Développement des fonctionnalités de création et d'organisation du contenu 
+pédagogique : l'admin crée les formations et a la possibilité de créer les  
+cours, chapitres et leçons, tandis que le formateur dispose des droits pour 
+créer ses propres cours, chapitres et leçons dans les formations qui lui ont 
+été affectées par l'admin. 
+Sprint 3 : Parcours Etudiants Développement du parcours utilisateur côté étudiants, incluant la 
+navigation dans le catalogue de formations, la réservation via un panier, 
+ainsi que l’accès aux formations qui le concerne. 
+ 
+Sprint 4 : Évaluation & 
+Certification 
+Finalisation du volet pédagogique avec les fonctionnalités d ’évaluation 
+(quiz, feedback) et la génération de certificats pour les étudiants ayant 
+complété leurs parcours, ainsi que des outils de reporting pour 
+l’administration. (Suivi des étudiants : qui a commencé, progressé ou 
+terminé une formation.  Résultats aux quiz : taux de réussite, scores moyens 
+et tentatives). 
+ 
+Tableau 4:Feuille de Route des Sprints (Roadmap Agile) 
+
+--- PAGE 33 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+23 
+6. Choix techniques  
+La section qui suit présente l'ensemble des décisions techniques qui ont guidé la réalisation de 
+ce projet. Nous y détaillons successivement le Framework de développement retenu, le système 
+de gestion de base de données utilisé, ainsi que les divers outils  de conception et de 
+développement mobilisés pour optimiser l'exécution du projet. 
+6.1. Outils de conception et de développement 
+Pour mener à bien notre projet, nous avons sélectionné un ensemble d'outils performants qui 
+nous ont permis d'optimiser les phases de conception et de développement de notre application. 
+Logo Outil Description 
+ 
+ 
+ 
+Visual Studio 
+Code 
+Visual Studio Code  est un éditeur de code gratuit et multiplateforme de 
+Microsoft. Il supporte de nombreux langages de programmation et offre des 
+fonctionnalités comme l'autocomplétion, le débogage et l'intégration Git. Son 
+atout principal est son large choix d'extensions qui permettent de le personnaliser 
+selon les besoins du développeur. (9) 
+ 
+ 
+ 
+ 
+ 
+Laravel 
+Blade UI 
+Blade est le moteur de templates simple et puissant inclus dans Laravel. 
+Contrairement à certains moteurs de templates PHP, Blade ne vous empêche pas 
+d'utiliser du code PHP brut dans vos templates. En fait, tous les templates Blade 
+sont compilés en code PHP brut et mis en cache jusqu'à leur modification, ce qui 
+signifie que Blade n'ajoute pratiquement aucune surcharge à v otre application. 
+(10) 
+ 
+ 
+ 
+Bootstrap 
+Bootstrap est un framework qui intègre les bases du développement web réactif. 
+Il suffit aux développeurs d'insérer le code dans une grille 
+prédéfinie. Bootstrap s'appuie sur le langage  HTML (Hypertext Markup 
+Language ) , les feuilles de style en cascade (  CSS ) et JavaScript . Les 
+développeurs web utilisant Bootstrap peuvent créer des sites web beaucoup plus 
+rapidement, sans se soucier des commandes et fonctions de base. (11) 
+ 
+ 
+ 
+ 
+ 
+Xampp 
+XAMPP est synonyme de multi-plateforme (X), Apache (A), MySQL (M), PHP 
+(P) et Perl (P).  C’est une distribution Apache simple et légère qui permet aux 
+développeurs de créer facilement un serveur web local à des fins de test. 
+(12) 
+
+
+--- PAGE 34 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+24 
+ 
+ 
+ 
+GitHub GitHub est une plateforme collaborative qui permet aux équipes tech de stocker 
+et de modifier du code pour tous leurs projets (logiciels, programmes 
+informatiques, développement de sites web, applications mobiles, etc.). Les 
+développeurs peuvent partager publiquement leurs projets (code open source), 
+afin que d’autres professionnels puissent contribuer au développement. (13) 
+ 
+ 
+ 
+ 
+Draw.io 
+Conçu par Seibert Media,  draw.io est un logiciel propriétaire de création  de 
+diagrammes et de graphiques  . Il vous permet de choisir une mise en page 
+automatique ou de créer une mise en page personnalisée. Il propose un large choix 
+de formes et des centaines d'éléments visuels pour personnaliser votre diagramme 
+ou graphique. La fonction glisser-déposer simplifie la création de diagrammes ou 
+de graphiques attrayants. (14) 
+ 
+Tableau 5:Outils de développement 
+6.2. Framework de développement 
+Pour le développement de cette application , nous avons opté pour le Framework backend 
+Laravel, un Framework web open source créé par Taylor Otwell le 15 juin 2011. Écrit en PHP, 
+il suit le modèle MVC (Modèle-Vue-Contrôleur) et repose entièrement sur les principes de la 
+programmation orientée objet. 
+Laravel est reconnu pour sa rapidité, sa robustesse et son évolutivité. Il intègre de nombreuses 
+fonctionnalités comme l’authentific ation, la gestion des bases de données et le routage. Sa 
+structure claire facilite la prise en main et permet d’écrire un code efficace, maintenable et 
+réutilisable. (15) 
+Cette figure ci-dessous, datant de janvier 2023, met en évidence la forte popularité de Laravel 
+parmi les Framework s backend. Ce classement visuel souligne à quel point Laravel domine 
+largement les autres outils grâce à sa valeur technique, sa communauté active et sa simplicité 
+d’utilisation. (16) 
+
+
+--- PAGE 35 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+25 
+ 
+ 
+Figure 6:Les Frameworks Backend les Plus Utilisés en Janvier 2023 
+6.3. Architecture de la solution  
+6.3.1. Pattern MVC  
+Cette illustration met en exergue le concept MVC (Modèle -Vue-Contrôleur), une approche 
+aprouvée en génie logiciel visant à segmenter une application en trois modules 
+complémentaires. Ce schéma d'organisation précise le rôle de chaque fichier, optimisant ainsi 
+la gestion et la maintenance du code source. (17) 
+ 
+
+
+--- PAGE 36 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+26 
+ 
+Figure 7:Interactions entre modèle, vue et contrôleur 
+Le Modèle constitue le cœur du système, gérant les données et la logique métier de l'application, 
+indépendamment de l'interface utilisateur.  
+La Vue sert d'interface visuelle, affichan t les informations du modèle à l'utilisateur de façon 
+compréhensible et recevant ses interactions.  
+Le Contrôleur agit comme intermédiaire, traitant les actions de l'utilisateur captées par la vue, 
+puis manipulant le modèle en conséquence.  
+Le flux d'infor mation circule de manière cyclique : lorsque l'utilisateur interagit avec la vue, 
+celle-ci notifie le contrôleur qui détermine les changements nécessaires dans le modèle ; 
+ Le modèle se met alors à jour et communique ces changements à la vue pour actualise r 
+l'affichage. Cette séparation des responsabilités facilite la maintenance, améliore la 
+réutilisabilité du code et permet de développer ou modifier chaque composant de façon 
+relativement indépendante. 
+ 
+ 
+
+
+--- PAGE 37 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+27 
+6.3.2. Présentation de l’ORM éloquent  
+Éloquent est l'ORM (Object-Relationnel Mapping) intégré à Laravel. Un ORM est un système 
+qui permet de faire correspondre des objets de programmation (en PHP) avec des tables de base 
+de données relationnelles. Éloquent représente la partie "Modèle" dans l'architecture MVC de  
+Laravel, et il facilite considérablement la manipulation des données en permettant aux 
+développeurs d'interagir avec la base de données via des classes PHP plutôt que d'écrire des 
+requêtes SQL directement (18). 
+Le mécanisme d'Éloquent, tel qu'illustré dans l'image, fonctionne comme un intermédiaire entre 
+les modèles PHP et la base de données. Lorsqu'un modèle fait un appel, Éloquent ORM traduit 
+cette requête en SQL, l'envoie à la connexion de base de données qui l'exécute, puis transforme 
+les résultats obtenus en objets PHP utilisables par l'application. Cette abstraction permet aux 
+développeurs de manipuler les données sans écrire de SQL brut, rendant le code plus lisible et 
+maintenable. (19) 
+ 
+Figure 8:Architecture Eloquent ORM « Pont entre modèles Laravel et base de données » 
+6.3.3. Gestion de la base de données 
+Nous avons opté pour l'utilisation du langage SQL, avec MySQL en tant que système de gestion 
+de base de données relationnelle. Cette solution permet de stocker une large gamme de données 
+et offre des fonctionnalités avancées, telles que la création et la gestion des relations entre les 
+différentes tables, assurant ainsi une gestion optimisée des données  
+
+
+--- PAGE 38 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+28 
+7. Diagramme de GANTT  
+Le diagramme de Gantt permet de visualiser les différentes tâches du projet, leur durée 
+respective, leurs dates de début et de fin, ainsi que le chevauchement ou la succession des 
+tâches. Il offre également une vue claire de l'avancement global du projet, des jalons importants 
+et des relations de dépendance entre les tâches, facilitant ainsi la planification et le suivi du 
+projet par l'équipe. (20) 
+Durant cette mission de 16 semaines, la planification et l'exécution du projet ont été structurées 
+selon le diagramme de Gantt présenté dans ce tableau, permettant une allocation optimale des 
+ressources et une répartition chronologique rigoureuse de chaque tâche selon un échéancier  
+stratégiquement établi. 
+ 
+Figure 9:Diagramme de GANTT 
+D’après le diagramme de Gantt présenté, le projet s’étale de février à mai 2025, structuré en 
+plusieurs phases successives. Il débute par la phase de lancement du projet, qui s’étend de 
+février à mars. Ensuite, quatre sprints agiles (Sprint1 à Sprint4), ch acun d’une durée de trois 
+semaines, se succèdent de mars jusqu’à fin mai, traduisant une approche itérative. Le Sprint1 
+démarre début mars en parallèle avec le début de la rédaction du rapport, qui se prolonge tout 
+au long du projet. 
+ 
+ 
+
+
+--- PAGE 39 ---
+Chapitre 2 : Spécification des Besoins et Choix Méthodologiques et Techniques 
+ 
+29 
+Conclusion  
+Après avoir établi les éléments préalables à la mise en œuvre du projet, nous allons désormais 
+nous concentrer sur les premières étapes de son développement. Le prochain chapitre présentera 
+le déroulement du premier sprint. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 40 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+30 
+Chapitre 3 : SPRINT  1 - Authentification et Gestion des Utilisateurs 
+ 
+Introduction  
+Dans ce chapitre, nous présentons les  démarches réalisées pour l'atteinte des objectifs de ce 
+premier sprint qui est l'inscription, l'authentification et la gestion des utilisateurs. Nous 
+commençons par montrer et interpréter les différents diagrammes UML pour arriver ensuite à 
+la présentation des interfaces de l 'application appropriées à ce sprint du côté de s utilisateurs 
+ainsi que de côté de l'admin. 
+1. Backlog du sprint 1  
+Le tableau ci -dessous présente le backlog du premier sprint, détaillant l'ensemble des user 
+stories avec leurs identifiants respectifs et leur ordre de priorité d'implémentation. 
+Id Thème  User Story Priorité 
+1 Formulaire d’inscription  - En tant que visiteur, je souhaite accéder à 
+un formulaire d'inscription afin de créer un 
+compte utilisateur sur la plateforme. 
+- En tant qu'admin ou formateur, j'ai besoin 
+que mon compte soit configuré par un 
+responsable autorisé pour garantir 
+l'attribution précise des permissions 
+nécessaire. 
+- En tant que super -admin, je souhaite 
+disposer d'un compte unique doté de tous 
+les droits d'accès pour gérer l'ensemble de 
+la plateforme. 
+ 
+ 
+ 
+ 
+ 
+ 
+Must 
+2 Authentification 
+utilisateur 
+En tant qu'utilisateur enregistré (étudiant, 
+formateur ou admin), je dois pouvoir 
+m'authentifier sur la plateforme afin d'accéder 
+à mon espace personnel sécurisé et aux 
+fonctionnalités correspondant à mon profil. 
+ 
+Must 
+
+--- PAGE 41 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+31 
+3 Gestion Compte 
+utilisateur 
+En tant qu’utilisateur (étudiant, formateur, 
+admin, super-admin) je veux accéder à mon 
+compte personnel et pouvoir modifier mes 
+informations (email, mot de passe, numéro 
+téléphone, nom, prénom). 
+ 
+ 
+Must 
+4 Réinitialisation du mot de 
+passe 
+En tant qu'utilisateur (étudiant, formateur, 
+admin, super-admin), je souhaite accéder à un 
+formulaire dédié me permettant de 
+réinitialiser mon mot de passe en cas d'oubli. 
+ 
+Must 
+5 Consultation liste 
+d’utilisateurs  
+- En tant qu'admin, je devrais pouvoir 
+consulter la liste de tous les utilisateurs 
+inscrits sur le site, à l'exception des autres 
+admins.  
+ - En tant que super-admin, je devrais pouvoir 
+consulter la liste complète de tous les 
+utilisateurs inscrits sur le site, y compris les 
+admins. 
+ 
+ 
+ 
+Must 
+23 Consultation liste 
+de rôles  
+En tant qu ’admin, je veux visualiser le 
+nombre d ’utilisateurs par rôle (étudiant, 
+formateur, admin) pour superviser les 
+permissions et adapter l ’organisation des 
+accès si nécessaire. 
+ 
+Should 
+ 
+Tableau 6:Backlog du Sprint1 
+2. Analyse et Conception  
+2.1. Diagramme de cas d’utilisation  
+La figure ci -après illustre le diagramme des cas d ’utilisation élaboré pour le premier 
+sprint. 
+Ce diagramme de cas d’utilisation met en évidence les cinq acteurs impliqués ainsi que les 
+différentes interactions qui leur sont proposées dans le cadre de ce sprint. Ces interactions 
+comprennent l’inscription, l’authentification, la réinitialisation du mot de passe, la gestion des  
+
+--- PAGE 42 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+32 
+Comptes, la consultation de la page d’accueil, ainsi que la suppression de comptes. Le super - 
+admin dispose des droits nécessaires pour supprimer tout type d’utilisateur, tandis que l’admin 
+peut, si nécessaire, supprimer ou bl oquer uniquement les comptes des étudiants et des 
+formateurs. 
+Figure 10:Diagramme de cas d'utilisation du premier sprint 
+
+
+--- PAGE 43 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+33 
+2.2. Description textuelle des cas d’utilisation 
+2.2.1. Description textuelle de cas d’utilisation côté visiteur 
+Le tableau suivant présente une description textuelle du diagramme relatif à la création d’un 
+compte. 
+ Sommaire d’identification 
+Titre Créer un compte 
+Description Ce cas décrit le processus de création d'un compte par un visiteur. 
+Acteurs Visiteur 
+ Description des enchainements  
+Pré-condition Avoir un compte email non inscrit.  
+Post-condition  Le visiteur est inscrit en tant qu’un étudiant. 
+Scénario nominal 1. Le visiteur accède à la page d'inscription de la plateforme 
+2. Le système affiche le formulaire d'inscription avec les 
+champs requis. 
+3. Le visiteur remplit les informations demandées. 
+4. Le système vérifie que les champs fournis sont valides et 
+uniques, puis enregistre ces informations. 
+5. Le système envoie un code de validation à l'utilisateur par 
+email. 
+6. Le système affiche une page demandant à l'utilisateur 
+d'entrer le code de validation reçu 
+7. L'utilisateur entre le code de validation et clique sur 
+"Valider mon compte" 
+8. Le système affiche un message de confirmation indiquant 
+que le compte a été créé avec succès 
+9. L'utilisateur est alors redirigé vers la page d'accueil 
+correspondant à son rôle. 
+
+--- PAGE 44 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+34 
+Enchaînements alternatifs et 
+erreurs 
+E1 : Si l’utilisateur  entre un champ non valide  (adresse email 
+incorrecte, un mot de passe composé de moins de 8 caractères, 
+etc.) :  
+1.Le système affiche un message d’erreur.  
+2.Le système affiche à l’utilisateur le formulaire de nouveau en 
+gardant les informations valides.  
+E2 : Si l’utilisateur entre un email  ou numéro de téléphone 
+existant. 
+- Le système affiche un message d’erreur indiquant que 
+l’adresse e-mail ou le numéro de téléphone est déjà utilisé. 
+E3 : Si l’utilisateur saisit un code de validation incorrect : 
+- Le système affiche un message d’erreur.  
+- L’utilisateur peut alors cliquer sur le bouton « 
+Renvoyer un code »,  ce qui déclenche l’envoi d’un 
+nouveau code à l’a dresse email fournie.  
+ 
+ 
+Tableau 7: Description textuelle « Créer un compte » 
+2.2.2. Description textuelle des cas d’utilisations côté Admin, formateur et étudiant 
+Le tableau suivant présente une description textuelle du cas d ’utilisation relatif à 
+l’authentification. 
+   Sommaire d’identification  
+Titre S’authentifier 
+Description  Ce cas détaille la procédure d’authentification des utilisateurs au sein 
+de l’application. 
+ 
+Acteurs admin, super-admin, formateur, étudiant 
+
+--- PAGE 45 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+35 
+ Description des enchainements 
+Pré-condition L'utilisateur doit avoir un compte. 
+Post-condition L’utilisateur est redirigé vers son espace qui varie selon son rôle. 
+Scénario nominal  1. L'utilisateur accède à l'interface d'authentification de la 
+plateforme.  
+2. Le système présente un formulaire d'identification comprenant 
+les champs obligatoires (email et mot de passe).  
+3. L'utilisateur saisit son adresse E-mail et son mot de passe.  
+4. Le systèm e procède à la vérification et à la validation des 
+informations d'identification par rapport à la base de données des 
+comptes enregistrés.  
+5. Le système effectue une redirection automatique de 
+l'utilisateur vers la page d ’accueil selon les privilèges 
+associés à son profil. 
+Enchaînements 
+alternatifs 
+E1 : Si les informations saisies sont incorrectes ou ne correspondent 
+à aucun compte utilisateur : 
+- Le système affiche un message d ’erreur indiquant que 
+l’authentification a échoué. 
+E2 : L’utilisateur clique sur le bouton mot de passe oublié,  
+- Le cas d ’utilisation réinitialisation du mot de passe est 
+déclenché. 
+ 
+Tableau 8:Description textuelle « s’authentifier » 
+Le tableau suivant présente une description textuelle du cas d ’utilisation relatif à la 
+réinitialisation du mot de passe. 
+ 
+Sommaire d’identification 
+Titre Réinitialiser le mot de passe 
+Description Ce cas présente les étapes du processus permettant à un utilisateur de 
+réinitialiser son mot de passe en cas d’oubli. 
+Acteurs  admin, super-admin, formateur, étudiant. 
+
+--- PAGE 46 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+36 
+                                              Description des enchainements 
+Pré-condition L’utilisateur est titulaire d’un compte existant. 
+Post-condition Le mot de passe est mis à jour avec succès. 
+Scénario nominal 1. L’utilisateur clique sur le lien « Mot de passe oublié » depuis 
+la page de connexion. 
+2. Le système affiche la page de réinitialisation du mot de passe. 
+3. L’utilisateur saisit une adresse e -mail associée à un compte 
+existant. 
+4. Il clique sur le bouton « Envoyer le code ». 
+5. Le système génère un code de vérification à 6 chiffres et 
+l’envoie à cette adresse e-mail. 
+6. Le système redirige l’utilisateur vers la page de vérification de 
+code. 
+7. L’utilisateur saisit le code reçu. 
+8. Le système affiche un formulaire de réinitialisation. 
+9. L’utilisateur saisit un nouveau mot de passe et une 
+confirmation du mot de passe. 
+10. Le système vérifie : 
+- Que le mot de passe respecte les règles de sécurité. 
+- Que le mot de passe et sa confirmation sont identiques. 
+11. Le système enregistre le nouveau mot de passe. 
+12. Un message de confirmation est affiché indiquant le succès de 
+la réinitialisation. 
+Enchaînements alternatifs et 
+erreurs 
+1. Adresse e-mail incorrecte ou inconnue 
+- Si l ’utilisateur saisit une adresse e -mail qui n ’est associée à 
+aucun compte, le système affiche un message d’erreur. 
+- L’utilisateur est invité à vérifier et corriger l’adresse saisie. 
+
+--- PAGE 47 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+37 
+2. Code de vérification incorrect 
+- En cas de code erroné, le système affiche un message d’erreur. 
+3. Mot de passe non conforme 
+- Si le mot de passe ne respecte pas les critères (longueur, 
+complexité...), un message explicatif est affiché. 
+- L’utilisateur doit ressaisir un mot de passe valide. 
+4. Confirmation du mot de passe incorrecte 
+- Si le mot de passe et sa confirmation ne correspondent pas, un 
+message d'erreur est affiché. 
+- L’utilisateur doit corriger les deux champs. 
+ 
+Tableau 9:Description textuelle "Réinitialiser le mot de passe" 
+Le tableau suivant présente une description textuelle du cas d’utilisation relatif à la gestion du 
+compte. 
+                                        Sommaire d’identification 
+Titre Gérer compte 
+Description Ce cas illustre la manière dont l'utilisateur gère son profil au sein de 
+l'application. 
+Acteurs 1. Tous les rôles d’utilisateurs (admin, super-admin, formateur, étudiant). 
+ Description des enchainements  
+Pré-condition L'utilisateur doit être authentifié 
+Post-condition La mise à jour du profil utilisateur a été effectuée avec succèss. 
+Scénario nominal 1. L’utilisateur se rend sur la page de gestion de son profil. 
+2. Le système affiche l’interface avec toutes les coordonnées 
+personnelles de l’utilisateur. 
+
+--- PAGE 48 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+38 
+3. L’utilisateur modifie les champs souhaités (nom, prénom, numéro 
+de téléphone.) en saisissant les nouvelles valeurs. 
+4. Le système vérifie que les informations fournies sont valides.  
+5. Le système met à jour les informations du profil utilisateur avec les 
+nouvelles valeurs fournies. 
+ 
+Enchainements 
+alternatifs 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+       E1 Pour le changement du mot de passe : 
+1. L’utilisateur renseigne son mot de passe actuel, le nouveau mot 
+de passe et sa confirmation. 
+2. Le système valide la conformité des données saisies. 
+3. Le système enregistre le nouveau mot de passe. 
+E2 Pour le changement de l’email : 
+1. L’utilisateur saisit la nouvelle adresse email et clique sur le 
+bouton “ Envoyer un code de validation “.  
+- Un popup demande la vérification du mot de passe actuel. 
+2.  L’utilisateur saisit son mot de passe. 
+3. Un code de confirmation est envoyé à la nouvelle adresse 
+email. 
+4. L’utilisateur saisit le code de validation. 
+5. Une notification confirme la modification de l’email. 
+6. Le système enregistre la nouvelle adresse email. 
+Enchainement d’erreurs 
+1. Email déjà existant 
+- Si la nouvelle adresse email est déjà utilisée, le système affiche :  
+"Cette adresse email est déjà associée à un compte." 
+2. Échec de vérification du mot de passe actuel (pour la 
+modification du nouvel email) 
+- Lors de  la demande d’envoi du code,  un popup demande 
+la vérification du mot de passe actuel  si l’utilisateur 
+
+--- PAGE 49 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+39 
+saisit incorrectement le mot de passe actuel après trois tentatives 
+: 
+- Le compte est temporairement bloqué et Il doit contacter le support 
+pour déverrouiller l’accès. 
+3. Mot de passe actuel incorrect (pour le changement de  mot de 
+passe) 
+- Si le mot de passe actuel est erroné, le système affiche :"Le mot 
+de passe saisi est incorrect. Veuillez réessayer." 
+- Le système invite l’utilisateur à corriger les informations et 
+réessayer. 
+ 
+Tableau 10: Description textuelle « Gérer compte » 
+2.2.3. Description textuelle de cas d’utilisation côté Administratif : 
+Le tableau suivant présente une description textuelle des cas d’utilisations relatif à la gestion 
+des utilisateurs. 
+ 
+  Sommaire d’identification  
+Titre  Gérer utilisateurs  
+Description  
+L'admin a accès à la liste complète des utilisateurs, dispose de droits de 
+suppression sur les comptes, et peut créer de nouveaux profils 
+(formateurs). 
+Acteurs admin , super-admin  
+                                                                          Description des enchainements 
+Pré-condition  Authentification préalable 
+Post-condition  La liste des utilisateurs est mise à jour avec les modifications apportées 
+(suppressions ou ajouts de profils formateurs, blocage d'utilisateurs). 
+Scénario nominal 1.  L’admin accède à l’interface de gestion des utilisateurs de 
+l’application. 
+
+--- PAGE 50 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+40 
+2. Il peut consulter la liste des utilisateurs, visualiser les détails de 
+chaque utilisateur (nom, e-mail, rôle), ainsi que les supprimer ou 
+les bloquer si nécessaire. 
+3. Si une action a été exécutée, le système confirme sa réussite et met 
+à jour la liste. 
+ 
+ 
+Enchainements alternatifs  
+ 
+ 
+ 
+1. Pour ajouter un nouveau formateur, il accède à l’interface de 
+création d’un nouvel utilisateur. 
+2.  Le système affiche alors un formulaire 
+d’inscription, que l’admin remplit avec les informations du 
+formateur (nom, prénom, numéro de téléphone, e-mail, etc.), puis 
+lui attribue le rôle de formateur. 
+3. Le système crée le compte et attribue le rôle formateur. 
+4. Le système affiche une notification confirmant la création de 
+l'utilisateur. 
+5. Un email de bienvenue est envoyé au formateur, contenant un 
+mot de passe temporaire à utiliser pour la première connexion, avec 
+la possibilité de le modifier ultérieurement. 
+Enchainements d’erreurs  
+ 
+E1 : Lors de la création d ’un nouvel utilisateur (formateur), si une 
+vérification échoue (e -mail invalide ou déjà utilisé, numéro de 
+téléphone incorrect),  
+- Le système affiche un message d’erreur explicite et invite l’admin 
+à corriger les champs concernés avant de soumettre à nouveau le 
+formulaire. 
+ 
+Tableau 11:Description textuelle « Gestion utilisateurs » 
+3. Diagrammes de séquence  
+3.1. Présentation 
+Les diagrammes de séquence permettent la modélisation dynamique d’un système en langage 
+UML. Ils se basent sur les lignes de vie, les processus et les objets qui vivent simultanément, et 
+les messages qu'ils échangent entre eux pour exercer une fonction. (21) 
+
+--- PAGE 51 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+41 
+3.2. Diagramme de séquence « créer un compte » 
+Le diagramme de séquence ci-dessous, intitulé "Créer un compte", décrit les interactions entre 
+les différentes entités impliquées lors du processus d'inscription d'un visiteur jusqu'à la 
+validation de son compte. 
+Figure 11:Diagramme de séquence " Créer un compte " 
+
+
+--- PAGE 52 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+42 
+3.3. Diagramme de séquence « S’authentifier » 
+Le diagramme de séquence suivant présente le processus d'authentification utilisateur. 
+Dans ce qui suit, le terme user désigne un utilisateur inscrit pouvant être : admin, super-admin, 
+formateur, étudiant. 
+Figure 12:Diagramme de séquence "S'authentifier" 
+
+
+--- PAGE 53 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+43 
+3.4. Diagramme de séquence « Réinitialiser le mot de passe » 
+Le diagramme de séquence suivant présente le processus de réinitialisation de mot de passe. 
+Figure 13:Diagramme de séquence "Réinitialiser le mot de passe" 
+
+
+--- PAGE 54 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+44 
+3.5. Diagramme de séquence « Modifier Email » 
+Le diagramme de séquence suivant présente le processus de modification d'adresse email. 
+ 
+Figure 14:Diagramme de séquence "Modifier Email" 
+
+
+--- PAGE 55 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+45 
+4. Diagramme de classe  
+Un diagramme de classe est un type de diagramme UML qui décrit un système en visualisant 
+les différents types d’objets au sein d’un système et les types de relations statiques qui existent 
+entre eux. Il illustre également les opérations et les attributs des classes. (22) 
+Ils sont généralement utilisés pour explorer les concepts de domaine, comprendre les exigences 
+logicielles et décrire les conceptions détaillées. 
+La figure ci -dessous illustre le diagramme de classes, présentant les classes spécifiques 
+développées lors du premier sprint. 
+ 
+ 
+Figure 15:Diagramme de classe du sprint 1 
+Ce diagramme illustre la structure de gestion des utilisateurs et des rôles mise en place pour 
+assurer une authentification sécurisée et un contrôle d'accès approprié sur le site.  Chaque 
+utilisateur possède un seul rôle.  
+Les données personnelles incluent les informations d'identification essentielles (nom, prénom, 
+email, mot de passe, téléphone) qui servent de base à l'authentification sécurisée.  
+
+
+--- PAGE 56 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+46 
+Le système intègre plusieurs mécanismes de sécurité avancés : le champ first_login détecte 
+automatiquement la première connexion d'un u tilisateur et déclenche un formulaire de 
+changement de mot de passe obligatoire pour les rôles administratifs et formateurs, tandis qu'un 
+code de validation est systématiquement envoyé à tous les nouveaux utilisateurs pour activer et 
+confirmer leur compte.  
+Pour la récupération de mots de passe oubliés, un code de réinitialisation  
+(code_reset_password) spécifique est généré, et enfin, un indicateur de statut  (status) booléen 
+permet de contrôler si le compte est actif ou temporairement bloqué.  
+Cette architecture complète garantit une gestion sécurisée des accès tout en offrant une 
+expérience utilisateur adaptée aux privilèges de chaque rôle. 
+5. Revue du sprint 1 
+Cette section présente les résultats obtenus lors du deuxième sprint, illustrés par les 
+interfaces développées de l’application. 
+5.1. Interface d’Inscription  
+Pour accéder à la plateforme, le visiteur doit d'abord créer un compte. L'interface d'inscription 
+permet de renseigner ses informations personnelles : nom, prénom, numéro de téléphone, 
+adresse e-mail et mot de passe. Nous avons implémenté une validation des champs pour garantir 
+la qualité et la sécurité des données saisies lors de l'inscription.    
+
+--- PAGE 57 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+47 
+  
+Figure 16:Interface d'inscription 
+5.2. Interface d’authentification 
+L’authentification est requise pour accéder aux services de l’application, aussi bien pour 
+l’étudiant que pour L’admin et le formateur. L’interface correspondante est illustrée ci-dessous. 
+ 
+Figure 17:Interface d'authentification 
+
+
+--- PAGE 58 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+48 
+5.3. Interface modifier profil 
+L'interface de modification du profil utilisateur permet la mise à jour des informations 
+personnelles telles que le nom, prénom et numéro de téléphone, avec validation par le bouton 
+"Sauvegarder". 
+ 
+Figure 18:Interface de modification de profil 
+L'accès aux paramètres du compte s'effectue via un menu dédié offrant des options de gestion 
+des informations personnelles et des paramètres de sécurité, notamment la modification de 
+l'adresse email et du mot de passe. 
+Figure 19:Interface de modification des paramètres du compte 
+
+
+--- PAGE 59 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+49 
+5.4. Interface mot de passe oublié  
+Depuis l'interface de connexion, lorsqu ’un utilisateur oublie son mot de passe, il peut cliquer 
+sur le lien "Mot de passe oublié" qui le redirige vers l'interface de récupération de compte : 
+ 
+Figure 20:Interface de récupération de mot de passe par e-mail 
+ Sur cette interface, l'utilisateur est invité à saisir son adresse e-mail associée à son compte dans 
+le champ prévu. Une fois l'adresse e -mail confirmée en cliquant sur le bouton "Envoyer le 
+code", le système génère  automatiquement un code de réinitialisation qui sera transmis à 
+l'adresse électronique renseignée.  
+ 
+ 
+ 
+ 
+ 
+
+
+--- PAGE 60 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+50 
+ 
+Figure 21:Interface de Vérification du code de réinitialisation 
+Lorsque le code de vérification est validé avec succès, le système affiche l'interface de création 
+d'un nouveau mot de passe. Cette interface demande à l'utilisateur de saisir son nouveau mot de 
+passe dans le premier champ, puis de le confirmer dans le second champ pour éviter toute erreur 
+de saisie. Une fois les  deux champs complétés, l'utilisateur peut finaliser la réinitialisation en 
+cliquant sur le bouton "Changer mon mot de passe" 
+ 
+Figure 22:Interface de création d’un nouveau mot de passe 
+
+
+--- PAGE 61 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+51 
+5.5. Interface création d’un nouvel utilisateur 
+Cette interface permet à l’admin d’ajouter un nouvel utilisateur en renseignant un formulaire 
+contenant les informations essentielles telles que le nom, le prénom, l’adresse e-mail, le numéro 
+de téléphone et le rôle de l’utilisateur  (formateur ou admin si l’utilisateur est un super-admin, 
+uniquement formateur s’il est un simple admin). 
+ 
+Figure 23:Interface de création d'un nouvel utilisateur 
+5.6. Interface gestion des utilisateurs  
+Cette interface permet à L’admin de consulter et  gérer les utilisateurs enregistrés dans le 
+système. Elle affiche les informations personnelles de chaque utilisateur, telles que le nom 
+complet, l’adresse email, le rôle attribué et le statut (actif ou inactif). L’admin peut modifier le 
+statut d’un utilisateur, en l’activant ou en le désactivant selon les besoins. Des options de filtrage 
+permettent de rechercher les utilisateurs par rôle ou par statut. 
+
+
+--- PAGE 62 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+52 
+Figure 24:Interface de gestion des utilisateurs 
+5.7. Interface consultation liste de rôles 
+Cette interface offre une vue en lecture seule des rôles existants dans le système. Elle permet 
+d'afficher les rôles disponibles ainsi que le nombre d’utilisateurs associés à chacun. Une barre 
+de recherche est également disponible pour filtrer le s rôles par nom, facilitant ainsi la 
+consultation ciblée des informations. 
+Figure 25:Interface consultation des rôles 
+
+
+--- PAGE 63 ---
+Chapitre 3 : Sprint 1 : Authentification et Gestion des Utilisateurs 
+ 
+53 
+6. Rétrospective du sprint  
+Cette section présente les réalisations du premier sprint. L'ensemble des objectifs ont été atteints 
+avec la mise en œuvre complète de toutes les interfaces utilisateur planifiées, comprenant les 
+pages d'accueil, les formulaires d'inscription et de connexion, la modification de profil 
+personnel (changement d'email et mot de passe), l'interfac e de récupération de mot de passe 
+oublié, ainsi que les interfaces administratives de gestion des utilisateurs, consultation des rôles 
+et ajout de nouveaux utilisateurs. 
+Conclusion 
+Les objectifs de ce premier sprint ont été atteints avec succès. L'application dispose maintenant 
+d'une base fonctionnelle, ce  qui permettra d'aborder le Sprint 2, consacré à la g estion de 
+formations. 
+ 
+ 
+
+--- PAGE 64 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+54 
+Chapitre 4 : SPRINT  2 - Gestion de Formations 
+  
+Introduction 
+Dans ce sprint, nous présentons les étapes des travaux dirigés afin d ’atteindre les objectifs du 
+deuxième sprint qui est la gestion de formations (cours, chapitres, leçons)  nous définissons le 
+backlog spécifique à ce sprint. Ensui te, nous interprétons les différents diagrammes de 
+conception pour arriver, par la suite, à la description des interfaces de l’application. Finalement, 
+nous détaillons la rétrospective de ce sprint. 
+1. Backlog du Sprint 2  
+Le tableau ci-dessous présente un aperçu du backlog du deuxième sprint. 
+Chaque thème est constitué d ’un user story définie par un ID et un ordre d ’importance de 
+réalisation 
+ 
+Id Thème  User Story Priorité 
+20 Gestion de formations En tant qu’admin, je souhaite pouvoir créer 
+de nouvelles formations en définissant leurs 
+caractéristiques (titre, description, 
+catégorie, durée, prix) afin d'enrichir l'offre 
+de la plateforme. 
+ 
+ 
+Must 
+24 Consultation de la liste 
+des formation  
+- En tant qu’admin, je veux consulter, 
+modifier et supprimer les formations 
+afin de gérer efficacement le contenu 
+proposé. 
+- En tant qu'étudiant, je veux 
+uniquement consulter la liste des 
+formations disponibles afin de choisir 
+celles qui m'intéressent. 
+ 
+ 
+ 
+ 
+Must 
+16 Organisation des cours - En tant qu’admin, je souhaite pouvoir 
+organiser tous les cours en chapitres et 
+ 
+Must 
+
+--- PAGE 65 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+55 
+leçons afin de structurer l’ensemble du 
+contenu pédagogique proposé. 
+- En tant que formateur, je souhaite 
+pouvoir organiser uniquement mes 
+propres cours en chapitres et leçons 
+afin de structurer logiquement le 
+contenu destiné à mes étudiants. 
+17 Intégration des 
+réunions en ligne à 
+l’aide d’outils tierces 
+En tant que formateur, je souhaite pouvoir 
+intégrer des outils de réunion en ligne tiers 
+(lien de réunion Google Meet) afin de 
+favoriser l'échange et l'accompagnement 
+pédagogique avec les étudiants. 
+ 
+       Should 
+19 Gestion des catégories 
+ 
+En tant qu’admin, je souhaite pouvoir créer 
+et gérer des catégories de formations afin 
+d'organiser logiquement l'offre 
+pédagogique. 
+        Must 
+7 Filtrage des 
+formations 
+En tant qu'utilisateur, je souhaite pouvoir 
+filtrer les formations selon différents 
+critères ( feedbacks, catégorie) et les 
+rechercher afin de trouver rapidement les 
+contenus correspondant à mes besoins 
+spécifiques. 
+         
+ 
+Should 
+8 Aperçu des formations En tant que visiteur, je souhaite avoir un 
+aperçu des caractéristiques des formations 
+(description, durée, nombre de cours, 
+nombre de places disponibles). 
+Should 
+25 Notification du 
+démarrage des 
+formations  
+ 
+- En tant que formateur, je souhaite 
+recevoir une notification deux jours 
+avant le début de mes formations. 
+ 
+ 
+Should 
+28 Accéder au contenu de 
+la formation  
+- En tant qu'étudiant ayant effectué une 
+réservation valide pour une formation, 
+Must 
+
+--- PAGE 66 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+56 
+je souhaite pouvoir accéder à 
+l'intégralité du contenu pédagogique 
+(cours, chapitres et leçons) pour mes 
+études. 
+ 14  Téléchargement de 
+ressources  
+- En tant qu'étudiant, je souhaite 
+pouvoir télécharger les ressources 
+pédagogiques partagées par les 
+formateurs afin d'y accéder hors 
+ligne. 
+ 
+Must 
+Tableau 12:Backlog du Sprint 2 
+2. Analyse et Conception 
+Cette section présente la conception relative au deuxième sprint, à travers l’analyse détaillée 
+des diagrammes UML, incluant les cas d’utilisation, les classes et les séquences. Elle vise à 
+fournir une vision complète des modèles architecturaux et fonctionnels développés durant 
+cette phase 
+2.1. Diagramme de cas d’utilisation 
+La figure ci-dessous illustre le diagramme de cas d’utilisation relatif au deuxième sprint. 
+
+--- PAGE 67 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+57 
+ 
+Figure 26:Diagramme de cas d'utilisation du deuxième sprint 
+Ce diagramme représente la partie relative à la gestion des formations ainsi que le contenu 
+associé (cours, chapitres, leçons). Dans cette section, nous proposons une description textuelle 
+de ce diagramme des cas d’utilisation. 
+ 
+ 
+
+
+--- PAGE 68 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+58 
+2.2.  Description textuelle de cas d’utilisation coté admin 
+Le tableau suivant illustre la description textuelle du cas d’utilisation « Créer une formation » 
+ 
+  Sommaire d’identification 
+Titre Créer une formation 
+Description Ce cas décrit l’action de création d’une formation par un 
+admin ou un super-admin, avec la possibilité de la publier 
+immédiatement ou de planifier sa publication à une date 
+ultérieure. 
+Acteurs admin, super-admin  
+      Description des enchainements 
+Pré-condition Authentification préalable 
+Post-condition La formation est enregistrée dans le système et visible selon la 
+date de publication choisie (immédiatement ou à la date 
+programmée). 
+ 
+ 
+ 
+Scénario nominal 
+1. L’admin clique sur le Button de création de formation. 
+2. Le système redirige vers la page de création et affiche 
+le formulaire de création de formation. 
+3. L’admin accède à l ’interface de création des 
+formations. 
+4. Il saisit les informations nécessaires à la création de la 
+formation (image, titre, description…). 
+5. Il choisit une option de publication : immédiate ou 
+programmée à une date spécifique. 
+6. Lors du clic sur le bouton « Ajouter » le système vérifie 
+la validité des données (champs obligatoires remplis, 
+format correct) 
+7. Le système enregistre la formation, puis affiche une alerte 
+demandant à l’admin : « V oulez-vous créer un cours 
+pour cette formation ? » 
+7.1.   Si l’admin clique sur "Oui" : 
+
+--- PAGE 69 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+59 
+- Le système redirige vers la page de création de cours 
+avec le champ "titre de la formation" prérempli. 
+7.2.   Si l’admin clique sur "Non" : 
+-  Le système redirige vers la page de la liste des 
+formations. 
+8. Lors du clic sur le bouton « Annuler », le système redirige 
+le Super-admin ainsi que l’admin vers la page de la liste 
+des formations. 
+ 
+ 
+Enchaînements alternatifs 
+E1 Si les données saisies sont incomplètes ou au mauvais 
+format : 
+1. Le système affiche un message d ’erreur précisant les 
+champs incorrects ou manquants. 
+2. L’admin reste sur la même page et corrige les données. 
+Tableau 13:Description textuelle "Créer une formation" 
+Le tableau suivant illustre la description textuelle du cas d’utilisation « Modifier une formation 
+» 
+                          Sommaire d’identification 
+Titre Modifier une formation 
+Description Ce cas décrit l’action de modification d’une formation par un 
+admin ou un super-admin. 
+Acteurs Admin, super-admin  
+     Description des enchainements 
+Pré-condition L’utilisateur est authentifié en tant qu’admin ou super-
+admin. 
+ 
+Post-condition La formation est enregistrée dans le système et visible selon la date 
+de publication choisie (immédiatement ou à la date programmée). 
+ 
+ 
+ 
+Scénario nominal 
+1. L’admin clique sur l’icône de modification d’une formation. 
+2. Le système redirige vers la page de modification et affiche 
+le formulaire. 
+3. L’admin accède à l’interface de modification d’une formation 
+spécifique. 
+
+--- PAGE 70 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+60 
+4. Il modifie les informations souhaitées de la formation. 
+5. Lors du clic sur le bouton « enregistrer » le système vérifie la 
+validité des données (champs obligatoires remplis, format 
+correct). 
+5.1. Le système enregistre les modifications apportées à cette 
+formation 
+5.2. L’admin sera donc redirigeré vers la page de la liste des 
+formations. 
+6. Lors du clic sur le bouton « Annuler », aucune 
+modification n’est enregistrée et le système le redirige 
+vers la page de la liste des formations. 
+ 
+ 
+Enchaînements alternatifs 
+E1. Si les données saisies lors de la modification sont 
+incomplètes ou ne respectent pas le format requis  
+1. Le système affiche un message d ’erreur indiquant les 
+champs incorrects ou manquants. 
+2. L’admin reste sur la même page et corrige les données. 
+3. Une fois les données corrigées, il revient à l ’étape 5 pour 
+tenter un nouvel enregistrement. 
+ 
+Tableau 14:Description textuelle "Modifier une formation" 
+Le tableau suivant illustre la description textuelle du cas d’utilisation « supprimer une 
+formation » 
+ Sommaire d’identification 
+Titre Supprimer une formation 
+Description Ce cas décrit l’action de suppression d’une formation par un 
+admin ou un super-admin. 
+Acteurs Admin, super-admin  
+       Description des enchainements  
+Pré-condition Authentification préalable et formation déjà existe  
+Post-condition La formation est supprimée du système avec succès et n’apparaît 
+plus dans la liste des formations. 
+
+--- PAGE 71 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+61 
+ 
+ 
+ 
+ 
+Scénario nominal 
+1. L’admin clique sur l ’icône de suppression d ’une 
+formation. 
+2.  Le système affiche une fenêtre modale de confirmation 
+avec deux boutons : « Supprimer » et « Annuler ». 
+3. Si l’admin clique sur « Supprimer » : 
+4.1. Le système supprime la formation sélectionnée. 
+4.2. Le système actualise la liste des formations. 
+4. Si l’utilisateur clique sur « Annuler » : 
+4.1 Le système ferme la fenêtre modale. 
+4.2. Aucune suppression n’est effectuée. 
+Tableau 15:Description textuelle "Supprimer une formation" 
+2.3. Description textuelle de cas d’utilisation coté administratif et formateurs 
+Le tableau suivant illustre la description textuelle du cas d’utilisation « Créer un cours » 
+ 
+                                       Sommaire d’identification 
+Titre Créer un cours  
+Description Ce cas décrit l’action de création un cours par un admin, un 
+super-admin ou un formateur. 
+Acteurs Admin, super-admin, formateur 
+         Description des enchainements 
+Pré-condition Authentification préalable 
+Post-condition Cours créer avec succès  
+ 
+ 
+Scénario nominal 
+1. Le formateur clique sur le bouton de création d’un cours. 
+2. Le système redirige vers la page de création de cours et 
+affiche le formulaire vide. 
+3. Le formateur remplit les champs requis du cours (titre, 
+description, date de publication, etc.). 
+4. Il clique sur le bouton « Ajouter ». 
+5. Le système valide les données saisies : 
+
+--- PAGE 72 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+62 
+- Vérifie que tous les champs obligatoires sont 
+remplis 
+- Vérifier le format des données. 
+6.    Le système enregistre le cours dans la base de données. 
+7. Le système affiche une alerte à l’utilisateur : V oulez-vous 
+ajouter un chapitre à ce cours ? 
+8. Si Le formateur clique sur « Oui » : 
+- Le système redirige vers la page de création de 
+chapitre, en associant automatiquement le cours 
+nouvellement créé. 
+9. Si Le formateur clique sur « Non » : 
+-  Le système redirige vers la page de liste des 
+cours. 
+ 
+ 
+Enchaînements alternatifs 
+E1. Si les données sont invalides ou incomplètes : 
+1. Le système affiche sous chaque champs incorrecte ou 
+manquants un message d’erreur. 
+2. Le formateur reste sur la même page de création. 
+3. Il corrige les erreurs et retourne à l’étape 4 pour 
+réessayer. 
+Tableau 16:Description textuelle "Créer un cours" 
+Le tableau suivant illustre la description textuelle du cas d’utilisation « Modifier un cours » 
+ 
+                            Sommaire d’identification 
+Titre Modifier un cours  
+Description Ce scénario décrit l’action de modification d’un cours par un 
+admin, un super-admin ou formateur. 
+Acteurs Admin, super-admin, formateur 
+         Description des enchainements  
+Pré-condition L’utilisateur est authentifié en tant qu’admin ou super-
+admin ou formateur. 
+
+--- PAGE 73 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+63 
+Post-condition Lae cours est enregistré avec sucées dans le système  
+ 
+ 
+ 
+Scénario nominal 
+1. Le formateur clique sur l’icône de modification d’un cours. 
+2. Le système redirige vers la page de modification et affiche 
+le formulaire 
+3. Le formateur accède à l ’interface de modification d’un 
+cours spécifique. 
+4. Il modifie les informations souhaitées du cours. 
+5. Lors du clic sur le bouton « enregistrer » le système vérifie 
+la validité des données (champs obligatoires remplis, 
+format correct) 
+5.1. Le système enregistre les modifications apportées à ce 
+cours.   
+5.2.   Le système redirige vers la page de la liste des cours. 
+6. Lors du clic sur le bouton « Annuler », aucune 
+modification n’est enregistrée et le système le redirige 
+vers la page de la liste des cours. 
+ 
+ 
+Enchaînements alternatifs 
+E1. Si les données saisies lors de la modification sont 
+incomplètes ou ne respectent pas le format requis  
+1. Le système affiche un message d ’erreur indiquant les 
+champs incorrects ou manquants. 
+2. Le formateur sur la même page et corrige les données. 
+3. Une fois les données corrigées, il revient à l ’étape 5 pour 
+tenter un nouvel enregistrement. 
+ 
+Tableau 17:Description textuelle "Modifier un cours" 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 74 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+64 
+Le tableau suivant illustre la description textuelle du cas d’utilisation « supprimer un cours » 
+ 
+                           Sommaire d’identification 
+Titre Supprimer un cours 
+Description Ce cas décrit l’action de suppression d’un cours par un admin ou 
+un super-admin ou formateur. 
+Acteurs Admin, super-admin, formateur 
+        Description des enchainements 
+Pré-condition Authentification préalable et cours déjà existe. 
+Post-condition Le cours est supprimé du système avec succès et n’apparaît plus 
+dans la liste des cours. 
+ 
+ 
+ 
+ 
+Scénario nominal 
+1. Le formateur clique sur l ’icône de suppression d ’un 
+cours. 
+2.  Le système affiche une fenêtre modale de confirmation 
+avec deux boutons : « Supprimer » et « Annuler ». 
+3. Si le formateur clique sur « Supprimer » : 
+3.1 Le système supprime le cours sélectionné. 
+3.2. Le système actualise la liste des cours. 
+4. Si le formateur clique sur « Annuler » : 
+4.1 Le système ferme la fenêtre modale. 
+4.2. Aucune suppression n’est effectuée. 
+Tableau 18:Description textuelle “Supprimer un cours" 
+Le processus de gestion des cours (création, modification, suppression) suit le même principe 
+que celui appliqué pour les leçons et les chapitres. 
+3. Diagrammes de séquence 
+Cette section présente les diagrammes de séquence élaborés dans le cadre du 
+Sprint 2. 
+
+--- PAGE 75 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+65 
+3.1. Diagramme de séquence « Créer une formation » 
+Ce diagramme de séquence représente le processus de création d’une formation. 
+Figure 27:Diagramme de séquence "Créer une formation" 
+3.2. Diagramme de séquence « Créer un cours »  
+Ce diagramme de séquence représente le processus de la gestion d’un cours. Il s’agit de scénario 
+nominal : 
+
+
+--- PAGE 76 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+66 
+ 
+Figure 28:Diagramme de séquence "Créer un cours" 
+
+
+--- PAGE 77 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+67 
+4. Diagramme de classe du sprint 2  
+La figure ci -dessous illustre le diagramme de classe, présentant les classes spécifiques 
+développées lors du deuxième sprint. 
+ 
+Figure 29:Diagramme de classe de sprint 2 
+5. Revue du sprint 2 
+Cette section a pour objectif de présenter les résultats obtenus lors du deuxième sprint, à 
+travers les interfaces développées de l'application. 
+
+
+--- PAGE 78 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+68 
+5.1. Interface de création de formation  
+ 
+Figure 30: Interface de création de formation 
+5.2. Interface d’affichage des formations 
+Figure 31: Interface d’affichage des formations 
+
+
+--- PAGE 79 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+69 
+5.3. Interface des détails de la formation 
+Figure 32: Interface des détails de la formation 
+5.4. Interface de modification de formation 
+Figure 33: Interface de modification de formation 
+
+
+--- PAGE 80 ---
+Chapitre 4 : Sprint 2 : Gestion de Formations 
+ 
+70 
+Conclusion 
+Cette phase de développement a établi les bases fonctionnelles nécessaires pour la gestion du 
+contenu pédagogique. Le prochain sprint se concentrera sur l'expérience utilisateur côté 
+étudiant pour compléter l'écosystème d'apprentissage de la plateforme. 
+ 
+  
+
+--- PAGE 81 ---
+Chapitre 5 : Sprint 3 : Parcours Étudiant 
+ 
+71 
+Chapitre 5 : Sprint 3 - Parcours Etudiant 
+Introduction 
+Dans le cadre de ce troisième sprint, nous développons le parcours étudiant incluant la 
+navigation dans le catalogue de formations, le système de panier d'achat, et l'accès aux 
+formations acquises. Nous définissons le backlog spécifique à ce sprint, analysons les 
+diagrammes de conception associés, puis procédons à la description d es interfaces utilisateur 
+dédiées au parcours étudiant. Cette démarche se conclut par une rétrospective détaillée du sprint 
+réalisé. 
+1. Backlog du Sprint3 
+Le tableau ci-dessous présente un aperçu du backlog du troisième sprint. 
+ 
+Id Thème  User Story Priorité 
+9 Panier de formations En tant qu’étudiant, je souhaite 
+ajouter des formations à mon 
+panier afin de préparer ma 
+préinscription. 
+ 
+ 
+       Must 
+6 Validation des réservations En tant qu’admin, je dois pouvoir 
+valider les réservations après 
+confirmation du paiement en 
+présentiel afin que les  étudiants 
+puissent assister aux formations. 
+ 
+ 
+    Must 
+10 Réservation de formations En tant qu’étudiant, je souhaite 
+effectuer une réservation de mes 
+formations en ligne, afin de 
+procéder à leur validation 
+définitive auprès du centre. 
+Must 
+25 Notification du démarrage des 
+formations  
+En tant qu ’étudiant, je souhaite 
+recevoir une notification deux 
+jours avant le début de la formation 
+que j’ai réservée. 
+ 
+ 
+ 
+Should 
+
+--- PAGE 82 ---
+Chapitre 5 : Sprint 3 : Parcours Étudiant 
+ 
+72 
+ 
+26 
+Notification de confirmation 
+de réservation 
+ 
+En tant qu’étudiant, je souhaite 
+recevoir un email de confirmation 
+une fois ma réservation validée 
+Should 
+28 Gestion des réservations En tant qu ’admin, je souhaite 
+disposer d ’une interface affichant 
+les réservations en attente des 
+étudiants, afin de pouvoir les 
+valider ou les refuser. 
+Must 
+Tableau 19:Backlog du sprint 3 
+2. Analyse et Conception 
+Cette section présente la conception relative au troisième sprint, à travers l’analyse 
+détaillée des diagrammes UML, incluant les cas d’utilisation, les classes et les séquences.  
+ 
+
+--- PAGE 83 ---
+Chapitre 5 : Sprint 3 : Parcours Étudiant 
+ 
+73 
+2.1. Diagramme de cas d’utilisation 
+La figure ci-après illustre le diagramme des cas d’utilisation élaboré pour le troisième 
+sprint. 
+Figure 34:Diagramme de cas d'utilisation du troisième sprint 
+Ce diagramme illustre la gestion des réservations de formations. Il met en évidence les 
+interactions entre les acteurs. Les cas d’utilisation représentés couvrent des actions telles que 
+la réservation de formations, la consultation et la gestion du panier, ainsi que le traitement des 
+réservations par l’administrateur. Dans cette section, nous présentons une description textuelle 
+détaillée de ces cas d’utilisation. 
+
+
+--- PAGE 84 ---
+Chapitre 5 : Sprint 3 : Parcours Étudiant 
+ 
+74 
+2.2. Description textuelle de cas d’utilisation  
+Le tableau suivant présente une description textuelle du cas d’utilisation relatif à l’ajoute de 
+formation au panier par l’étudiant. 
+                                      Sommaire d’identification 
+Titre  Ajouter une formation au panier 
+Description  Ce cas illustre la manière dont l ’étudiant ajouter des formations au 
+panier selon ses besoins. 
+Acteurs Etudiant 
+         Description des enchainements 
+Pré-condition  Authentification préalable 
+Post-condition  Le panier de l’étudiant est mis à jour. 
+Scénario nominal 1. L’étudiant accède à la liste des formations disponibles. 
+2.  Il clique sur le bouton « Ajouter au panier » associé à une 
+formation. 
+3. Le système ajoute la formation au panier de l’étudiant. 
+4. Le système affiche un message de confirmation « 
+Formation ajoutée au panier avec succès. » 
+Tableau 20:Description textuelle " Ajouter une formation au panier " 
+Le tableau suivant présente une description textuelle du cas d’utilisation relatif à la 
+réservation des formations. 
+                                          Sommaire d’identification 
+Titre Réserver une formation 
+Description Ce cas illustre la manière dont l'étudiant effectue une réservation de 
+formations depuis son panier 
+Acteurs 2. Etudiant 
+ 
+        Description des enchainements 
+Pré-condition L'étudiant doit avoir des formations dans son panier. 
+
+--- PAGE 85 ---
+Chapitre 5 : Sprint 3 : Parcours Étudiant 
+ 
+75 
+Post-condition Les réservations ont été créées (non confirmées) et deviennent 
+visibles dans "Mes réservations" pour une confirmation ultérieure 
+ 
+Scénario nominal 6. L’étudiant accède à son panier contenant des formations 
+7. Le système vérifie que toutes les formations sont encore 
+valables (dates non dépassées et places disponibles). 
+8. Le système affiche la liste des formations  avec leurs détails 
+(titre, date de début, nombre de cours). 
+9. L'étudiant clique sur le bouton "Réserver". 
+10. Le système vérifie s'il y a des formations avec des dates 
+identiques.  
+11. Le système crée les réservations pour toutes les formations du 
+panier (statut : non confirmées) et le bouton "Réserver" devient 
+"Voir mes réservations". 
+12.  L’étudiant clique sur "Voir mes réservations". 
+13. Le système affiche les formations réservées dans la page "Mes 
+réservations" avec le statut "En attente de confirmation". 
+14.   L'étudiant valide sa réservation au centre. 
+15.  Le système vide le panier complètement.  
+16. Les formations réservées seront affichées uniquement dans la 
+page "Mes réservations 
+Enchainements alternatifs  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  E1 Conflit de dates identiques détecté : 
+1. Le système détecte des formations avec des dates identiques. 
+2. Une alerte s'affiche : "Il y a des conflits de temps entre certaines 
+formations et deux boutons sont proposés  : « Réserver quand 
+même » ou « annuler ». 
+2.1. Si l'étudiant clique sur "Réserver quand même" 
+- Les formations avec dates identiques sont réservées 
+(statut : non confirmées) 
+2.2. Si l'étudiant clique sur "Annuler" 
+
+--- PAGE 86 ---
+Chapitre 5 : Sprint 3 : Parcours Étudiant 
+ 
+76 
+- L'étudiant peut supprimer les formations ayant des 
+dates identique s et reprendre le processus de 
+réservation. 
+ 
+E2 Formations avec dates dépassées ou places indisponibles  
+1.  Le panier contient des formations dont les dates sont 
+dépassées ou qui n'ont plus de places disponibles,  
+2. Le système désactive le bouton « Réserver »  et affiche une 
+alerte : "V ous devez supprimer les formations ayant des 
+dates dépassées ou sans places disponibles pour réserver. 
+3. L'étudiant doit supprimer ces formations avant de pouvoir 
+procéder à la réservation. 
+E3 Réservations existantes non validées 
+1. L'étudiant a des réservations non confirmées. 
+2. Le panier contient des formations avec dates dépassées ou 
+complètes. 
+3. Le système affiche  des alertes s'affichent pour signaler les 
+formations problématiques. 
+4. Ces formations sont automatiquement supprimées de la liste 
+des réservations. 
+ 
+Tableau 21:Description textuelle " Réserver une formation " 
+3. Diagramme de séquence 
+Cette section présente les diagrammes de séquence élaborés dans le cadre du Sprint 3. 
+3.1. Diagramme de séquence « Ajouter une formation au panier » 
+Le diagramme de séquence suivant présente le processus d’ajout une formation au panier. 
+ 
+
+--- PAGE 87 ---
+Chapitre 5 : Sprint 3 : Parcours Étudiant 
+ 
+77 
+ 
+Figure 35::Diagramme de séquence " Ajouter une formation au panier" 
+3.2. Diagramme de séquence « Réserver une formation » 
+Ce diagramme de séquence présente le processus de réservation des formations effectuée à 
+travers le panier. 
+ 
+ 
+
+
+--- PAGE 88 ---
+Chapitre 5 : Sprint 3 : Parcours Étudiant 
+ 
+78 
+ 
+Figure 36:Diagramme de séquence “Réserver une formation" 
+4. Diagramme de classe du Sprint 3 
+La figure ci -dessous illustre le diagramme de classes, présentant les classes spécifiques 
+développées lors du troisième sprint. 
+ 
+ 
+ 
+Figure 37:Diagramme de classe de sprint 3 
+
+
+--- PAGE 89 ---
+Chapitre 5 : Sprint 3 : Parcours Étudiant 
+ 
+79 
+5. Revue du sprint 3 
+Cette section a pour objectif de présenter les résultats obtenus lors du troisième sprint, à 
+travers les interfaces développées de l'application. 
+5.1. Interface du panier 
+ 
+Figure 38: Interface du panier 
+5.2. Interface de consultation des réservations 
+Figure 39: Interface de consultation des réservations 
+
+
+--- PAGE 90 ---
+Chapitre 5 : Sprint 3 : Parcours Étudiant 
+ 
+80 
+5.3. Interface de gestion des réservations 
+Figure 40: Interface de gestion des réservations 
+Conclusion 
+Les fonctionnalités du parcours étudiant sont désormais opérationnelles, permettant 
+une expérience d'apprentissage complète sur la plateforme. Le sprint final abordera la 
+gestion des quiz et des certificats pour clôturer le développement de l'écosystème 
+d'apprentissage. 
+ 
+ 
+  
+
+
+--- PAGE 91 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+81 
+Chapitre 6 : Sprint 4 - Évaluation & Certification  
+ 
+Introduction 
+Ce quatrième et dernier sprint finalise la plateforme en intégrant les fonctionnalités d'évaluation 
+par quiz et la génération de certificats. Il inclut également des outils de suivi des parcours 
+étudiants et d'analyse des performances, complétant ainsi le développement de l'écosystème 
+d'apprentissage. 
+1. Backlog du sprint 4 
+Le tableau ci-dessous présente un aperçu du backlog du quatrième sprint. 
+Id Thème User Story Priorité 
+11 Test de niveau linguistique  En tant qu'étudiant inscrit à une formation 
+linguistique, je souhaite pouvoir passer un 
+test de niveau initial afin d'être affecté à une 
+formation adaptée à mes compétences. 
+ 
+Must 
+12 Quiz d'évaluation En tant qu'étudiant ayant terminé une 
+formation, je souhaite passer un quiz 
+d'évaluation finale afin de valider mes acquis 
+et d’obtenir un certificat à condition 
+d’atteindre le score requis. 
+Must 
+13 Retour d'expérience En tant qu'étudiant ayant terminé un e 
+formation et passé le quiz, je souhaite pouvoir 
+laisser un feedback sous forme d'évaluation 
+par étoiles afin de partager mon expérience. 
+Should 
+15 Espace personnel 
+d'archivage 
+En tant qu'étudiant, je souhaite accéder à un 
+espace personnel où sont archiv ées mes 
+attestations et certificats afin de pouvoir les 
+consulter et les télécharger à tout moment. 
+Must 
+18 Soumission de Quiz En tant que formateur, je souhaite soumettre 
+mes Quiz à l'admin pour publication afin 
+qu'ils soient disponibles pour les étudiants. 
+Must 
+
+--- PAGE 92 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+82 
+21 Publication de Quiz En tant qu’admin, je souhaite pouvoir valider 
+et publier les Quiz préparés par les formateurs 
+afin de les rendre accessibles aux étudiants. 
+Must 
+22 Analyse des performances 
+de quiz 
+En tant qu’admin , je souhaite accé der à un 
+tableau de statistiques détaillées pour chaque 
+quiz (pourcentage de réussite, score moyen, 
+nombre de tentatives par étudiant) afin 
+d'évaluer l'efficacité des évaluations et 
+d'identifier les points d'amélioration dans le 
+contenu pédagogique. 
+Should 
+Tableau 22: Backlog du quatrième sprint 
+2. Analyse et conception 
+Cette section décrit la conception du quatrième sprint à travers les diagrammes UML : cas 
+d'utilisation, classes et séquences. 
+2.1. Diagramme de cas d’utilisation 
+La figure ci-après illustre le diagramme des cas d ’utilisation élaboré pour le quatrième sprint. 
+Ce diagramme met en évidence les deux acteurs principaux, à savoir l’étudiant et l’admin, ainsi 
+que les différentes fonctionnalités qui leur sont proposées dans ce sprint. L’étudiant peut passer 
+un quiz, soumettre un feedback, consulter l ’historique de ses certifications obtenues et 
+télécharger ses certificats. Quant à l’admin, il dispose de fonctionnalités avancées telles que la 
+gestion des quiz, la consultation e t la suppression des feedbacks, l ’accès aux évaluations et à 
+leurs suppressions, ainsi que la consultation des statistiques globales. 
+ 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+ 
+
+--- PAGE 93 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+83 
+ 
+Figure 41:Diagramme de cas d'utilisation du quatrième sprint 
+
+
+--- PAGE 94 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+84 
+2.2. Description textuelle de cas d’utilisation coté admin 
+Le tableau suivant présente une description textuelle des cas d'utilisation relatifs à la création 
+de quiz. 
+                                      Sommaire d’identification 
+Titre  Créer un quiz 
+Description  
+Ce cas décrit le processus de création d'un quiz par un admin ou 
+super-admin. 
+Acteurs Admin, super-admin 
+    Description des enchainements  
+ 
+Pré-condition  Authentification préalable 
+Post-condition  Quiz créer avec succès. 
+Scénario nominal 1. L’admin accède à la page de création de quiz. 
+2. Le système affiche un formulaire de création de quiz. 
+3. L’admin saisit les informations nécessaires à la création 
+du quiz (titre, type, durée, etc.). 
+4. L’admin importe un fichier contenant les questions du 
+quiz via le formulaire. 
+5. Le système vérifie que : 
+- Tous les champs sont valides. 
+- Les données du fichier sont correctes. 
+- Le type du quiz est unique pour la formation 
+sélectionnée. 
+6. Le système enregistre le quiz. 
+7. L’admin est redirigé vers la page de détails du quiz avec 
+un message de confirmation indiquant que le quiz a été 
+créé avec succès. 
+
+--- PAGE 95 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+85 
+Enchainements d’erreurs  
+ 
+E1 : Si l'admin saisit un champ non valide : 
+1. Le système affiche un message d ’erreur précisant le 
+champ invalide. 
+2. Le système réaffiche le formulaire de création en 
+conservant les informations valides déjà saisies. 
+E2 : Si le type de quiz (exemple :test de niveau, quiz final) existe 
+déjà dans la formation sélectionnée : 
+- Le système affiche un message d'erreur indiquant que le 
+type de quiz existe déjà pour cette formation. 
+E3 : Si les données sont invalides dans le fichier importé : 
+- Le système affiche un message contenant les erreurs 
+détectées dans le fichier 
+Tableau 23:Description textuelle « Créer un quiz » 
+2.3. Description textuelle de cas d’utilisation coté étudiant 
+Le tableau suivant présente une description textuelle détaillée des cas d’utilisation liés au 
+passage de quiz par l’étudiant. 
+                                 Sommaire d’identification 
+Titre  Passer un quiz  
+Description  
+Ce cas décrit le processus de passage d’un quiz par un étudiant. 
+Acteurs Etudiant  
+         Description des enchainements 
+Pré-condition  Authentification préalable 
+Post-condition  À l’issue du quiz, les réponses de l’étudiant sont sauvegardées et 
+une évaluation est effectuée. 
+
+--- PAGE 96 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+86 
+Scénario nominal 1. L’étudiant consulte la page de détails de la formation. 
+2. L’étudiant sélectionne un quiz et clique sur le bouton « 
+Démarrer » pour lancer le quiz. 
+3. Le système vérifie si l’utilisateur connecté a déjà une 
+tentative associée à ce quiz puis il crée une nouvelle 
+tentative. 
+4. Le système redirige l’étudiant vers la page de tentative 
+du quiz.  
+5. Le système affiche les questions une par une, chacune 
+accompagnée de ses propositions de réponse. 
+6. Tant que le temps imparti n’est pas écoulé et qu’il reste 
+des questions, l’étudiant répondre aux questions. 
+7. Le système enregistre les réponses. 
+8. Une fois le quiz terminé, le système calcule le score et 
+redirige l’étudiant vers la page de résultats. 
+9. Si le score atteint est supérieur ou égal au score 
+minimum requis, le système génère automatiquement un 
+certificat de réussite. 
+ 
+Enchainements alternatifs 
+ 
+E1 : soumission de feedbacks : 
+1. L’étudiant clique sur le bouton « Donner votre avis » 
+depuis la page de résultats. 
+2. Le système affiche le formulaire de feedback, 
+comprenant un système de notation par étoiles. 
+3. L’étudiant attribue une note (étoiles). 
+4. Le système enregistre le feedback. 
+E2 : télécharger le certificat : 
+1. L’étudiant clique sur le bouton « Télécharger » depuis la 
+page de résultats. 
+
+--- PAGE 97 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+87 
+2. Le système télécharger le certificat sous forme de PDF.  
+Enchainements d’erreurs  
+ 
+E1 : Si l’étudiant a une tentative non complétée associée à ce 
+quiz : 
+- Le système redirige l’étudiant vers la page de tentative en 
+cours, afin qu’il puisse la reprendre. 
+E2 : Si l’étudiant a déjà complété une tentative pour ce quiz : 
+- Le système le redirige vers la page de détails de la 
+formation avec un message l’informant qu’il ne peut plus 
+retenter le quiz. 
+E3 : Si l’étudiant commet deux actes de triche (ex. : changement 
+d’onglet détecté) pendant sa tentative : 
+- Le système soumet automatiquement le quiz, puis 
+redirige l ’étudiant vers la page de résultats, avec un 
+message indiquant que la tentative a été clôturée pour 
+cause de triche. 
+Tableau 24:Description textuelle « Passer un quiz » 
+3. Diagrammes de séquence 
+Cette section a pour objectif de présenter les diagrammes de séquence illustrant les différents 
+scénarios possibles dans le cadre du quatrième sprint. 
+ 
+
+--- PAGE 98 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+88 
+3.1.  Diagramme de séquence « Créer un quiz » 
+Le diagramme ci-dessous décrit le scénario de publication d’un quiz par admin ou super-
+admin : 
+Figure 42:Diagramme de séquence "Créer un quiz" 
+
+
+--- PAGE 99 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+89 
+3.2. Diagramme de séquence « Passer un quiz » 
+Ce diagramme de séquence représente les interactions impliquées dans le processus de 
+passage d’un quiz par un étudiant. Il s’agit du scénario nominal : 
+
+--- PAGE 100 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+90 
+Figure 43: Diagramme de séquence « Passer un quiz »  
+  
+
+
+--- PAGE 101 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+91 
+4. Diagramme de classe 
+La figure ci-dessous illustre le diagramme de classes, représentant les entités spécifiques 
+développées lors du quatrième sprint. 
+ 
+ 
+Figure 44: Digramme de classe de sprint 4 
+
+
+--- PAGE 102 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+92 
+Ce diagramme met en évidence la structure de gestion des quiz et des évaluations des 
+étudiants au sein de la plateforme. Chaque formation peut contenir zéro à deux quiz : un 
+test de niveau (dans le cas des formations linguistiques) et un quiz final (visant à évaluer 
+les compétences acquises à la fin de la formation). 
+Les quiz sont enregistrés dans la table Quiz, qui contient des attributs tels que le titre, la 
+durée, le score minimum requis (passing_score) et le type (test de niveau ou quiz final). 
+Chaque quiz est composé de plusieurs questions, et chaque question est composé de 
+plusieurs réponses, stockées dans la table Answer. Lorsqu’un étudiant passe un quiz, ses 
+tentatives sont enregistrées dans la table QuizAttempt, contenant des informations telles 
+que le score obtenu, le niveau (dans le cas des tests de langue), le nombre de changements 
+d’onglet (tab_switches) pour détecter d’éventuelles triches, les horaires de début et de fin 
+(started_at, finished_at), ainsi qu’un indicateur passed (true si l’étudiant a réussi). 
+En cas de réussite, un certificat est généré et enregistré dans la table Certification. 
+Pendant la tentative, les réponses de l’étudiant sont enregistrées dans la table UserAnswer. 
+Une fois le quiz terminé, le champ (completed) passe à true, et l’étudiant peut soumettre 
+un feedback, qui est stocké dans la table Feedback pour évaluer son expérience. 
+Cette modélisation permet une gestion complète et rigoureuse des évaluations, depuis la 
+création des quiz jusqu’à l’obtention de la certification, tout en assurant un suivi précis des 
+performances et du comportement des étudiants. 
+5. Revue du sprint 4 
+Cette section présente les résultats obtenus lors du quatrième sprint, illustrés par les 
+interfaces développées de l’application. 
+
+--- PAGE 103 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+93 
+5.1. Interface de création de quiz  
+Figure 45: Interface de création de quiz 
+
+
+--- PAGE 104 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+94 
+5.2.  Interface de détails du quiz 
+Cette page contient les détails du quiz, tels que ses informations générales et les détails de 
+ses questions. Elle affiche également les statistiques du quiz, comme le nombre de 
+tentatives associées et le taux de réussite. Elle permet également d’ajouter de nouvelles 
+questions, de publier ou dépublier le quiz, ainsi que de le supprimer. 
+ 
+Figure 46: Interface de détails du quiz 
+ 
+ 
+ 
+
+
+--- PAGE 105 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+95 
+5.3. Interface de gestion des évaluations 
+Cette interface permet d’afficher l’ensemble des tentatives réalisées par les étudiants. Elle offre 
+également la possibilité de consulter les évaluations en détail et de les supprimer si nécessaire. 
+Figure 47: Interface de gestion des évaluations 
+5.4. Interface de tentative  
+ 
+Figure 48: Interface de tentative 
+
+
+--- PAGE 106 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+96 
+5.5. Interface de résultats 
+L'interface des résultats du quiz offre une présentation claire et complète des performances de 
+l’étudiant après la finalisation de son évaluation. Elle affiche le score obtenu, accompagné des 
+informations temporelles (durée et date de passage), ainsi qu’une section de certification avec 
+un message de félicitations. L’interface propose également un détail des réponses par 
+question, avec la possibilité de soumettre un feedback et de télécharger ou consulter le 
+certificat, s’il est disponible.  
+ 
+Figure 49: Interface de résultats 
+
+
+--- PAGE 107 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+97 
+5.6. Interface de retour d’expérience 
+Figure 50: Interface de retour d’expérience 
+5.7. Interface de la liste des feedbacks 
+Figure 51: Interface de la liste des feedbacks 
+ 
+ 
+ 
+
+
+--- PAGE 108 ---
+ 
+Chapitre 6 : Sprint 4 : Évaluation & Certification 
+ 
+98 
+Rétrospective du sprint 
+Dans cette section, nous faisons le bilan du travail accompli lors du dernier sprint. 
+Ce qui a été bien réalisé : 
+- Gestion des quiz : Mise en place d’un module permettant de créer des quiz, de les publier 
+et de suivre leurs statistiques (nombre de tentatives, taux de réussite, etc.). 
+- Passage de tentative : Les étudiants peuvent passer des quiz pour évaluer leurs 
+compétences. En cas de réussite, une certification est automatiquement générée. 
+- Retours d’expérience (feedbacks) : Après chaque tentative, les étudiants ont la 
+possibilité de donner leur avis sur la formation qu’ils ont suivie, à travers un système de 
+notation par étoiles. Cela permet au centre de mieux comprendre quelles formations ont 
+été les plus appréciées et celles qui nécessitent des améliorations. 
+Conclusion  
+Ce chapitre a mis en évidence les principales réalisations du sprint, notamment la gestion des 
+quiz, le système de certification et  les feedbacks. Ces réalisations améliorent l'expérience 
+utilisateur pour les étudiants et les administrateurs. 
+ 
+ 
+ 
+  
+
+--- PAGE 109 ---
+ 
+Conclusion Générale 
+ 
+ 
+99 
+Conclusion Générale 
+La plateforme web réalisée dans le cadre de ce stage de fin d'études répond efficacement aux 
+objectifs fixés. Elle facilite la gestion centralisée des formations, améliore la communication 
+entre les utilisateurs et permet un suivi pédagogique en temps réel. 
+L'accomplissement de ce stage au sein de la s ociété INNO THINK LABS nous a offert 
+l'opportunité de découvrir concrètement l'environnement professionnel et d'acquérir une 
+expérience précieuse pour notre future carrière. 
+Durant cette période, nous avons suivi une démarche méthodique structurée. Nous av ons 
+d'abord analysé le contexte général du projet, puis établi un plan de travail détaillé en définissant 
+les tâches et leur répartition temporelle. La spécification des besoins fonctionnels et non 
+fonctionnels de l'application a constitué une étape fondamentale, suivie de la mise en œuvre de 
+sprints dans le cadre de la méthodologie Agile Scrum. 
+Concernant les choix techniques, nous avons opté pour le framework Laravel pour le 
+développement backend et frontend et MySQL pour la gestion de la base de données,  des 
+technologies qui se sont révélées parfaitement adaptées à nos besoins. 
+Le résultat obtenu est conforme aux exigences établies. Ce projet nous a permis de nous 
+confronter à une expérience enrichissante sur les plans technique et professionnel dans le 
+domaine du développement web. Nous avons également développé des compétences 
+transversales essentielles : le travail d'équipe, la répartition des tâches et la gestion du temps. 
+Cette expérience nous a offert l'opportunité de concrétiser les connaissances théoriques acquises 
+durant nos études à l'ISET de Sousse. 
+Comme tout projet de développement, cette plateforme reste perfectible et peut bénéficier de 
+plusieurs améliorations. Nos perspectives d'évolution incluent l'intégration d'un calendrier 
+centralisé regroupant l'ensemble des dates de formation, permettant aux utilisateurs de mieux 
+organiser leur emploi du temps, ainsi que l'implémentation d'un système de messagerie 
+instantanée pour faciliter la communication en tre les différents acteurs de la plateforme. Cette 
+expérience marque une étape significative dans notre parcours académique et constitue un 
+tremplin vers notre insertion professionnelle future.     
+
+--- PAGE 110 ---
+ 
+Bibliographie 
+ 
+100 
+Bibliographie 
+ 
+1. INNO THINK LABS. Présentation de l’Entreprise.  
+2. centre de formation professionnelle.  
+3. QRP. QRP. [Online] 12 01 2021. https://www.qrpinternational.fr/blog/glossaire/scrum-cest-
+quoi-definition-scrum/. 
+4. pm-partners. [Online] https://www.pm-partners.com.au/insights/the-agile-journey-a-scrum-
+overview/. 
+5. MYAGILE. [Online] 04 12 2023. https://blog.myagilepartner.fr/index.php/2017/01/05/product-
+owner-role/. 
+6. MYAGILE. [Online] 24 11 2023. https://blog.myagilepartner.fr/index.php/2018/05/27/role-de-
+scrum-master/. 
+7. MYAGILE. [Online] 04 12 2023. https://blog.myagilepartner.fr/index.php/2019/08/02/lequipe-
+de-developpement-en-scrum/. 
+8. Ball, . QRP. [Online] https://www.qrpinternational.fr/blog/methoade-agile/top-2-des-
+techniques-agile-la-priorisation-moscow-et-le-timeboxing/. 
+9. Bility. Bility. [Online] [Cited: 20 05 2025.] https://bility.fr/definition-visual-studio-code/. 
+10. Laravel. Laravel. [Online] [Cited: 28 04 2025.] https://laravel.com/docs/12.x/blade. 
+11. techtarget. techtarget. [Online] 26 02 2025. 
+https://www.techtarget.com/whatis/definition/bootstrap. 
+12. LWS. [Online] https://blog.lws-hosting.com/creation-de-sites-web/utiliser-xampp-pour-creer-
+son-serveur-web/. 
+13. lemagit. [Online] https://www.lemagit.fr/definition/GitHub. 
+14. computerhope. [Online] 18 07 2024. https://www.computerhope.com/jargon/d/drawio.htm. 
+15. mobiskill. [Online] https://www.mobiskill.fr/blog-posts/pourquoi-choisir-laravel-pour-du-
+developpement-web. 
+16. Statistics & Data. [Online] https://statisticsanddata.org/data/most-popular-backend-
+frameworks-2012-2023/. 
+17. apcpedagogie. [Online] https://apcpedagogie.com/le-modele-mvc/. 
+18. L'ORM Eloquent. [Online] https://grafikart.fr/tutoriels/orm-eloquent-laravel-2115. 
+19. Support DevOps. [Online] https://www.devopssupport.in/blog/laravel-eloquent-orm-simplify-
+database-operations-in-laravel/. 
+20. Gantt. [Online] https://www.gantt.com/fr/. 
+
+--- PAGE 111 ---
+ 
+Bibliographie 
+ 
+101 
+21. lucidchart. lucidchart. [Online] [Cited: 31 03 2025.] 
+https://www.lucidchart.com/pages/fr/diagramme-de-sequence-uml. 
+22. lucidchart. lucidchart. [Online] [Cited: 01 04 2025.] 
+https://www.lucidchart.com/pages/fr/diagramme-de-classes-uml. 
+ 
+ 
+ 
+   

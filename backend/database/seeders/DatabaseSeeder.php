@@ -152,7 +152,7 @@ class DatabaseSeeder extends Seeder
 
         $project4 = Project::firstOrCreate(['nom' => 'API de paiement v2'], [
             'description' => 'Refactoring complet de l\'API de paiement pour supporter Stripe, PayPal et les virements SEPA.',
-            'statut'      => 'ouvert',
+            'statut'      => 'en_cours',
             'date_debut'  => now()->subWeeks(2),
             'date_fin'    => now()->addMonths(5),
             'created_by' => $chefProjet2->id,
@@ -167,7 +167,15 @@ class DatabaseSeeder extends Seeder
             'created_by'    => $chefProjet1->id,
         ]);
 
-        $projects = [$project1, $project2, $project3, $project4, $project5];
+        $project6 = Project::firstOrCreate(['nom' => 'Intégration CRM Salesforce'], [
+            'description'   => 'Synchronisation bidirectionnelle entre la plateforme et le CRM Salesforce pour le suivi client.',
+            'statut'        => 'ouvert',
+            'date_debut'    => now()->addWeeks(1),
+            'date_fin'      => now()->addMonths(2),
+            'created_by'    => $chefProjet2->id,
+        ]);
+
+        $projects = [$project1, $project2, $project3, $project4, $project5, $project6];
 
         // ── 3. Membres des projets ─────────────────────────────────────────────
 
@@ -181,6 +189,8 @@ class DatabaseSeeder extends Seeder
         $project4->users()->syncWithoutDetaching([$dev1->id, $dev2->id, $testeur1->id, $chefProjet2->id]);
         // Projet 5 — portail client (archivé)
         $project5->users()->syncWithoutDetaching([$dev3->id, $dev4->id, $testeur2->id, $chefProjet1->id]);
+        // Projet 6 — Intégration CRM (ouvert, pas de tickets)
+        $project6->users()->syncWithoutDetaching([$dev1->id, $dev4->id, $testeur1->id, $chefProjet2->id]);
 
         // ── 4. Tickets réalistes par projet ───────────────────────────────────
 

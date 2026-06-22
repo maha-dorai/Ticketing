@@ -162,7 +162,12 @@ const scrollBottom = () => {
 watch(() => props.result, (v) => { if (v) runAnimation(v); }, { deep: true, immediate: true });
 
 watch(() => props.triggered, (val) => {
-  if (val && !props.result) {
+  if (!val) {
+    clearAllTimers();
+    visibleLines.value = [];
+    isDone.value = false;
+    progressPct.value = 0;
+  } else if (val && !props.result) {
     clearAllTimers();
     visibleLines.value = [];
     isDone.value = false;

@@ -237,16 +237,39 @@ class StatsController extends Controller
             ->groupBy('categorie_ia')->get();
 
         // 6. Délai moyen résolution
-        $avgResolutionTime = (clone $resolvedQuery)
-            ->select(DB::raw('AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as avg_hours'))
-            ->first()->avg_hours;
+        if (DB::getDriverName() === 'mysql') {
+            $avgResolutionTime = (clone $resolvedQuery)
+                ->select(DB::raw('AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as avg_hours'))
+                ->first()->avg_hours;
+        } else {
+            $avgResolutionTime = (clone $resolvedQuery)
+                ->select(DB::raw('AVG((julianday(updated_at) - julianday(created_at)) * 24) as avg_hours'))
+                ->first()->avg_hours;
+        }
 
         // 7. Heatmap d'activité
-        $heatmap = (clone $query)->select(
-            DB::raw('DAYNAME(created_at) as day'),
-            DB::raw('HOUR(created_at) as hour'),
-            DB::raw('count(*) as count')
-        )->groupBy('day', 'hour')->get();
+        if (DB::getDriverName() === 'mysql') {
+            $heatmap = (clone $query)->select(
+                DB::raw('DAYNAME(created_at) as day'),
+                DB::raw('HOUR(created_at) as hour'),
+                DB::raw('count(*) as count')
+            )->groupBy('day', 'hour')->get();
+        } else {
+            $rawHeatmap = (clone $query)->select(
+                DB::raw("strftime('%w', created_at) as day_num"),
+                DB::raw("CAST(strftime('%H', created_at) AS INTEGER) as hour"),
+                DB::raw('count(*) as count')
+            )->groupBy('day_num', 'hour')->get();
+            
+            $daysMap = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            $heatmap = $rawHeatmap->map(function ($item) use ($daysMap) {
+                return [
+                    'day' => $daysMap[$item->day_num] ?? 'Unknown',
+                    'hour' => $item->hour,
+                    'count' => $item->count,
+                ];
+            });
+        }
 
         return response()->json([
             'avancement'          => ['total' => $totalTickets, 'resolus' => $resolvedTickets],
